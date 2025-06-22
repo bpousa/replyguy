@@ -5,6 +5,7 @@ import ReplyForm from './components/reply-form';
 import ReplyOutput from './components/reply-output';
 import { UserInput, GeneratedReply } from './lib/types';
 import { Sparkles } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 export default function HomePage() {
   const [generatedReply, setGeneratedReply] = useState<GeneratedReply | null>(null);
@@ -15,20 +16,25 @@ export default function HomePage() {
     setGeneratedReply(null);
 
     try {
-      // TODO: Implement the actual API calls
-      // For now, using a mock response
-      const mockReply: GeneratedReply = {
-        reply: "That's exactly what happened to me last week! Found a typo in a variable name after staring at it for hours. The debugging struggle is real.",
-        replyType: 'Relatable Confession',
-        cost: 0.016,
-        processingTime: 2500,
-      };
+      const response = await fetch('/api/process', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(input),
+      });
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setGeneratedReply(mockReply);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to generate reply');
+      }
+
+      setGeneratedReply(result.data);
+      toast.success('Reply generated successfully!');
     } catch (error) {
       console.error('Failed to generate reply:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to generate reply');
     } finally {
       setIsGenerating(false);
     }
@@ -83,6 +89,49 @@ export default function HomePage() {
             icon="🎯"
           />
         </div>
+
+        {/* Footer */}
+        <footer className="mt-16 text-center text-sm text-gray-500">
+          <p>
+            Built with ❤️ using{' '}
+            <a
+              href="https://nextjs.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline"
+            >
+              Next.js
+            </a>
+            ,{' '}
+            <a
+              href="https://www.anthropic.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline"
+            >
+              Claude
+            </a>
+            , and{' '}
+            <a
+              href="https://openai.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline"
+            >
+              OpenAI
+            </a>
+          </p>
+          <p className="mt-2">
+            <a
+              href="https://github.com/bpousa/replyguy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline"
+            >
+              View on GitHub
+            </a>
+          </p>
+        </footer>
       </div>
     </main>
   );

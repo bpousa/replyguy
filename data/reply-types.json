@@ -1,0 +1,58 @@
+[
+  {
+    "category": "Humor & Wit",
+    "reply_name": "The Witty Comeback",
+    "description": "A clever, humorous retort that plays off the original tweet's content, often using wordplay or a clever twist.",
+    "example_original_tweet": "Just spilled coffee all over my laptop.",
+    "example_reply": "Congrats, now you have a JavaScript machine!"
+  },
+  {
+    "category": "Humor & Wit",
+    "reply_name": "The Self-Deprecating Joke",
+    "description": "A humorous reply that pokes fun at oneself in a relatable way, often in response to a shared struggle.",
+    "example_original_tweet": "My plants are thriving. I'm basically a botanist now.",
+    "example_reply": "Meanwhile, I looked at a cactus and it wilted. Teach me your ways."
+  },
+  {
+    "category": "Agreement & Relatability",
+    "reply_name": "The Relatable Confession",
+    "description": "Admitting to a personal, often quirky, habit or feeling that you suspect many others secretly share.",
+    "example_original_tweet": "I hate talking on the phone. Just text me.",
+    "example_reply": "I thought I was the only one who rehearses the phone call in my head before I dial."
+  },
+  {
+    "category": "Agreement & Relatability",
+    "reply_name": "The Emphatic Agreement",
+    "description": "Using short, common internet slang to express strong and immediate agreement or relatability.",
+    "example_original_tweet": "Adulting is just Googling how to do things.",
+    "example_reply": "This. So much this."
+  },
+  {
+    "category": "Praise & Support",
+    "reply_name": "The Supportive Hype",
+    "description": "Offering genuine encouragement, validation, or cheerleading to someone.",
+    "example_original_tweet": "Feeling really discouraged with my job search.",
+    "example_reply": "You got this! The right opportunity is just around the corner."
+  },
+  {
+    "category": "Value & Information",
+    "reply_name": "The Helpful Tip",
+    "description": "Providing a useful piece of advice, a practical solution, or a link to a helpful article, tool, or resource.",
+    "example_original_tweet": "My phone battery dies so fast!",
+    "example_reply": "Try turning off background app refresh. It's a game-changer! This article explains how: [link]"
+  },
+  {
+    "category": "Conversation Starter",
+    "reply_name": "The Thread Starter Question",
+    "description": "Asking a simple, open-ended question to encourage the original poster and others to elaborate or continue the conversation.",
+    "example_original_tweet": "Just visited the most beautiful beach.",
+    "example_reply": "That looks amazing! What happened next?"
+  },
+  {
+    "category": "Opinion & Challenge",
+    "reply_name": "The Contrarian View",
+    "description": "Respectfully disagreeing with the original tweet and providing a well-articulated argument to support your different perspective.",
+    "example_original_tweet": "Email marketing is dead.",
+    "example_reply": "I see your point about oversaturation, but I'd argue that highly personalized email campaigns are more effective than ever."
+  }
+]

@@ -1,0 +1,21 @@
+{
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "outputDirectory": ".next",
+  "env": {
+    "OPENAI_API_KEY": "@openai-api-key",
+    "ANTHROPIC_API_KEY": "@anthropic-api-key",
+    "PERPLEXITY_API_KEY": "@perplexity-api-key",
+    "SUPABASE_SERVICE_KEY": "@supabase-service-key"
+  },
+  "functions": {
+    "app/api/process/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/generate/route.ts": {
+      "maxDuration": 30
+    }
+  }
+}

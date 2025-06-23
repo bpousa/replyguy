@@ -151,7 +151,7 @@ export function Features() {
               </div>
               <h3 className="text-xl font-semibold mb-2">Add Your Intent</h3>
               <p className="text-gray-600">
-                Tell us what you want to say and pick your tone. Add a meme if you're feeling spicy
+                Tell us what you want to say and pick your tone. Add a meme if you&apos;re feeling spicy
               </p>
             </motion.div>
             

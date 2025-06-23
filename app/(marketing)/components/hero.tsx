@@ -34,7 +34,7 @@ export function Hero() {
             </h1>
             
             <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-2xl mx-auto">
-              AI-powered replies that actually sound human. No more "As an AI" nonsense. 
+              AI-powered replies that actually sound human. No more &ldquo;As an AI&rdquo; nonsense. 
               Just authentic, engaging responses that get likes.
             </p>
             
@@ -89,8 +89,8 @@ export function Hero() {
                   <div className="pl-13 space-y-2">
                     <div className="text-sm text-gray-500">Reply Guy suggests:</div>
                     <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-sm">
-                      "Living dangerously, I see! Hope your weekend plans include being on-call 😅 
-                      May the server gods be merciful 🙏"
+                      &ldquo;Living dangerously, I see! Hope your weekend plans include being on-call 😅 
+                      May the server gods be merciful 🙏&rdquo;
                     </div>
                     <div className="flex gap-2">
                       <div className="text-xs bg-gray-100 rounded px-2 py-1">Witty</div>

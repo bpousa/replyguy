@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import ReplyForm from './components/reply-form';
-import ReplyOutput from './components/reply-output';
-import { UserInput, GeneratedReply } from './lib/types';
+import ReplyForm from '@/app/components/reply-form';
+import ReplyOutput from '@/app/components/reply-output';
+import { UserInput, GeneratedReply } from '@/app/lib/types';
 import { Sparkles } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 

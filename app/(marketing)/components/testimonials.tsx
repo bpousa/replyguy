@@ -66,7 +66,7 @@ export function Testimonials() {
               </span>
             </h2>
             <p className="text-xl text-gray-600">
-              Join thousands who've transformed their Twitter game
+              Join thousands who&apos;ve transformed their Twitter game
             </p>
           </motion.div>
         </div>
@@ -96,7 +96,7 @@ export function Testimonials() {
                 </div>
                 
                 <p className="text-gray-700 flex-grow">
-                  "{testimonial.content}"
+                  &ldquo;{testimonial.content}&rdquo;
                 </p>
               </div>
             </motion.div>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { UserInput, GeneratedReply, CostBreakdown } from '@/app/lib/types';
+import { imgflipService } from '@/app/lib/services/imgflip.service';
 
 // This is the main orchestrator endpoint that calls all other endpoints
 
@@ -13,7 +14,8 @@ const requestSchema = z.object({
   needsResearch: z.boolean(),
   replyLength: z.enum(['short', 'medium', 'long']).optional(),
   perplexityGuidance: z.string().max(200).optional(),
-  enableStyleMatching: z.boolean().optional()
+  enableStyleMatching: z.boolean().optional(),
+  includeMeme: z.boolean().optional()
 });
 
 export async function POST(req: NextRequest) {
@@ -96,6 +98,7 @@ export async function POST(req: NextRequest) {
         tone: validated.tone,
         selectedTypes,
         perplexityData,
+        enableMemes: validated.includeMeme && imgflipService.isConfigured(),
       }),
     });
 
@@ -105,9 +108,30 @@ export async function POST(req: NextRequest) {
 
     const reasonData = await reasonResponse.json();
     const selectedType = reasonData.data.selectedType;
+    const shouldIncludeMeme = reasonData.data.includeMeme;
+    const memeText = reasonData.data.memeText;
     costs.reasoning = reasonData.data.cost;
 
-    // Step 4: Generate final reply
+    // Step 4: Generate meme if needed
+    let memeUrl: string | undefined;
+    let memePageUrl: string | undefined;
+    
+    if (shouldIncludeMeme && memeText && validated.includeMeme) {
+      try {
+        // TODO: Check user's meme limit before generating
+        const memeResult = await imgflipService.generateAutomeme(memeText);
+        memeUrl = memeResult.url;
+        memePageUrl = memeResult.pageUrl;
+        
+        // TODO: Track meme usage
+        console.log('Generated meme:', memeUrl);
+      } catch (error) {
+        console.error('Meme generation failed:', error);
+        // Continue without meme
+      }
+    }
+
+    // Step 5: Generate final reply
     const generateResponse = await fetch(new URL('/api/generate', req.url), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -147,6 +171,8 @@ export async function POST(req: NextRequest) {
       processingTime,
       perplexityData,
       costs,
+      memeUrl,
+      memePageUrl,
     };
 
     return NextResponse.json({ data: result });

@@ -24,6 +24,7 @@ const requestSchema = z.object({
     complexity: z.number(),
   })),
   perplexityData: z.string().optional(),
+  enableMemes: z.boolean().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -38,15 +39,15 @@ export async function POST(req: NextRequest) {
     // Call Claude Sonnet for reasoning
     const message = await anthropic.messages.create({
       model: 'claude-3-sonnet-20240229',
-      max_tokens: 200,
+      max_tokens: 300,
       temperature: 0.2,
       system: 'You are an expert at understanding social media culture and selecting appropriate response patterns. Be concise and analytical.',
       messages: [{ role: 'user', content: prompt }],
     });
 
     const response = message.content[0].type === 'text' ? message.content[0].text : '';
-    const selectedTypeId = parseReasoningResponse(response, validated.selectedTypes);
-    const selectedType = validated.selectedTypes.find(t => t.id === selectedTypeId);
+    const parsedResponse = parseReasoningResponse(response, validated.selectedTypes);
+    const selectedType = validated.selectedTypes.find(t => t.id === parsedResponse.typeId);
 
     if (!selectedType) {
       throw new Error('Failed to select reply type');
@@ -60,6 +61,8 @@ export async function POST(req: NextRequest) {
       data: {
         selectedType,
         reasoning: response,
+        includeMeme: parsedResponse.includeMeme,
+        memeText: parsedResponse.memeText,
         tokensUsed,
         cost,
       },
@@ -89,6 +92,16 @@ ${i + 1}. ${t.name}
    Tags: ${t.tags.join(', ')}`)
     .join('\n');
 
+  const memeInstructions = input.enableMemes ? `
+
+Also decide if a meme would enhance this reply. Memes work best for:
+- Humorous or sarcastic tones
+- Relatable situations
+- Making a point through humor
+- Reactions to absurd situations
+
+If a meme would help, provide concise text (max 100 chars) that captures the essence.` : '';
+
   return `
 Context:
 - Tweet: "${input.originalTweet}"
@@ -103,22 +116,45 @@ Analyze which pattern would create the most natural, engaging, and appropriate r
 Consider:
 1. Which pattern best matches the user's intent?
 2. Which fits Twitter culture and conventions?
-3. Which allows natural incorporation of the tone and any research data?
+3. Which allows natural incorporation of the tone and any research data?${memeInstructions}
 
-Provide your choice in this exact format:
-Choice: [number] - [one sentence explanation]
+Provide your response in this exact format:
+Choice: [number] - [one sentence explanation]${input.enableMemes ? '\nMeme: [yes/no] - [meme text if yes, or "none" if no]' : ''}
 
 Be decisive and specific.`;
 }
 
-function parseReasoningResponse(response: string, types: ReplyType[]): string {
-  const match = response.match(/Choice:\s*(\d+)/i);
-  if (match) {
-    const index = parseInt(match[1]) - 1;
+function parseReasoningResponse(response: string, types: ReplyType[]): {
+  typeId: string;
+  includeMeme: boolean;
+  memeText: string | null;
+} {
+  // Parse choice
+  const choiceMatch = response.match(/Choice:\s*(\d+)/i);
+  let typeId = types[0].id; // Default to first type
+  
+  if (choiceMatch) {
+    const index = parseInt(choiceMatch[1]) - 1;
     if (index >= 0 && index < types.length) {
-      return types[index].id;
+      typeId = types[index].id;
     }
   }
-  // Fallback to first type
-  return types[0].id;
+
+  // Parse meme decision
+  let includeMeme = false;
+  let memeText: string | null = null;
+  
+  const memeMatch = response.match(/Meme:\s*(yes|no)\s*-\s*(.+)/i);
+  if (memeMatch) {
+    includeMeme = memeMatch[1].toLowerCase() === 'yes';
+    if (includeMeme && memeMatch[2] && memeMatch[2].toLowerCase() !== 'none') {
+      memeText = memeMatch[2].trim();
+      // Ensure meme text isn't too long
+      if (memeText.length > 100) {
+        memeText = memeText.substring(0, 100);
+      }
+    }
+  }
+
+  return { typeId, includeMeme, memeText };
 }

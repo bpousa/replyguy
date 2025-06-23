@@ -25,6 +25,7 @@ export interface UserInput {
   replyLength?: ReplyLength;
   perplexityGuidance?: string;
   enableStyleMatching?: boolean;
+  includeMeme?: boolean;
 }
 
 export interface ReplyType {
@@ -63,6 +64,8 @@ export interface GeneratedReply {
   processingTime: number;
   perplexityData?: string;
   imageUrl?: string;
+  memeUrl?: string;
+  memePageUrl?: string;
   costs?: CostBreakdown;
 }
 

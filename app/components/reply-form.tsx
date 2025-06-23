@@ -26,6 +26,7 @@ export default function ReplyForm({ onSubmit, isLoading }: ReplyFormProps) {
   const [replyLength, setReplyLength] = useState<ReplyLength>('short');
   const [perplexityGuidance, setPerplexityGuidance] = useState('');
   const [enableStyleMatching, setEnableStyleMatching] = useState(true);
+  const [includeMeme, setIncludeMeme] = useState(false);
   const [errors, setErrors] = useState<{ tweet?: string; idea?: string }>({});
   const [isSuggestingIdea, setIsSuggestingIdea] = useState(false);
   
@@ -36,7 +37,10 @@ export default function ReplyForm({ onSubmit, isLoading }: ReplyFormProps) {
     max_reply_length: 2000,
     enable_long_replies: true,
     enable_style_matching: true,
-    enable_perplexity_guidance: true
+    enable_perplexity_guidance: true,
+    enable_memes: true,
+    meme_limit: 50,
+    memes_used: 12 // TODO: Get from actual usage
   };
   
   // Filter reply lengths based on plan
@@ -102,7 +106,8 @@ export default function ReplyForm({ onSubmit, isLoading }: ReplyFormProps) {
       needsResearch,
       replyLength,
       perplexityGuidance: needsResearch && userPlan.enable_perplexity_guidance ? perplexityGuidance : undefined,
-      enableStyleMatching: userPlan.enable_style_matching ? enableStyleMatching : false
+      enableStyleMatching: userPlan.enable_style_matching ? enableStyleMatching : false,
+      includeMeme: userPlan.enable_memes ? includeMeme : false
     };
     
     try {
@@ -295,6 +300,26 @@ export default function ReplyForm({ onSubmit, isLoading }: ReplyFormProps) {
             id="style-matching"
             checked={enableStyleMatching}
             onCheckedChange={setEnableStyleMatching}
+          />
+        </div>
+      )}
+
+      {/* Meme Toggle - Only show if plan supports it */}
+      {userPlan.enable_memes && (
+        <div className="flex items-center justify-between p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+          <div className="space-y-1">
+            <Label htmlFor="include-meme" className="text-base font-medium">
+              Include Meme
+            </Label>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {userPlan.memes_used}/{userPlan.meme_limit} memes used this month
+            </p>
+          </div>
+          <Switch
+            id="include-meme"
+            checked={includeMeme}
+            onCheckedChange={setIncludeMeme}
+            disabled={userPlan.memes_used >= userPlan.meme_limit}
           />
         </div>
       )}

@@ -9,6 +9,7 @@ import { Card } from './ui/card';
 import { Copy, Check, Sparkles, DollarSign, Clock, Info } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { LoadingReplyGuy } from './loading-reply-guy';
 
 interface ReplyOutputProps {
   reply: GeneratedReply | null;
@@ -34,16 +35,7 @@ export default function ReplyOutput({ reply, isLoading }: ReplyOutputProps) {
   };
 
   if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <div className="h-32 bg-gray-100 dark:bg-gray-700 rounded-lg animate-pulse" />
-        <div className="grid grid-cols-3 gap-4">
-          <div className="h-16 bg-gray-100 dark:bg-gray-700 rounded-lg animate-pulse" />
-          <div className="h-16 bg-gray-100 dark:bg-gray-700 rounded-lg animate-pulse" />
-          <div className="h-16 bg-gray-100 dark:bg-gray-700 rounded-lg animate-pulse" />
-        </div>
-      </div>
-    );
+    return <LoadingReplyGuy />;
   }
 
   if (!reply) {
@@ -88,6 +80,32 @@ export default function ReplyOutput({ reply, isLoading }: ReplyOutputProps) {
             )}
           </Button>
         </Card>
+
+        {/* Meme if included */}
+        {reply.memeUrl && (
+          <Card className="p-4 bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium text-sm text-purple-900 dark:text-purple-100">
+                  Generated Meme
+                </h3>
+                <a
+                  href={reply.memePageUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-purple-600 hover:text-purple-700 dark:text-purple-400"
+                >
+                  View on Imgflip →
+                </a>
+              </div>
+              <img
+                src={reply.memeUrl}
+                alt="Generated meme"
+                className="rounded-lg w-full max-w-md mx-auto"
+              />
+            </div>
+          </Card>
+        )}
 
         {/* Metadata - Only show in debug mode */}
         {debugMode && (

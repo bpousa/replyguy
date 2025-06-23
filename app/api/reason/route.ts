@@ -16,9 +16,12 @@ const requestSchema = z.object({
   selectedTypes: z.array(z.object({
     id: z.string(),
     name: z.string(),
+    category: z.string(),
     pattern: z.string(),
     styleRules: z.string(),
+    examples: z.array(z.string()),
     tags: z.array(z.string()),
+    complexity: z.number(),
   })),
   perplexityData: z.string().optional(),
 });

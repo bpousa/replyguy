@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { UserInput, GeneratedReply, CostBreakdown } from '@/app/lib/types';
-import { authMiddleware } from '@/app/lib/auth/middleware';
-import { createOrchestrator } from '@/app/lib/services/orchestrator.service';
 
 // This is the main orchestrator endpoint that calls all other endpoints
 
@@ -19,9 +17,8 @@ const requestSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  // Check authentication (optional for backward compatibility)
-  const authResult = await authMiddleware(req, { requireAuth: false });
-  const userId = authResult.user?.id || 'anonymous';
+  // Skip authentication for now
+  const userId = 'anonymous';
   const startTime = Date.now();
   const costs: CostBreakdown = {
     classification: 0,

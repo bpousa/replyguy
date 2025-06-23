@@ -1,19 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { UserInput, GeneratedReply, CostBreakdown } from '@/app/lib/types';
+import { authMiddleware } from '@/app/lib/auth/middleware';
+import { createOrchestrator } from '@/app/lib/services/orchestrator.service';
 
 // This is the main orchestrator endpoint that calls all other endpoints
 
 // Request validation schema
 const requestSchema = z.object({
-  originalTweet: z.string().min(1).max(500),
-  responseIdea: z.string().min(1).max(200),
+  originalTweet: z.string().min(1).max(2000),
+  responseIdea: z.string().min(1).max(2000),
   responseType: z.enum(['agree', 'disagree', 'neutral', 'other']),
   tone: z.string(),
   needsResearch: z.boolean(),
+  replyLength: z.enum(['short', 'medium', 'long']).optional(),
+  perplexityGuidance: z.string().max(200).optional(),
+  enableStyleMatching: z.boolean().optional()
 });
 
 export async function POST(req: NextRequest) {
+  // Check authentication (optional for backward compatibility)
+  const authResult = await authMiddleware(req, { requireAuth: false });
+  const userId = authResult.user?.id || 'anonymous';
   const startTime = Date.now();
   const costs: CostBreakdown = {
     classification: 0,
@@ -43,6 +51,7 @@ export async function POST(req: NextRequest) {
             originalTweet: validated.originalTweet,
             responseIdea: validated.responseIdea,
             responseType: validated.responseType,
+            guidance: validated.perplexityGuidance,
           }),
         });
 
@@ -111,6 +120,8 @@ export async function POST(req: NextRequest) {
         tone: validated.tone,
         selectedType,
         perplexityData,
+        replyLength: validated.replyLength || 'short',
+        enableStyleMatching: validated.enableStyleMatching ?? true,
       }),
     });
 
@@ -138,6 +149,7 @@ export async function POST(req: NextRequest) {
       cost: costs.total,
       processingTime,
       perplexityData,
+      costs,
     };
 
     return NextResponse.json({ data: result });

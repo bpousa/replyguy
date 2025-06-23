@@ -14,12 +14,17 @@ export type Tone =
   | 'friendly'
   | 'formal';
 
+export type ReplyLength = 'short' | 'medium' | 'long';
+
 export interface UserInput {
   originalTweet: string;
   responseIdea: string;
   responseType: ResponseType;
   tone: Tone;
   needsResearch: boolean;
+  replyLength?: ReplyLength;
+  perplexityGuidance?: string;
+  enableStyleMatching?: boolean;
 }
 
 export interface ReplyType {
@@ -47,6 +52,7 @@ export interface CostBreakdown {
   classification: number;
   reasoning: number;
   generation: number;
+  imageGeneration?: number;
   total: number;
 }
 
@@ -56,6 +62,8 @@ export interface GeneratedReply {
   cost: number;
   processingTime: number;
   perplexityData?: string;
+  imageUrl?: string;
+  costs?: CostBreakdown;
 }
 
 export interface APIResponse<T = any> {

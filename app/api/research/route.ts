@@ -9,9 +9,10 @@ const openai = new OpenAI({
 
 // Request validation schema
 const requestSchema = z.object({
-  originalTweet: z.string().min(1).max(500),
-  responseIdea: z.string().min(1).max(200),
+  originalTweet: z.string().min(1).max(2000),
+  responseIdea: z.string().min(1).max(2000),
   responseType: z.string(),
+  guidance: z.string().max(200).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -29,14 +30,24 @@ export async function POST(req: NextRequest) {
     const validated = requestSchema.parse(body);
 
     // Generate search query using GPT-3.5
-    const queryPrompt = `
-Tweet: "${validated.originalTweet}"
+    const queryPrompt = validated.guidance 
+      ? `Tweet: "${validated.originalTweet}"
+User wants to: ${validated.responseIdea}
+Guidance: ${validated.guidance}
+
+Generate a search query based on the guidance to find specific facts, statistics, or current events.
+Search query:`
+      : `Tweet: "${validated.originalTweet}"
 User wants to: ${validated.responseIdea}
 Response type: ${validated.responseType}
 
-Generate a concise search query (3-7 words) to find supporting facts or statistics for this reply.
-Focus on factual information that would enhance the response.
+Generate a search query to find:
+- Recent statistics or data (with dates)
+- Current events or news (last 6 months)
+- Specific facts with sources
+- Real numbers or percentages
 
+Focus on concrete, verifiable information.
 Search query:`;
 
     const queryCompletion = await openai.chat.completions.create({
@@ -60,7 +71,16 @@ Search query:`;
         messages: [
           {
             role: 'user',
-            content: `Search for: ${searchQuery}. Provide 2-3 concise, factual points with sources.`,
+            content: `Search for: ${searchQuery}
+
+Provide 2-3 specific facts that are:
+- Recent (include dates when possible)
+- Concrete (numbers, percentages, specific events)
+- Sourced (mention the source)
+- Relevant to the topic
+
+Format each fact clearly with its source.
+Avoid generalizations or vague statements.`,
           },
         ],
         temperature: 0.2,

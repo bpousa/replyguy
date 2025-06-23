@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import Anthropic from '@anthropic-ai/sdk';
+import { StyleAnalyzer, TweetStyle } from '@/app/lib/services/style-analyzer.service';
+import { AntiAIDetector } from '@/app/lib/services/anti-ai-detector.service';
+import { REPLY_LENGTHS } from '@/app/lib/constants';
 
 // Initialize Anthropic client
 const anthropic = new Anthropic({
@@ -20,6 +23,8 @@ const requestSchema = z.object({
     examples: z.array(z.string()),
   }),
   perplexityData: z.string().optional(),
+  replyLength: z.enum(['short', 'medium', 'long']).optional(),
+  enableStyleMatching: z.boolean().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -27,23 +32,42 @@ export async function POST(req: NextRequest) {
     // Validate request body
     const body = await req.json();
     const validated = requestSchema.parse(body);
+    
+    // Get character limit based on reply length
+    const replyLength = validated.replyLength || 'short';
+    const charLimit = REPLY_LENGTHS.find(l => l.value === replyLength)?.maxChars || 280;
+    
+    // Analyze style if enabled
+    let styleInstructions = '';
+    if (validated.enableStyleMatching && process.env.OPENAI_API_KEY) {
+      try {
+        const styleAnalyzer = new StyleAnalyzer(process.env.OPENAI_API_KEY);
+        const tweetStyle = await styleAnalyzer.analyzeTweetStyle(validated.originalTweet);
+        styleInstructions = StyleAnalyzer.generateStyleInstructions(tweetStyle, 0.5);
+      } catch (error) {
+        console.error('Style analysis failed:', error);
+      }
+    }
 
     // Build generation prompt
-    const prompt = buildGenerationPrompt(validated);
+    const prompt = buildGenerationPrompt(validated, charLimit, styleInstructions);
 
     // Call Claude Opus for final generation
     const message = await anthropic.messages.create({
       model: 'claude-3-opus-20240229',
-      max_tokens: 100,
+      max_tokens: Math.min(charLimit / 4, 300), // Adjust tokens based on length
       temperature: 0.8,
-      system: 'You are a witty, authentic Twitter user. Write natural replies without AI-isms. Be conversational and genuine.',
+      system: `You are a real person on Twitter having a genuine conversation. Write natural, human replies that sound authentic and conversational. Never use corporate speak or AI language patterns. Your replies should feel like they're from someone who actually cares about the conversation.`,
       messages: [{ role: 'user', content: prompt }],
     });
 
     let reply = message.content[0].type === 'text' ? message.content[0].text : '';
     
+    // Apply anti-AI processing
+    reply = AntiAIDetector.process(reply);
+    
     // Clean and validate the reply
-    reply = cleanReply(reply);
+    reply = cleanReply(reply, charLimit);
 
     // Calculate cost
     const tokensUsed = message.usage.input_tokens + message.usage.output_tokens;
@@ -72,65 +96,79 @@ export async function POST(req: NextRequest) {
   }
 }
 
-function buildGenerationPrompt(input: any): string {
+function buildGenerationPrompt(input: any, charLimit: number, styleInstructions: string): string {
+  const antiAIPrompt = `
+CRITICAL - Avoid these AI patterns:
+- NEVER start with: "Great point", "Absolutely", "I think", "Indeed", "Fascinating", "Fair enough", "Well,", "So,", "Oh,"
+- NO transitions like: Moreover, Furthermore, Additionally, Nevertheless, However, Thus, Hence
+- NO corporate words: leverage, optimize, streamline, robust, comprehensive, innovative
+- NO phrases like: "It's worth noting", "One might argue", "In essence"
+- MAXIMUM 1 emoji per reply (prefer zero)
+- NO excessive positivity or enthusiasm
+- NO em dashes (—) or semicolons
+- Write like you're texting a friend, not writing an essay`;
+
   return `
-Write a ${input.selectedType.name} reply to this tweet:
-"${input.originalTweet}"
+Original tweet: "${input.originalTweet}"
 
-Your reply should:
+Write a ${input.selectedType.name} reply that:
 - ${input.responseIdea}
-- Follow this pattern: ${input.selectedType.pattern}
-- Style: ${input.selectedType.styleRules}
+- Pattern: ${input.selectedType.pattern}
+- Style rules: ${input.selectedType.styleRules}
 - Tone: ${input.tone}
-${input.perplexityData ? `- Naturally incorporate: ${input.perplexityData}` : ''}
+- Character limit: ${charLimit}
+${input.perplexityData ? `\n- Naturally weave in this info: ${input.perplexityData}` : ''}
+${styleInstructions}
 
-Rules:
-- Under 280 characters
-- No emojis or em-dashes
-- Start directly (no "Great point!" or "I think...")
-- Sound like you're continuing a conversation
-- Match their energy level
-- Be authentic and natural
+${antiAIPrompt}
 
-Example of this style: "${input.selectedType.examples[0]}"
+Guidelines:
+- Start mid-thought, like continuing a conversation
+- Match their energy (don't be overly positive if they're neutral/negative)  
+- Sound genuinely human - imperfect, real, authentic
+- Reference specific details from their tweet
+- You can disagree, be sarcastic, or neutral - whatever fits
 
-Reply:`;
+Example of good ${input.selectedType.name}: "${input.selectedType.examples[0]}"
+
+Write the reply (just the text, no quotes):`;
 }
 
-function cleanReply(reply: string): string {
-  // Remove any AI-isms and clean up
+function cleanReply(reply: string, charLimit: number): string {
+  // Basic cleanup
   reply = reply.trim();
   
-  // Remove common AI prefixes
-  const bannedStarts = [
-    /^(Great point|I think|Absolutely|Interesting|Fair enough|Well,|So,|Oh,|Ah,)[,!.]?\s*/i,
-    /^(That's|This is|It's)\s+(a\s+)?(great|interesting|good)\s+(point|question|observation)[,!.]?\s*/i,
-  ];
-  
-  for (const pattern of bannedStarts) {
-    reply = reply.replace(pattern, '');
-  }
-
   // Remove quotes if the entire reply is quoted
   if (reply.startsWith('"') && reply.endsWith('"')) {
     reply = reply.slice(1, -1);
   }
+  
+  // Remove any leading/trailing quotes or asterisks
+  reply = reply.replace(/^["'*]+|["'*]+$/g, '');
 
   // Ensure it's not too long
-  if (reply.length > 280) {
+  if (reply.length > charLimit) {
     // Try to cut at a sentence boundary
     const sentences = reply.match(/[^.!?]+[.!?]+/g) || [reply];
     let truncated = '';
     
     for (const sentence of sentences) {
-      if (truncated.length + sentence.length <= 277) {
+      if (truncated.length + sentence.length <= charLimit - 3) {
         truncated += sentence;
       } else {
         break;
       }
     }
     
-    reply = truncated || reply.substring(0, 277) + '...';
+    reply = truncated || reply.substring(0, charLimit - 3) + '...';
+  }
+  
+  // Final cleanup
+  reply = reply.trim();
+  
+  // Ensure first letter is capitalized
+  if (reply.length > 0) {
+    reply = reply[0].toUpperCase() + reply.substring(1);
   }
 
   return reply;

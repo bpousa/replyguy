@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { GeneratedReply } from '@/app/lib/types';
 import { formatCost, formatDuration, copyToClipboard } from '@/app/lib/utils';
 import { Button } from './ui/button';
@@ -16,6 +17,8 @@ interface ReplyOutputProps {
 
 export default function ReplyOutput({ reply, isLoading }: ReplyOutputProps) {
   const [copied, setCopied] = useState(false);
+  const searchParams = useSearchParams();
+  const debugMode = searchParams.get('debug') === 'true';
 
   const handleCopy = async () => {
     if (!reply) return;
@@ -86,30 +89,32 @@ export default function ReplyOutput({ reply, isLoading }: ReplyOutputProps) {
           </Button>
         </Card>
 
-        {/* Metadata */}
-        <div className="grid grid-cols-3 gap-4">
-          <MetadataCard
-            icon={<Info className="w-4 h-4" />}
-            label="Reply Type"
-            value={reply.replyType}
-            color="blue"
-          />
-          <MetadataCard
-            icon={<DollarSign className="w-4 h-4" />}
-            label="Cost"
-            value={formatCost(reply.cost)}
-            color="green"
-          />
-          <MetadataCard
-            icon={<Clock className="w-4 h-4" />}
-            label="Time"
-            value={formatDuration(reply.processingTime)}
-            color="purple"
-          />
-        </div>
+        {/* Metadata - Only show in debug mode */}
+        {debugMode && (
+          <div className="grid grid-cols-3 gap-4">
+            <MetadataCard
+              icon={<Info className="w-4 h-4" />}
+              label="Reply Type"
+              value={reply.replyType}
+              color="blue"
+            />
+            <MetadataCard
+              icon={<DollarSign className="w-4 h-4" />}
+              label="Cost"
+              value={formatCost(reply.cost)}
+              color="green"
+            />
+            <MetadataCard
+              icon={<Clock className="w-4 h-4" />}
+              label="Time"
+              value={formatDuration(reply.processingTime)}
+              color="purple"
+            />
+          </div>
+        )}
 
-        {/* Perplexity Data (if available) */}
-        {reply.perplexityData && (
+        {/* Perplexity Data - Only show in debug mode */}
+        {debugMode && reply.perplexityData && (
           <Card className="p-4 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
             <h3 className="font-medium text-sm mb-2 text-blue-900 dark:text-blue-100">
               Research Data
@@ -122,9 +127,9 @@ export default function ReplyOutput({ reply, isLoading }: ReplyOutputProps) {
 
         {/* Character Count */}
         <div className="text-center text-sm text-gray-500">
-          {reply.reply.length} / 280 characters
+          {reply.reply.length} characters
           {reply.reply.length > 280 && (
-            <span className="text-red-500 ml-2">(Too long for Twitter)</span>
+            <span className="text-red-500 ml-2">(Too long for X/Twitter)</span>
           )}
         </div>
       </motion.div>

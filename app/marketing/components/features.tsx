@@ -22,8 +22,8 @@ const features = [
   },
   {
     icon: Image,
-    title: 'Perfect Memes',
-    description: 'Auto-selected memes that actually make sense. Powered by Imgflip.',
+    title: 'Smart Meme Integration',
+    description: 'Let AI decide when a meme would enhance your reply. Perfect meme selection powered by Imgflip.',
     color: 'text-blue-600',
     bgColor: 'bg-blue-100',
   },
@@ -51,7 +51,7 @@ const features = [
   {
     icon: BarChart,
     title: 'Real-Time Research',
-    description: 'Optional fact-checking with Perplexity AI for informed responses.',
+    description: 'Get current stats, facts, and figures with Perplexity AI for data-backed responses.',
     color: 'text-indigo-600',
     bgColor: 'bg-indigo-100',
   },
@@ -151,7 +151,7 @@ export function Features() {
               </div>
               <h3 className="text-xl font-semibold mb-2">Add Your Intent</h3>
               <p className="text-gray-600">
-                Tell us what you want to say and pick your tone. Add a meme if you&apos;re feeling spicy
+                Tell us what you want to say and pick your tone. Enable memes for extra engagement
               </p>
             </motion.div>
             

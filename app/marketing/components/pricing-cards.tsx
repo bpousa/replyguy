@@ -68,16 +68,34 @@ const plans = [
     description: 'For power users',
     price: { monthly: 29, yearly: 290 },
     features: [
-      { text: '300 replies/month', included: true },
+      { text: '500 replies/month', included: true },
       { text: 'Extended tweets (1500 chars)', included: true },
       { text: 'Long replies (1000 chars)', included: true },
       { text: 'All tones', included: true },
       { text: '100 AI suggestions/month', included: true },
-      { text: '50 memes/month', included: true },
+      { text: '100 memes/month', included: true },
       { text: 'Style matching', included: true },
       { text: 'Real-time research', included: true },
     ],
     cta: 'Go Business',
+    popular: false,
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    description: 'For teams and agencies',
+    price: { monthly: 49, yearly: 490 },
+    features: [
+      { text: '1000 replies/month', included: true },
+      { text: 'Max tweet length (2000 chars)', included: true },
+      { text: 'Extra long replies (1500 chars)', included: true },
+      { text: 'All tones + custom', included: true },
+      { text: 'Unlimited AI suggestions', included: true },
+      { text: '200 memes/month', included: true },
+      { text: 'Advanced style matching', included: true },
+      { text: 'Priority real-time research', included: true },
+    ],
+    cta: 'Go Enterprise',
     popular: false,
   },
 ];
@@ -118,7 +136,7 @@ export function PricingCards() {
           </motion.div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           {plans.map((plan, index) => (
             <motion.div
               key={plan.id}

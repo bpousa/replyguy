@@ -1,20 +1,106 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ReplyForm from '@/app/components/reply-form';
 import ReplyOutput from '@/app/components/reply-output';
 import { UserInput, GeneratedReply } from '@/app/lib/types';
 import { Sparkles } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { DailyGoalTracker } from '@/app/components/daily-goal-tracker';
+import { createBrowserClient } from '@/app/lib/auth';
+
+const supabase = createBrowserClient();
 
 export default function HomePage() {
   const [generatedReply, setGeneratedReply] = useState<GeneratedReply | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [dailyCount, setDailyCount] = useState(7); // TODO: Get from actual usage
-  const [dailyGoal, setDailyGoal] = useState(10); // TODO: Get from user settings
+  const [dailyCount, setDailyCount] = useState(0);
+  const [dailyGoal, setDailyGoal] = useState(10);
+  const [user, setUser] = useState<any>(null);
+  const [subscription, setSubscription] = useState<any>(null);
+  
+  useEffect(() => {
+    const loadUserData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      setUser(user);
+      
+      // Get user's settings
+      const { data: userData } = await supabase
+        .from('users')
+        .select('daily_goal')
+        .eq('id', user.id)
+        .single();
+        
+      if (userData?.daily_goal) {
+        setDailyGoal(userData.daily_goal);
+      }
+      
+      // Get subscription
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select(`
+          *,
+          subscription_plans (*)
+        `)
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .single();
+        
+      setSubscription(sub);
+      
+      // Get today's usage
+      const today = new Date().toISOString().split('T')[0];
+      const { data: usage } = await supabase
+        .from('daily_usage')
+        .select('reply_count')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .single();
+        
+      if (usage) {
+        setDailyCount(usage.reply_count);
+      }
+    };
+    
+    loadUserData();
+  }, []);
 
   const handleGenerate = async (input: UserInput) => {
+    if (!user) {
+      toast.error('Please sign in to generate replies');
+      return;
+    }
+    
+    // Check usage limits
+    const planLimits = {
+      free: 10,
+      basic: 50,
+      pro: 150,
+      business: 500,
+      enterprise: 1000,
+    };
+    
+    const planName = subscription?.subscription_plans?.id || 'free';
+    const monthlyLimit = planLimits[planName as keyof typeof planLimits] || 10;
+    
+    // Get monthly usage
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    
+    const { data: monthlyUsage } = await supabase
+      .from('user_usage')
+      .select('id')
+      .eq('user_id', user.id)
+      .gte('created_at', startOfMonth.toISOString());
+      
+    if (monthlyUsage && monthlyUsage.length >= monthlyLimit) {
+      toast.error(`You've reached your monthly limit of ${monthlyLimit} replies. Please upgrade your plan.`);
+      return;
+    }
+
     setIsGenerating(true);
     setGeneratedReply(null);
 
@@ -24,7 +110,10 @@ export default function HomePage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(input),
+        body: JSON.stringify({
+          ...input,
+          userId: user.id,
+        }),
       });
 
       const result = await response.json();
@@ -36,13 +125,56 @@ export default function HomePage() {
       setGeneratedReply(result.data);
       toast.success('Reply generated successfully!');
       
-      // Increment daily count
+      // Track usage
+      await supabase.from('user_usage').insert({
+        user_id: user.id,
+        reply_type: result.data.replyType,
+        tokens_used: result.data.tokensUsed || 0,
+        cost: result.data.cost || 0,
+        has_meme: result.data.memeUrl ? true : false,
+      });
+      
+      // Update daily count
+      const today = new Date().toISOString().split('T')[0];
+      const { data: dailyUsage } = await supabase
+        .from('daily_usage')
+        .select('id, reply_count')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .single();
+        
+      if (dailyUsage) {
+        await supabase
+          .from('daily_usage')
+          .update({ reply_count: dailyUsage.reply_count + 1 })
+          .eq('id', dailyUsage.id);
+      } else {
+        await supabase
+          .from('daily_usage')
+          .insert({
+            user_id: user.id,
+            date: today,
+            reply_count: 1,
+          });
+      }
+      
       setDailyCount(prev => prev + 1);
     } catch (error) {
       console.error('Failed to generate reply:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to generate reply');
     } finally {
       setIsGenerating(false);
+    }
+  };
+  
+  const handleGoalChange = async (newGoal: number) => {
+    setDailyGoal(newGoal);
+    
+    if (user) {
+      await supabase
+        .from('users')
+        .update({ daily_goal: newGoal })
+        .eq('id', user.id);
     }
   };
 
@@ -67,7 +199,7 @@ export default function HomePage() {
           <DailyGoalTracker 
             currentCount={dailyCount} 
             goal={dailyGoal}
-            onGoalChange={setDailyGoal}
+            onGoalChange={handleGoalChange}
           />
         </div>
 

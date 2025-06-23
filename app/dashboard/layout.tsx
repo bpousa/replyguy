@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { createBrowserClient } from '@/app/lib/auth';
 import { Button } from '@/app/components/ui/button';
 import { 
   Home, 
@@ -13,25 +14,9 @@ import {
   X,
   Sparkles
 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
-// Temporary mock auth - replace with Supabase
-const useAuth = () => {
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  
-  useEffect(() => {
-    // Mock auth check
-    const mockUser = { 
-      id: '1', 
-      email: 'test@example.com',
-      plan: 'pro' 
-    };
-    setUser(mockUser);
-    setLoading(false);
-  }, []);
-  
-  return { user, loading };
-};
+const supabase = createBrowserClient();
 
 export default function DashboardLayout({
   children,
@@ -39,14 +24,69 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const [user, setUser] = useState<any>(null);
+  const [subscription, setSubscription] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
+    const checkAuth = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          router.push('/auth/login');
+          return;
+        }
+        
+        setUser(user);
+        
+        // Get user's subscription
+        const { data: sub } = await supabase
+          .from('subscriptions')
+          .select(`
+            *,
+            subscription_plans (*)
+          `)
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .single();
+          
+        setSubscription(sub);
+      } catch (error) {
+        console.error('Auth error:', error);
+        router.push('/auth/login');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    checkAuth();
+    
+    // Listen for auth changes
+    const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        router.push('/auth/login');
+      } else if (event === 'SIGNED_IN' && session) {
+        checkAuth();
+      }
+    });
+    
+    return () => {
+      authListener?.unsubscribe();
+    };
+  }, [router]);
+  
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast.success('Signed out successfully');
+      router.push('/');
+    } catch (error) {
+      console.error('Sign out error:', error);
+      toast.error('Failed to sign out');
     }
-  }, [user, loading, router]);
+  };
   
   if (loading) {
     return (
@@ -94,15 +134,14 @@ export default function DashboardLayout({
           <div className="p-4 border-t">
             <div className="mb-4">
               <p className="text-sm font-medium text-gray-900">{user.email}</p>
-              <p className="text-xs text-gray-500 capitalize">{user.plan} Plan</p>
+              <p className="text-xs text-gray-500 capitalize">
+                {subscription?.subscription_plans?.name || 'Free'} Plan
+              </p>
             </div>
             <Button
               variant="ghost"
               className="w-full justify-start"
-              onClick={() => {
-                // Handle logout
-                router.push('/');
-              }}
+              onClick={handleSignOut}
             >
               <LogOut className="w-4 h-4 mr-2" />
               Sign Out
@@ -146,15 +185,14 @@ export default function DashboardLayout({
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
             <div className="mb-4">
               <p className="text-sm font-medium text-gray-900">{user.email}</p>
-              <p className="text-xs text-gray-500 capitalize">{user.plan} Plan</p>
+              <p className="text-xs text-gray-500 capitalize">
+                {subscription?.subscription_plans?.name || 'Free'} Plan
+              </p>
             </div>
             <Button
               variant="ghost"
               className="w-full justify-start"
-              onClick={() => {
-                // Handle logout
-                router.push('/');
-              }}
+              onClick={handleSignOut}
             >
               <LogOut className="w-4 h-4 mr-2" />
               Sign Out

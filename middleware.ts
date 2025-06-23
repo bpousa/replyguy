@@ -1,56 +1,42 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
-// Simple rate limiting middleware
-const rateLimit = new Map<string, { count: number; resetTime: number }>();
+export async function middleware(request: NextRequest) {
+  const res = NextResponse.next();
+  
+  // Create a Supabase client configured to use cookies
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
-export function middleware(request: NextRequest) {
-  // Only apply to API routes
-  if (!request.nextUrl.pathname.startsWith('/api/')) {
-    return NextResponse.next();
+  // Check if we have a session
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  // Check auth for protected routes
+  if (request.nextUrl.pathname.startsWith('/dashboard')) {
+    if (!session) {
+      return NextResponse.redirect(new URL('/auth/login', request.url));
+    }
   }
 
-  // Skip rate limiting in development
-  if (process.env.NODE_ENV === 'development') {
-    return NextResponse.next();
+  // Redirect authenticated users away from auth pages
+  if (request.nextUrl.pathname.startsWith('/auth/')) {
+    if (session) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
   }
 
-  // Get client IP
-  const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
-  const now = Date.now();
-  const windowMs = 60 * 1000; // 1 minute
-  const maxRequests = 10; // 10 requests per minute
-
-  // Get or create rate limit entry
-  const clientData = rateLimit.get(ip) || { count: 0, resetTime: now + windowMs };
-
-  // Reset if window has passed
-  if (now > clientData.resetTime) {
-    clientData.count = 0;
-    clientData.resetTime = now + windowMs;
-  }
-
-  // Increment count
-  clientData.count++;
-  rateLimit.set(ip, clientData);
-
-  // Check if limit exceeded
-  if (clientData.count > maxRequests) {
-    return NextResponse.json(
-      { error: 'Too many requests. Please try again later.' },
-      { status: 429 }
-    );
-  }
-
-  // Add rate limit headers
-  const response = NextResponse.next();
-  response.headers.set('X-RateLimit-Limit', maxRequests.toString());
-  response.headers.set('X-RateLimit-Remaining', (maxRequests - clientData.count).toString());
-  response.headers.set('X-RateLimit-Reset', new Date(clientData.resetTime).toISOString());
-
-  return response;
+  return res;
 }
 
 export const config = {
-  matcher: '/api/:path*',
+  matcher: [
+    '/dashboard/:path*',
+    '/auth/:path*',
+    '/api/:path*',
+  ],
 };

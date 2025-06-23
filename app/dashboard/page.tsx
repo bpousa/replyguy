@@ -6,10 +6,13 @@ import ReplyOutput from '@/app/components/reply-output';
 import { UserInput, GeneratedReply } from '@/app/lib/types';
 import { Sparkles } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { DailyGoalTracker } from '@/app/components/daily-goal-tracker';
 
 export default function HomePage() {
   const [generatedReply, setGeneratedReply] = useState<GeneratedReply | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [dailyCount, setDailyCount] = useState(7); // TODO: Get from actual usage
+  const [dailyGoal, setDailyGoal] = useState(10); // TODO: Get from user settings
 
   const handleGenerate = async (input: UserInput) => {
     setIsGenerating(true);
@@ -32,6 +35,9 @@ export default function HomePage() {
 
       setGeneratedReply(result.data);
       toast.success('Reply generated successfully!');
+      
+      // Increment daily count
+      setDailyCount(prev => prev + 1);
     } catch (error) {
       console.error('Failed to generate reply:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to generate reply');
@@ -54,6 +60,15 @@ export default function HomePage() {
           <p className="text-lg text-gray-600 dark:text-gray-400">
             Create authentic, human-like replies to tweets with AI
           </p>
+        </div>
+
+        {/* Daily Goal Tracker */}
+        <div className="mb-8">
+          <DailyGoalTracker 
+            currentCount={dailyCount} 
+            goal={dailyGoal}
+            onGoalChange={setDailyGoal}
+          />
         </div>
 
         {/* Main content */}

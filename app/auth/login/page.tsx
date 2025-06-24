@@ -70,8 +70,19 @@ export default function LoginPage() {
           throw error;
         }
 
+        // Verify session was created
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          throw new Error('Failed to establish session. Please try again.');
+        }
+
         toast.success('Welcome back!');
-        router.push('/dashboard');
+        
+        // Add a small delay to ensure session is propagated
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 100);
       }
     } catch (error: any) {
       console.error('Login error:', error);
@@ -173,7 +184,7 @@ export default function LoginPage() {
                 id="email"
                 name="email"
                 type="email"
-                autoComplete="email"
+                autoComplete="username email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}

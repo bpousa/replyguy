@@ -31,6 +31,22 @@ export default function DashboardLayout({
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        // First check if we have a session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          // Wait a bit in case session is being established
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Check again
+          const { data: { session: retrySession } } = await supabase.auth.getSession();
+          
+          if (!retrySession) {
+            router.push('/auth/login');
+            return;
+          }
+        }
+        
         const { data: { user } } = await supabase.auth.getUser();
         
         if (!user) {

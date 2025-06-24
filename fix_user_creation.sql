@@ -43,7 +43,23 @@ ORDER BY
     created_at DESC
 LIMIT 10;
 
--- 5. If the trigger doesn't exist, recreate it
+-- 5. Create the handle_new_user function first
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.users (id, email, full_name, daily_goal, timezone)
+  VALUES (
+    new.id,
+    new.email,
+    new.raw_user_meta_data->>'full_name',
+    10,
+    'America/New_York'
+  );
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 6. Now create the trigger
 -- First drop if exists
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 
@@ -52,7 +68,7 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- 6. Test the function exists
+-- 7. Test the function exists
 SELECT 
     routine_name,
     routine_type
@@ -61,3 +77,17 @@ FROM
 WHERE 
     routine_schema = 'public'
     AND routine_name = 'handle_new_user';
+
+-- 8. Manually create users for any existing auth users that don't have public.users records
+INSERT INTO public.users (id, email, daily_goal, timezone)
+SELECT 
+    au.id,
+    au.email,
+    10,
+    'America/New_York'
+FROM 
+    auth.users au
+    LEFT JOIN public.users pu ON au.id = pu.id
+WHERE 
+    pu.id IS NULL
+    AND au.email IS NOT NULL;

@@ -85,14 +85,24 @@ export async function POST(req: NextRequest) {
 
     const mappedPlanId = planMapping[plan.id] || plan.id;
 
+    // Define meme limits by plan
+    const memeLimits: Record<string, number> = {
+      'free': 0,
+      'growth': 10,      // X Basic
+      'professional': 50, // X Pro
+      'enterprise': 100   // X Business
+    };
+    
+    const memeLimit = memeLimits[userData.subscription_tier] || 0;
+    
     // Check if user can generate more replies
     const canGenerate = currentUsage.total_replies < plan.monthly_limit;
-    const canGenerateMeme = currentUsage.total_memes < 50; // Default meme limit
+    const canGenerateMeme = memeLimit > 0 && currentUsage.total_memes < memeLimit;
     const canUseSuggestions = plan.suggestion_limit === -1 || currentUsage.total_suggestions < plan.suggestion_limit;
 
     // Calculate remaining
     const repliesRemaining = plan.monthly_limit - currentUsage.total_replies;
-    const memesRemaining = 50 - currentUsage.total_memes; // Default meme limit
+    const memesRemaining = memeLimit - currentUsage.total_memes;
     const suggestionsRemaining = plan.suggestion_limit === -1 ? 'unlimited' : plan.suggestion_limit - currentUsage.total_suggestions;
 
     return NextResponse.json({
@@ -104,7 +114,7 @@ export async function POST(req: NextRequest) {
         plan_name: plan.name,
         reply_limit: plan.monthly_limit,
         replies_used: currentUsage.total_replies,
-        meme_limit: 50, // Default meme limit
+        meme_limit: memeLimit,
         memes_used: currentUsage.total_memes,
         suggestion_limit: plan.suggestion_limit,
         suggestions_used: currentUsage.total_suggestions,

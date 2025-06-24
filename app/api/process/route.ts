@@ -84,8 +84,15 @@ export async function POST(req: NextRequest) {
           );
         }
         
-        // Check meme limit if meme requested (default 50 for all paid plans)
-        const memeLimit = userData.subscription_tier === 'free' ? 0 : 50;
+        // Check meme limit if meme requested
+        const memeLimits: Record<string, number> = {
+          'free': 0,
+          'growth': 10,      // X Basic
+          'professional': 50, // X Pro
+          'enterprise': 100   // X Business
+        };
+        const memeLimit = memeLimits[userData.subscription_tier] || 0;
+        
         if (validated.includeMeme && currentUsage.total_memes >= memeLimit) {
           return NextResponse.json(
             { 

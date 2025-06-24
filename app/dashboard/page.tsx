@@ -37,18 +37,20 @@ export default function HomePage() {
         setDailyGoal(userData.daily_goal);
       }
       
-      // Get subscription
-      const { data: sub } = await supabase
-        .from('subscriptions')
-        .select(`
-          *,
-          subscription_plans (*)
-        `)
-        .eq('user_id', user.id)
-        .eq('status', 'active')
+      // Get subscription from user record
+      const { data: userData } = await supabase
+        .from('users')
+        .select('*, subscription_plans!subscription_tier(*)')
+        .eq('id', user.id)
         .single();
         
-      setSubscription(sub);
+      if (userData?.subscription_plans) {
+        setSubscription({
+          plan_id: userData.subscription_tier,
+          subscription_plans: userData.subscription_plans,
+          status: userData.subscription_status
+        });
+      }
       
       // Get today's usage
       const today = new Date().toISOString().split('T')[0];
@@ -85,16 +87,22 @@ export default function HomePage() {
     }
     
     // Check usage limits
-    const limitsResponse = await fetch('/api/check-limits', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    const limitsData = await limitsResponse.json();
-    
-    if (!limitsData.canGenerate) {
+    try {
+      const limitsResponse = await fetch('/api/check-limits', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+      
+      if (!limitsResponse.ok) {
+        console.error('Failed to check limits:', limitsResponse.status);
+        // Continue without limit checking for now
+      } else {
+        const limitsData = await limitsResponse.json();
+        
+        if (!limitsData.canGenerate) {
       toast.error(
         <div className="flex flex-col gap-2">
           <p>You&apos;ve reached your monthly limit of {limitsData.limits.reply_limit} replies.</p>
@@ -108,6 +116,11 @@ export default function HomePage() {
         { duration: 5000 }
       );
       return;
+        }
+      }
+    } catch (error) {
+      console.error('Error checking limits:', error);
+      // Continue without limit checking
     }
 
     setIsGenerating(true);

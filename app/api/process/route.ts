@@ -5,11 +5,13 @@ import { imgflipService } from '@/app/lib/services/imgflip.service';
 import { createServerClient } from '@/app/lib/auth';
 import { cookies } from 'next/headers';
 
-interface UserLimits {
-  replies_used: number;
-  reply_limit: number;
-  memes_used: number;
-  meme_limit: number;
+interface UserData {
+  subscription_tier: string;
+  subscription_plans?: {
+    reply_limit: number;
+    meme_limit: number;
+    suggestion_limit: number;
+  };
 }
 
 // This is the main orchestrator endpoint that calls all other endpoints
@@ -50,32 +52,42 @@ export async function POST(req: NextRequest) {
     
     // Check user limits
     if (userId !== 'anonymous') {
-      const { data: limits } = await supabase
-        .rpc('get_user_limits', { p_user_id: userId })
-        .single() as { data: UserLimits | null };
+      // Get user data with plan
+      const { data: userData } = await supabase
+        .from('users')
+        .select('*, subscription_plans!subscription_tier(*)')
+        .eq('id', userId)
+        .single() as { data: UserData | null };
         
-      if (limits) {
+      if (userData?.subscription_plans) {
+        // Get current usage
+        const { data: usage } = await supabase
+          .rpc('get_current_usage', { p_user_id: userId })
+          .single();
+          
+        const currentUsage = usage || { total_replies: 0, total_memes: 0 };
+        
         // Check reply limit
-        if (limits.replies_used >= limits.reply_limit) {
+        if (currentUsage.total_replies >= userData.subscription_plans.reply_limit) {
           return NextResponse.json(
             { 
               error: 'Monthly reply limit reached',
               upgradeUrl: '/pricing',
-              limit: limits.reply_limit,
-              used: limits.replies_used
+              limit: userData.subscription_plans.reply_limit,
+              used: currentUsage.total_replies
             },
             { status: 429 }
           );
         }
         
         // Check meme limit if meme requested
-        if (validated.includeMeme && limits.memes_used >= limits.meme_limit) {
+        if (validated.includeMeme && currentUsage.total_memes >= userData.subscription_plans.meme_limit) {
           return NextResponse.json(
             { 
               error: 'Monthly meme limit reached',
               upgradeUrl: '/pricing',
-              limit: limits.meme_limit,
-              used: limits.memes_used
+              limit: userData.subscription_plans.meme_limit,
+              used: currentUsage.total_memes
             },
             { status: 429 }
           );

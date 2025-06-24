@@ -66,18 +66,21 @@ export default function SettingsPage() {
         }));
       }
 
-      // Get subscription
-      const { data: sub } = await supabase
-        .from('subscriptions')
-        .select(`
-          *,
-          subscription_plans (*)
-        `)
-        .eq('user_id', user.id)
-        .eq('status', 'active')
+      // Get subscription from user record
+      const { data: userWithPlan } = await supabase
+        .from('users')
+        .select('*, subscription_plans!subscription_tier(*)')
+        .eq('id', user.id)
         .single();
-
-      setSubscription(sub);
+        
+      if (userWithPlan?.subscription_plans) {
+        setSubscription({
+          plan_id: userWithPlan.subscription_tier,
+          subscription_plans: userWithPlan.subscription_plans,
+          status: userWithPlan.subscription_status,
+          current_period_end: userWithPlan.subscription_current_period_end
+        });
+      }
     } catch (error) {
       console.error('Error loading user data:', error);
     } finally {

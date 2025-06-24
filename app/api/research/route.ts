@@ -51,7 +51,7 @@ Focus on concrete, verifiable information.
 Search query:`;
 
     const queryCompletion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o',
       messages: [{ role: 'user', content: queryPrompt }],
       temperature: 0.3,
       max_tokens: 30,
@@ -95,9 +95,10 @@ Avoid generalizations or vague statements.`,
     const perplexityData = await perplexityResponse.json();
     const searchResults = perplexityData.choices[0].message.content || '';
 
-    // Calculate costs
-    const queryTokens = queryCompletion.usage?.total_tokens || 0;
-    const queryCost = queryTokens * 0.000002;
+    // Calculate costs - GPT-4o pricing
+    const queryPromptTokens = queryCompletion.usage?.prompt_tokens || 0;
+    const queryCompletionTokens = queryCompletion.usage?.completion_tokens || 0;
+    const queryCost = (queryPromptTokens * 0.0000025) + (queryCompletionTokens * 0.00001);
     const perplexityCost = 0.0002; // Estimated cost per request
     const totalCost = queryCost + perplexityCost;
 

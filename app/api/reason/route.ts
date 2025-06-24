@@ -36,9 +36,9 @@ export async function POST(req: NextRequest) {
     // Build reasoning prompt
     const prompt = buildReasoningPrompt(validated);
 
-    // Call Claude Sonnet for reasoning
+    // Call Claude 3.5 Sonnet for reasoning
     const message = await anthropic.messages.create({
-      model: 'claude-3-sonnet-20240229',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 300,
       temperature: 0.2,
       system: 'You are an expert at understanding social media culture and selecting appropriate response patterns. Be concise and analytical.',
@@ -55,7 +55,9 @@ export async function POST(req: NextRequest) {
 
     // Calculate cost
     const tokensUsed = message.usage.input_tokens + message.usage.output_tokens;
-    const cost = tokensUsed * 0.000003; // Claude Sonnet pricing
+    const inputCost = message.usage.input_tokens * 0.000003; // $3 per 1M input tokens
+    const outputCost = message.usage.output_tokens * 0.000015; // $15 per 1M output tokens
+    const cost = inputCost + outputCost;
 
     return NextResponse.json({
       data: {

@@ -52,9 +52,9 @@ export async function POST(req: NextRequest) {
     // Build generation prompt
     const prompt = buildGenerationPrompt(validated, charLimit, styleInstructions);
 
-    // Call Claude Opus for final generation
+    // Call Claude 3.5 Sonnet for final generation
     const message = await anthropic.messages.create({
-      model: 'claude-3-opus-20240229',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: Math.min(charLimit / 4, 300), // Adjust tokens based on length
       temperature: 0.8,
       system: `You are a real person on Twitter having a genuine conversation. Write natural, human replies that sound authentic and conversational. Never use corporate speak or AI language patterns. Your replies should feel like they're from someone who actually cares about the conversation.`,
@@ -71,7 +71,9 @@ export async function POST(req: NextRequest) {
 
     // Calculate cost
     const tokensUsed = message.usage.input_tokens + message.usage.output_tokens;
-    const cost = tokensUsed * 0.000015; // Claude Opus pricing
+    const inputCost = message.usage.input_tokens * 0.000003; // $3 per 1M input tokens
+    const outputCost = message.usage.output_tokens * 0.000015; // $15 per 1M output tokens
+    const cost = inputCost + outputCost;
 
     return NextResponse.json({
       data: {

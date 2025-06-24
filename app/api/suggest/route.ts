@@ -47,7 +47,7 @@ Examples:
 Return only the suggestion, nothing else.`;
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o',
       messages: [
         {
           role: 'system',
@@ -64,9 +64,11 @@ Return only the suggestion, nothing else.`;
 
     const suggestion = completion.choices[0].message.content?.trim() || '';
 
-    // Calculate cost
-    const tokensUsed = completion.usage?.total_tokens || 0;
-    const cost = tokensUsed * 0.000001; // $1 per 1M tokens for GPT-3.5
+    // Calculate cost - GPT-4o pricing
+    const promptTokens = completion.usage?.prompt_tokens || 0;
+    const completionTokens = completion.usage?.completion_tokens || 0;
+    const tokensUsed = promptTokens + completionTokens;
+    const cost = (promptTokens * 0.0000025) + (completionTokens * 0.00001); // $2.50/$10 per 1M tokens
 
     return NextResponse.json({
       suggestion,

@@ -45,7 +45,7 @@ Return ONLY a JSON object with these exact fields, no other text.`;
 
     try {
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o',
         messages: [
           {
             role: 'system',

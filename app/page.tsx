@@ -1,6 +1,18 @@
-// This file exists to prevent Next.js errors
-// The actual home page is at /(marketing)/page.tsx
-// Route groups with parentheses don't affect the URL structure
-// So /(marketing)/page.tsx renders at the root path /
+import { Hero } from './(marketing)/components/hero';
+import { Features } from './(marketing)/components/features';
+import { WhyReplyGuy } from './(marketing)/components/why-reply-guy';
+import { PricingCards } from './(marketing)/components/pricing-cards';
+import { MarketingWrapper } from './components/marketing-wrapper';
+// import { Testimonials } from './(marketing)/components/testimonials';
 
-export { default } from './(marketing)/page';
+export default function LandingPage() {
+  return (
+    <MarketingWrapper>
+      <Hero />
+      <Features />
+      <WhyReplyGuy />
+      <PricingCards />
+      {/* <Testimonials /> */}
+    </MarketingWrapper>
+  );
+}

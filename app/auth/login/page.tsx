@@ -15,6 +15,10 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isMagicLink, setIsMagicLink] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [showResendTimer, setShowResendTimer] = useState(false);
+  const [resendTimer, setResendTimer] = useState(60);
 
   useEffect(() => {
     // Check for error in URL params
@@ -24,22 +28,51 @@ export default function LoginPage() {
     }
   }, []);
 
+  useEffect(() => {
+    if (showResendTimer && resendTimer > 0) {
+      const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (resendTimer === 0) {
+      setShowResendTimer(false);
+      setResendTimer(60);
+    }
+  }, [showResendTimer, resendTimer]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      if (isMagicLink) {
+        // Send magic link
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            emailRedirectTo: `${window.location.origin}/dashboard`,
+          },
+        });
 
-      if (error) {
-        throw error;
+        if (error) {
+          throw error;
+        }
+
+        setMagicLinkSent(true);
+        setShowResendTimer(true);
+        toast.success('Check your email for the magic link!');
+      } else {
+        // Regular password login
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) {
+          throw error;
+        }
+
+        toast.success('Welcome back!');
+        router.push('/dashboard');
       }
-
-      toast.success('Welcome back!');
-      router.push('/dashboard');
     } catch (error: any) {
       console.error('Login error:', error);
       toast.error(error.message || 'Failed to sign in');
@@ -85,6 +118,51 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {magicLinkSent ? (
+          <div className="mt-8 text-center space-y-4">
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
+              <h3 className="text-lg font-medium text-purple-900 mb-2">
+                Check your email!
+              </h3>
+              <p className="text-sm text-purple-700">
+                We've sent a magic link to <strong>{email}</strong>
+              </p>
+              <p className="text-sm text-purple-600 mt-2">
+                Click the link in the email to sign in instantly.
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setMagicLinkSent(false);
+                  setIsMagicLink(false);
+                }}
+                className="w-full"
+              >
+                Use password instead
+              </Button>
+              
+              <Button
+                variant="ghost"
+                onClick={handleSubmit}
+                disabled={showResendTimer}
+                className="w-full"
+              >
+                {showResendTimer ? (
+                  `Resend in ${resendTimer}s`
+                ) : (
+                  'Resend magic link'
+                )}
+              </Button>
+            </div>
+            
+            <p className="text-xs text-gray-500">
+              Didn't receive the email? Check your spam folder.
+            </p>
+          </div>
+        ) : (
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
@@ -103,6 +181,7 @@ export default function LoginPage() {
                 placeholder="Email address"
               />
             </div>
+            {!isMagicLink && (
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
@@ -112,21 +191,37 @@ export default function LoginPage() {
                 name="password"
                 type="password"
                 autoComplete="current-password"
-                required
+                required={!isMagicLink}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
                 placeholder="Password"
               />
             </div>
+            )}
           </div>
 
           <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <input
+                id="magic-link"
+                name="magic-link"
+                type="checkbox"
+                checked={isMagicLink}
+                onChange={(e) => setIsMagicLink(e.target.checked)}
+                className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+              />
+              <label htmlFor="magic-link" className="ml-2 block text-sm text-gray-700">
+                Sign in with magic link
+              </label>
+            </div>
+            {!isMagicLink && (
             <div className="text-sm">
               <Link href="/auth/reset-password" className="text-purple-600 hover:text-purple-500">
-                Forgot your password?
+                Forgot password?
               </Link>
             </div>
+            )}
           </div>
 
           <Button
@@ -137,10 +232,10 @@ export default function LoginPage() {
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Signing in...
+                {isMagicLink ? 'Sending magic link...' : 'Signing in...'}
               </>
             ) : (
-              'Sign in'
+              isMagicLink ? 'Send magic link' : 'Sign in'
             )}
           </Button>
 
@@ -198,6 +293,7 @@ export default function LoginPage() {
             </Button>
           </div> */}
         </form>
+        )}
       </div>
     </div>
   );

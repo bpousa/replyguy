@@ -38,17 +38,17 @@ export default function HomePage() {
       }
       
       // Get subscription from user record
-      const { data: userData } = await supabase
+      const { data: userWithPlan } = await supabase
         .from('users')
         .select('*, subscription_plans!subscription_tier(*)')
         .eq('id', user.id)
         .single();
         
-      if (userData?.subscription_plans) {
+      if (userWithPlan?.subscription_plans) {
         setSubscription({
-          plan_id: userData.subscription_tier,
-          subscription_plans: userData.subscription_plans,
-          status: userData.subscription_status
+          plan_id: userWithPlan.subscription_tier,
+          subscription_plans: userWithPlan.subscription_plans,
+          status: userWithPlan.subscription_status
         });
       }
       

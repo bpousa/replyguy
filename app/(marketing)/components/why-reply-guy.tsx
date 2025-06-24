@@ -72,7 +72,7 @@ export function WhyReplyGuy() {
               <strong>Pro tip:</strong> Aim for 10-20 quality replies per day.
             </p>
             <p className="text-purple-700">
-              That's 300-600 opportunities per month to grow your audience and build your brand.
+              That&apos;s 300-600 opportunities per month to grow your audience and build your brand.
             </p>
           </div>
         </div>

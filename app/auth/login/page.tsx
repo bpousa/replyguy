@@ -125,7 +125,7 @@ export default function LoginPage() {
                 Check your email!
               </h3>
               <p className="text-sm text-purple-700">
-                We've sent a magic link to <strong>{email}</strong>
+                We&apos;ve sent a magic link to <strong>{email}</strong>
               </p>
               <p className="text-sm text-purple-600 mt-2">
                 Click the link in the email to sign in instantly.
@@ -159,7 +159,7 @@ export default function LoginPage() {
             </div>
             
             <p className="text-xs text-gray-500">
-              Didn't receive the email? Check your spam folder.
+              Didn&apos;t receive the email? Check your spam folder.
             </p>
           </div>
         ) : (

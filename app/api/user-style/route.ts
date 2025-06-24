@@ -69,18 +69,16 @@ export async function POST(req: NextRequest) {
     }
 
     // Check user's subscription for Write Like Me feature
-    const { data: subscription } = await supabase
-      .from('subscriptions')
-      .select(`
-        subscription_plans (
-          enable_write_like_me
-        )
-      `)
-      .eq('user_id', user.id)
-      .eq('status', 'active')
-      .single() as { data: { subscription_plans: { enable_write_like_me: boolean } | null } | null };
+    const { data: userData } = await supabase
+      .from('users')
+      .select('subscription_tier')
+      .eq('id', user.id)
+      .single();
 
-    if (!subscription?.subscription_plans?.enable_write_like_me) {
+    // Write Like Me is available for professional (X Pro) and enterprise (X Business) tiers
+    const writeLikeMeTiers = ['professional', 'enterprise'];
+    
+    if (!userData || !writeLikeMeTiers.includes(userData.subscription_tier)) {
       return NextResponse.json(
         { error: 'Write Like Me feature requires Pro or Business plan' },
         { status: 403 }

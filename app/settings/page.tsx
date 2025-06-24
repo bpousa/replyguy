@@ -130,16 +130,23 @@ export default function SettingsPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userId: user.id }),
+        body: JSON.stringify({ 
+          returnUrl: window.location.href 
+        }),
       });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to open billing portal');
+      }
 
       const { url } = await response.json();
       if (url) {
         window.location.href = url;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error opening billing portal:', error);
-      toast.error('Failed to open billing portal');
+      toast.error(error.message || 'Failed to open billing portal');
     }
   };
 

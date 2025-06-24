@@ -2,6 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/app/lib/auth';
 import { cookies } from 'next/headers';
 
+interface UserLimits {
+  replies_used: number;
+  reply_limit: number;
+  memes_used: number;
+  meme_limit: number;
+  suggestions_used: number;
+  suggestion_limit: number;
+  plan_id?: string;
+  plan_name?: string;
+}
+
 export async function POST(req: NextRequest) {
   const cookieStore = cookies();
   const supabase = createServerClient(cookieStore);
@@ -20,7 +31,7 @@ export async function POST(req: NextRequest) {
     // Get user's current limits and usage
     const { data: limits, error: limitsError } = await supabase
       .rpc('get_user_limits', { p_user_id: user.id })
-      .single();
+      .single() as { data: UserLimits | null; error: any };
 
     if (limitsError || !limits) {
       console.error('Error fetching limits:', limitsError);

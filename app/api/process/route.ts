@@ -5,6 +5,13 @@ import { imgflipService } from '@/app/lib/services/imgflip.service';
 import { createServerClient } from '@/app/lib/auth';
 import { cookies } from 'next/headers';
 
+interface UserLimits {
+  replies_used: number;
+  reply_limit: number;
+  memes_used: number;
+  meme_limit: number;
+}
+
 // This is the main orchestrator endpoint that calls all other endpoints
 
 // Request validation schema
@@ -45,7 +52,7 @@ export async function POST(req: NextRequest) {
     if (userId !== 'anonymous') {
       const { data: limits } = await supabase
         .rpc('get_user_limits', { p_user_id: userId })
-        .single();
+        .single() as { data: UserLimits | null };
         
       if (limits) {
         // Check reply limit

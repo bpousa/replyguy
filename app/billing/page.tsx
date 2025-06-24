@@ -25,7 +25,7 @@ export default function BillingPage() {
 
   useEffect(() => {
     loadBillingData();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadBillingData = async () => {
     try {

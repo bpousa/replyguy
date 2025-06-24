@@ -1,4 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createServerClient as createSSRClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 // Singleton instance
 let browserClient: SupabaseClient | null = null;
@@ -21,4 +23,33 @@ export const createBrowserClient = () => {
     );
   }
   return browserClient;
+};
+
+// Server-side Supabase client with cookie handling
+export const createServerClient = (cookieStore: ReturnType<typeof cookies>) => {
+  return createSSRClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name: string, value: string, options: any) {
+          try {
+            cookieStore.set({ name, value, ...options });
+          } catch (error) {
+            // Handle cookie setting in Server Components
+          }
+        },
+        remove(name: string, options: any) {
+          try {
+            cookieStore.delete(name);
+          } catch (error) {
+            // Handle cookie removal in Server Components
+          }
+        },
+      },
+    }
+  );
 };

@@ -97,7 +97,7 @@ export default function HomePage() {
     if (!limitsData.canGenerate) {
       toast.error(
         <div className="flex flex-col gap-2">
-          <p>You've reached your monthly limit of {limitsData.limits.reply_limit} replies.</p>
+          <p>You&apos;ve reached your monthly limit of {limitsData.limits.reply_limit} replies.</p>
           <a 
             href="/pricing" 
             className="text-sm underline font-medium"

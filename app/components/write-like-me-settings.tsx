@@ -450,7 +450,7 @@ export function WriteLikeMeSettings() {
                     <ul className="space-y-1">
                       {style.sample_tweets.slice(0, 3).map((sample, i) => (
                         <li key={i} className="pl-4 text-gray-500 italic">
-                          "{sample}"
+                          &quot;{sample}&quot;
                         </li>
                       ))}
                       {style.sample_tweets.length > 3 && (

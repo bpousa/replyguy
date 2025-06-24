@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
         
         const { data: activeStyle } = await supabase
           .rpc('get_user_active_style', { p_user_id: validated.userId })
-          .single();
+          .single() as { data: { style_instructions?: string } | null };
           
         if (activeStyle?.style_instructions) {
           customStyleInstructions = activeStyle.style_instructions;

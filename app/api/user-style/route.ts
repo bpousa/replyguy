@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
       `)
       .eq('user_id', user.id)
       .eq('status', 'active')
-      .single();
+      .single() as { data: { subscription_plans: { enable_write_like_me: boolean } | null } | null };
 
     if (!subscription?.subscription_plans?.enable_write_like_me) {
       return NextResponse.json(

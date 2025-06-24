@@ -38,9 +38,9 @@ const socialLinks = [
 
 const footerLinks = {
   product: [
-    { name: 'Features', href: '/marketing#features' },
-    { name: 'Pricing', href: '/marketing/pricing' },
-    { name: 'How it Works', href: '/marketing#how-it-works' },
+    { name: 'Features', href: '/#features' },
+    { name: 'Pricing', href: '/pricing' },
+    { name: 'How it Works', href: '/#features' },
   ],
   company: [
     { name: 'About', href: 'https://appendment.com' },

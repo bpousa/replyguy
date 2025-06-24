@@ -51,8 +51,6 @@ export default function SignupPage() {
         return;
       }
 
-      console.log('Signup successful:', data);
-
       // Show success message
       setShowSuccess(true);
       toast.success('Account created successfully! Please check your email to confirm.');

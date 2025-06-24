@@ -26,6 +26,7 @@ export interface UserInput {
   perplexityGuidance?: string;
   enableStyleMatching?: boolean;
   includeMeme?: boolean;
+  useCustomStyle?: boolean;
 }
 
 export interface ReplyType {

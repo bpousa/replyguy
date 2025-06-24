@@ -54,18 +54,29 @@ export default function HomePage() {
       const today = new Date().toISOString().split('T')[0];
       const { data: usage } = await supabase
         .from('daily_usage')
-        .select('reply_count')
+        .select('replies_generated')
         .eq('user_id', user.id)
         .eq('date', today)
         .single();
         
       if (usage) {
-        setDailyCount(usage.reply_count);
+        setDailyCount(usage.replies_generated || 0);
       }
     };
     
     loadUserData();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    
+    // Subscribe to auth state changes
+    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        loadUserData();
+      }
+    });
+    
+    return () => {
+      authSubscription?.unsubscribe();
+    };
+  }, [supabase]);
 
   const handleGenerate = async (input: UserInput) => {
     if (!user) {
@@ -74,30 +85,28 @@ export default function HomePage() {
     }
     
     // Check usage limits
-    const planLimits = {
-      free: 10,
-      basic: 50,
-      pro: 150,
-      business: 500,
-      enterprise: 1000,
-    };
+    const limitsResponse = await fetch('/api/check-limits', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
     
-    const planName = subscription?.subscription_plans?.id || 'free';
-    const monthlyLimit = planLimits[planName as keyof typeof planLimits] || 10;
+    const limitsData = await limitsResponse.json();
     
-    // Get monthly usage
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
-    
-    const { data: monthlyUsage } = await supabase
-      .from('user_usage')
-      .select('id')
-      .eq('user_id', user.id)
-      .gte('created_at', startOfMonth.toISOString());
-      
-    if (monthlyUsage && monthlyUsage.length >= monthlyLimit) {
-      toast.error(`You've reached your monthly limit of ${monthlyLimit} replies. Please upgrade your plan.`);
+    if (!limitsData.canGenerate) {
+      toast.error(
+        <div className="flex flex-col gap-2">
+          <p>You've reached your monthly limit of {limitsData.limits.reply_limit} replies.</p>
+          <a 
+            href="/pricing" 
+            className="text-sm underline font-medium"
+          >
+            Upgrade your plan to continue
+          </a>
+        </div>,
+        { duration: 5000 }
+      );
       return;
     }
 
@@ -134,28 +143,20 @@ export default function HomePage() {
         has_meme: result.data.memeUrl ? true : false,
       });
       
-      // Update daily count
-      const today = new Date().toISOString().split('T')[0];
-      const { data: dailyUsage } = await supabase
-        .from('daily_usage')
-        .select('id, reply_count')
-        .eq('user_id', user.id)
-        .eq('date', today)
-        .single();
-        
-      if (dailyUsage) {
-        await supabase
-          .from('daily_usage')
-          .update({ reply_count: dailyUsage.reply_count + 1 })
-          .eq('id', dailyUsage.id);
-      } else {
-        await supabase
-          .from('daily_usage')
-          .insert({
-            user_id: user.id,
-            date: today,
-            reply_count: 1,
-          });
+      // Update daily count using the database function
+      await supabase.rpc('track_daily_usage', {
+        p_user_id: user.id,
+        p_usage_type: 'reply',
+        p_count: 1
+      });
+      
+      // Also track meme if generated
+      if (result.data.memeUrl) {
+        await supabase.rpc('track_daily_usage', {
+          p_user_id: user.id,
+          p_usage_type: 'meme',
+          p_count: 1
+        });
       }
       
       setDailyCount(prev => prev + 1);
@@ -208,7 +209,12 @@ export default function HomePage() {
           {/* Input form */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 card-hover">
             <h2 className="text-xl font-semibold mb-4">Create Your Reply</h2>
-            <ReplyForm onSubmit={handleGenerate} isLoading={isGenerating} />
+            <ReplyForm 
+              onSubmit={handleGenerate} 
+              isLoading={isGenerating}
+              user={user}
+              subscription={subscription}
+            />
           </div>
 
           {/* Output display */}

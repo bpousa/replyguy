@@ -29,21 +29,60 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validated = requestSchema.parse(body);
 
-    // Generate suggestion using GPT-3.5-turbo
+    // Generate suggestion using GPT-4o
+    const examples = {
+      agree: [
+        "Build on their point with evidence",
+        "Share a supporting anecdote",
+        "Validate their feelings",
+        "Add another perspective that agrees",
+        "Express enthusiastic agreement",
+        "Share a similar frustration",
+        "Confirm with personal experience"
+      ],
+      disagree: [
+        "Present a counter-argument politely",
+        "Question their assumptions respectfully",
+        "Offer alternative viewpoint",
+        "Challenge with facts",
+        "Point out a different angle",
+        "Suggest reconsidering the stance",
+        "Provide contradicting evidence"
+      ],
+      neutral: [
+        "Ask for clarification",
+        "Add context or background",
+        "Share relevant information",
+        "Pose a thoughtful question",
+        "Suggest a resource",
+        "Expand on the topic",
+        "Connect to related ideas"
+      ],
+      other: [
+        "Make a witty observation",
+        "Use humor to engage",
+        "Create a clever analogy",
+        "Reference pop culture",
+        "Make a playful comment",
+        "Use wordplay or puns",
+        "Add unexpected twist"
+      ]
+    };
+    
+    // Randomly select 3 examples for variety
+    const relevantExamples = examples[validated.responseType as keyof typeof examples] || examples.neutral;
+    const shuffled = [...relevantExamples].sort(() => Math.random() - 0.5).slice(0, 3);
+    
     const prompt = `Given this tweet: "${validated.tweet}"
 
-Generate a brief response idea for a ${validated.responseType} reply with a ${validated.tone} tone.
+Generate a creative and specific response idea for a ${validated.responseType} reply with a ${validated.tone} tone.
 The suggestion should be 5-15 words that describes what the reply should convey.
-Do NOT write the actual reply, just describe the idea.
+Be specific and avoid generic suggestions.
 
-Examples:
-- "Share a similar experience"
-- "Offer encouragement and support"
-- "Add a helpful tip"
-- "Make a witty observation"
-- "Ask a follow-up question"
-- "Provide relevant information"
+Examples of ${validated.responseType} responses:
+${shuffled.map(ex => `- "${ex}"`).join('\n')}
 
+Create something unique and contextual to this specific tweet.
 Return only the suggestion, nothing else.`;
 
     const completion = await openai.chat.completions.create({
@@ -58,7 +97,7 @@ Return only the suggestion, nothing else.`;
           content: prompt
         }
       ],
-      temperature: 0.7,
+      temperature: 0.9,
       max_tokens: 50
     });
 

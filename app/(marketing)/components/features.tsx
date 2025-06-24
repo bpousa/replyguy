@@ -4,14 +4,27 @@ import {
   TrendingUp, 
   MessageSquare,
   Target,
-  Clock
+  Clock,
+  User,
+  Search
 } from 'lucide-react';
 
 const features = [
   {
+    name: 'Write Like Me™',
+    description: 'Train AI on your tweets to generate replies in your unique voice and style.',
+    icon: User,
+    badge: 'NEW',
+  },
+  {
     name: 'Human-Like Responses',
     description: 'Our AI is trained to avoid AI-isms and create replies that sound genuinely human.',
     icon: Brain,
+  },
+  {
+    name: 'Real-Time Research',
+    description: 'Optional fact-checking with Perplexity to add credible data to your replies.',
+    icon: Search,
   },
   {
     name: 'Context-Aware',
@@ -24,19 +37,9 @@ const features = [
     icon: Zap,
   },
   {
-    name: 'Grow Your Audience',
-    description: 'Consistent, quality engagement helps you build a loyal following.',
-    icon: TrendingUp,
-  },
-  {
     name: 'Daily Goals',
     description: 'Track your reply goals and celebrate your consistency with fun animations.',
     icon: Target,
-  },
-  {
-    name: 'Save Hours Daily',
-    description: 'What used to take hours now takes minutes. Focus on strategy, not typing.',
-    icon: Clock,
   },
 ];
 
@@ -58,8 +61,13 @@ export function Features() {
           {features.map((feature) => (
             <div 
               key={feature.name} 
-              className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow"
+              className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow relative"
             >
+              {feature.badge && (
+                <div className="absolute -top-2 -right-2 bg-purple-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                  {feature.badge}
+                </div>
+              )}
               <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
                 <feature.icon className="w-6 h-6 text-purple-600" />
               </div>

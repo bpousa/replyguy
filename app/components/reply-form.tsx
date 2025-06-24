@@ -11,13 +11,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Switch } from './ui/switch';
 import { AlertCircle, Sparkles, RefreshCw, Lightbulb } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { UpgradeModal } from './upgrade-modal';
 
 interface ReplyFormProps {
   onSubmit: (input: UserInput) => Promise<void>;
   isLoading: boolean;
+  user?: any;
+  subscription?: any;
 }
 
-export default function ReplyForm({ onSubmit, isLoading }: ReplyFormProps) {
+export default function ReplyForm({ onSubmit, isLoading, user, subscription }: ReplyFormProps) {
   const [originalTweet, setOriginalTweet] = useState('');
   const [responseIdea, setResponseIdea] = useState('');
   const [responseType, setResponseType] = useState<ResponseType>('agree');
@@ -28,10 +31,17 @@ export default function ReplyForm({ onSubmit, isLoading }: ReplyFormProps) {
   const [enableStyleMatching, setEnableStyleMatching] = useState(true);
   const [includeMeme, setIncludeMeme] = useState(false);
   const [errors, setErrors] = useState<{ tweet?: string; idea?: string }>({});
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeLimitType, setUpgradeLimitType] = useState<'tweet' | 'response' | 'replies' | 'memes' | 'suggestions'>('tweet');
   const [isSuggestingIdea, setIsSuggestingIdea] = useState(false);
+  const [useCustomStyle, setUseCustomStyle] = useState(false);
+  const [hasActiveStyle, setHasActiveStyle] = useState(false);
   
-  // TODO: Get user plan from context/props
-  const userPlan = {
+  // Get user plan from subscription
+  const userPlan = subscription?.subscription_plans ? {
+    ...subscription.subscription_plans,
+    memes_used: subscription.memes_used || 0
+  } : {
     max_tweet_length: 2000,
     max_response_idea_length: 2000,
     max_reply_length: 2000,
@@ -40,7 +50,8 @@ export default function ReplyForm({ onSubmit, isLoading }: ReplyFormProps) {
     enable_perplexity_guidance: true,
     enable_memes: true,
     meme_limit: 50,
-    memes_used: 12 // TODO: Get from actual usage
+    memes_used: 12,
+    enable_write_like_me: false
   };
   
   // Filter reply lengths based on plan
@@ -50,6 +61,27 @@ export default function ReplyForm({ onSubmit, isLoading }: ReplyFormProps) {
     }
     return length.maxChars <= userPlan.max_reply_length;
   });
+
+  // Check if user has an active style
+  useEffect(() => {
+    const checkActiveStyle = async () => {
+      if (!user || !userPlan.enable_write_like_me) return;
+      
+      try {
+        const response = await fetch('/api/user-style');
+        if (response.ok) {
+          const data = await response.json();
+          const activeStyle = data.styles?.find((s: any) => s.is_active);
+          setHasActiveStyle(!!activeStyle);
+          setUseCustomStyle(!!activeStyle); // Default to on if they have a style
+        }
+      } catch (error) {
+        console.error('Failed to check active style:', error);
+      }
+    };
+    
+    checkActiveStyle();
+  }, [user, userPlan.enable_write_like_me]);
 
   const handleSuggestIdea = async () => {
     if (!originalTweet.trim()) {
@@ -107,7 +139,8 @@ export default function ReplyForm({ onSubmit, isLoading }: ReplyFormProps) {
       replyLength,
       perplexityGuidance: needsResearch && userPlan.enable_perplexity_guidance ? perplexityGuidance : undefined,
       enableStyleMatching: userPlan.enable_style_matching ? enableStyleMatching : false,
-      includeMeme: userPlan.enable_memes ? includeMeme : false
+      includeMeme: userPlan.enable_memes ? includeMeme : false,
+      useCustomStyle: userPlan.enable_write_like_me && hasActiveStyle ? useCustomStyle : false
     };
     
     try {
@@ -124,6 +157,7 @@ export default function ReplyForm({ onSubmit, isLoading }: ReplyFormProps) {
   };
 
   return (
+    <>
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Tweet/X Post Input */}
       <div className="space-y-2">
@@ -145,7 +179,23 @@ export default function ReplyForm({ onSubmit, isLoading }: ReplyFormProps) {
             {errors.tweet}
           </p>
         )}
-        <p className="text-xs text-gray-500">{originalTweet.length}/{userPlan.max_tweet_length}</p>
+        <p className="text-xs text-gray-500">
+          {originalTweet.length}/{userPlan.max_tweet_length}
+          {originalTweet.length > userPlan.max_tweet_length && (
+            <Button 
+              type="button"
+              variant="link" 
+              size="sm" 
+              className="ml-2 text-purple-600 p-0 h-auto"
+              onClick={() => {
+                setUpgradeLimitType('tweet');
+                setShowUpgradeModal(true);
+              }}
+            >
+              Upgrade for longer tweets
+            </Button>
+          )}
+        </p>
       </div>
 
       {/* Response Idea */}
@@ -181,7 +231,23 @@ export default function ReplyForm({ onSubmit, isLoading }: ReplyFormProps) {
             {errors.idea}
           </p>
         )}
-        <p className="text-xs text-gray-500">{responseIdea.length}/{userPlan.max_response_idea_length}</p>
+        <p className="text-xs text-gray-500">
+          {responseIdea.length}/{userPlan.max_response_idea_length}
+          {responseIdea.length > userPlan.max_response_idea_length && (
+            <Button 
+              type="button"
+              variant="link" 
+              size="sm" 
+              className="ml-2 text-purple-600 p-0 h-auto"
+              onClick={() => {
+                setUpgradeLimitType('response');
+                setShowUpgradeModal(true);
+              }}
+            >
+              Upgrade for longer ideas
+            </Button>
+          )}
+        </p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -304,6 +370,28 @@ export default function ReplyForm({ onSubmit, isLoading }: ReplyFormProps) {
         </div>
       )}
 
+      {/* Write Like Me Toggle - Only show if plan supports it and user has active style */}
+      {userPlan.enable_write_like_me && hasActiveStyle && (
+        <div className="flex items-center justify-between p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+          <div className="space-y-1">
+            <Label htmlFor="write-like-me" className="text-base font-medium flex items-center gap-2">
+              Write Like Me™
+              <span className="bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded-full font-medium">
+                Pro
+              </span>
+            </Label>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Use your personalized writing style
+            </p>
+          </div>
+          <Switch
+            id="write-like-me"
+            checked={useCustomStyle}
+            onCheckedChange={setUseCustomStyle}
+          />
+        </div>
+      )}
+
       {/* Meme Toggle - Only show if plan supports it */}
       {userPlan.enable_memes && (
         <div className="flex items-center justify-between p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
@@ -344,5 +432,47 @@ export default function ReplyForm({ onSubmit, isLoading }: ReplyFormProps) {
         )}
       </Button>
     </form>
+
+    {/* Upgrade Modal */}
+    <UpgradeModal
+      isOpen={showUpgradeModal}
+      onClose={() => setShowUpgradeModal(false)}
+      limitType={upgradeLimitType}
+      currentLimit={
+        upgradeLimitType === 'tweet' ? `${userPlan.max_tweet_length} chars` :
+        upgradeLimitType === 'response' ? `${userPlan.max_response_idea_length} chars` :
+        upgradeLimitType === 'replies' ? `${userPlan.reply_limit}/month` :
+        upgradeLimitType === 'memes' ? `${userPlan.meme_limit}/month` :
+        `${userPlan.suggestion_limit}/month`
+      }
+      currentPlan={userPlan.name || 'Free'}
+      upgradePlans={
+        upgradeLimitType === 'tweet' ? [
+          { name: 'X Basic', limit: '500 chars', price: '$19', features: ['300 replies/month', '10 memes/month', '50 AI suggestions'] },
+          { name: 'X Pro', limit: '1000 chars', price: '$49', features: ['500 replies/month', '50 memes/month', 'Write Like Me™'] },
+          { name: 'X Business', limit: '1500 chars', price: '$99', features: ['1000 replies/month', '100 memes/month', 'All features'] }
+        ] :
+        upgradeLimitType === 'response' ? [
+          { name: 'X Basic', limit: '300 chars', price: '$19', features: ['300 replies/month', '10 memes/month', '50 AI suggestions'] },
+          { name: 'X Pro', limit: '500 chars', price: '$49', features: ['500 replies/month', '50 memes/month', 'Write Like Me™'] },
+          { name: 'X Business', limit: '1000 chars', price: '$99', features: ['1000 replies/month', '100 memes/month', 'All features'] }
+        ] :
+        upgradeLimitType === 'replies' ? [
+          { name: 'X Basic', limit: '300/month', price: '$19', features: ['10 memes/month', '50 AI suggestions', 'Email support'] },
+          { name: 'X Pro', limit: '500/month', price: '$49', features: ['50 memes/month', 'Write Like Me™', 'Priority support'] },
+          { name: 'X Business', limit: '1000/month', price: '$99', features: ['100 memes/month', 'Real-time research', 'Dedicated support'] }
+        ] :
+        upgradeLimitType === 'memes' ? [
+          { name: 'X Basic', limit: '10/month', price: '$19', features: ['300 replies/month', '50 AI suggestions', 'Email support'] },
+          { name: 'X Pro', limit: '50/month', price: '$49', features: ['500 replies/month', 'Write Like Me™', 'Priority support'] },
+          { name: 'X Business', limit: '100/month', price: '$99', features: ['1000 replies/month', 'Real-time research', 'Dedicated support'] }
+        ] : [
+          { name: 'X Basic', limit: '50/month', price: '$19', features: ['300 replies/month', '10 memes/month', 'Email support'] },
+          { name: 'X Pro', limit: '100/month', price: '$49', features: ['500 replies/month', 'Write Like Me™', 'Priority support'] },
+          { name: 'X Business', limit: '200/month', price: '$99', features: ['1000 replies/month', 'Real-time research', 'Dedicated support'] }
+        ]
+      }
+    />
+    </>
   );
 }

@@ -19,53 +19,56 @@ const plans = [
     mostPopular: false,
   },
   {
-    name: 'Basic',
+    name: 'X Basic',
     id: 'basic',
     href: '/auth/signup',
     price: { monthly: '$19', yearly: '$190' },
     description: 'For regular X users',
     features: [
-      '50 replies per month',
+      '300 replies per month',
+      '10 memes per month',
+      '50 AI suggestions',
       'All reply types',
-      'Priority support',
-      'Daily goal tracking',
-      'Usage analytics',
+      'Email support',
     ],
-    cta: 'Start Free Trial',
+    cta: 'Get Started',
     mostPopular: false,
   },
   {
-    name: 'Pro',
+    name: 'X Pro',
     id: 'pro',
     href: '/auth/signup',
     price: { monthly: '$49', yearly: '$490' },
     description: 'For power users and creators',
     features: [
-      '150 replies per month',
-      'All reply types',
+      '500 replies per month',
+      '50 memes per month',
+      '100 AI suggestions',
+      'Write Like Me™ AI training',
+      'Style matching',
+      'Medium-length replies',
       'Priority support',
-      'Advanced analytics',
-      'Custom reply styles',
-      'API access',
     ],
-    cta: 'Start Free Trial',
+    cta: 'Get Started',
     mostPopular: true,
   },
   {
-    name: 'Business',
-    id: 'business',
+    name: 'X Business',
+    id: 'x_business',
     href: '/auth/signup',
     price: { monthly: '$99', yearly: '$990' },
-    description: 'For teams and agencies',
+    description: 'Maximum features for businesses',
     features: [
-      '500 replies per month',
-      'Everything in Pro',
-      'Team collaboration',
-      'White-label options',
+      '1000 replies per month',
+      '100 memes per month',
+      '200 AI suggestions',
+      'Write Like Me™ AI training',
+      'Real-time fact checking',
+      'Long-form replies (1000 chars)',
+      'API access',
       'Dedicated support',
-      'Custom integrations',
     ],
-    cta: 'Start Free Trial',
+    cta: 'Get Started',
     mostPopular: false,
   },
 ];
@@ -79,7 +82,7 @@ export function PricingCards() {
             Simple, Transparent Pricing
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Choose the plan that fits your needs. All plans include a 7-day free trial.
+            Choose the plan that fits your needs. No credit card required for free plan.
           </p>
         </div>
 

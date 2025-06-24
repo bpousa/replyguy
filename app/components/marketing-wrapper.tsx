@@ -21,9 +21,9 @@ export function MarketingWrapper({ children }: { children: React.ReactNode }) {
               <Link href="/pricing" className="text-sm font-medium text-gray-600 hover:text-gray-900">
                 Pricing
               </Link>
-              <Link href="/#testimonials" className="text-sm font-medium text-gray-600 hover:text-gray-900">
+              {/* <Link href="/#testimonials" className="text-sm font-medium text-gray-600 hover:text-gray-900">
                 Testimonials
-              </Link>
+              </Link> */}
             </div>
             
             <div className="flex items-center space-x-4">

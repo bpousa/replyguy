@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { UserInput, GeneratedReply, CostBreakdown } from '@/app/lib/types';
 import { imgflipService } from '@/app/lib/services/imgflip.service';
+import { createServerClient } from '@/app/lib/auth';
+import { cookies } from 'next/headers';
 
 // This is the main orchestrator endpoint that calls all other endpoints
 
@@ -15,12 +17,14 @@ const requestSchema = z.object({
   replyLength: z.enum(['short', 'medium', 'long']).optional(),
   perplexityGuidance: z.string().max(200).optional(),
   enableStyleMatching: z.boolean().optional(),
-  includeMeme: z.boolean().optional()
+  includeMeme: z.boolean().optional(),
+  useCustomStyle: z.boolean().optional(),
+  userId: z.string().optional()
 });
 
 export async function POST(req: NextRequest) {
-  // Skip authentication for now
-  const userId = 'anonymous';
+  const cookieStore = cookies();
+  const supabase = createServerClient(cookieStore);
   const startTime = Date.now();
   const costs: CostBreakdown = {
     classification: 0,
@@ -33,6 +37,44 @@ export async function POST(req: NextRequest) {
     // Validate request body
     const body = await req.json();
     const validated = requestSchema.parse(body);
+    
+    // Get authenticated user or use provided userId
+    let userId = validated.userId || 'anonymous';
+    
+    // Check user limits
+    if (userId !== 'anonymous') {
+      const { data: limits } = await supabase
+        .rpc('get_user_limits', { p_user_id: userId })
+        .single();
+        
+      if (limits) {
+        // Check reply limit
+        if (limits.replies_used >= limits.reply_limit) {
+          return NextResponse.json(
+            { 
+              error: 'Monthly reply limit reached',
+              upgradeUrl: '/pricing',
+              limit: limits.reply_limit,
+              used: limits.replies_used
+            },
+            { status: 429 }
+          );
+        }
+        
+        // Check meme limit if meme requested
+        if (validated.includeMeme && limits.memes_used >= limits.meme_limit) {
+          return NextResponse.json(
+            { 
+              error: 'Monthly meme limit reached',
+              upgradeUrl: '/pricing',
+              limit: limits.meme_limit,
+              used: limits.memes_used
+            },
+            { status: 429 }
+          );
+        }
+      }
+    }
 
     // Check daily cost limit
     const dailyLimit = Number(process.env.DAILY_COST_LIMIT) || 100;
@@ -117,18 +159,26 @@ export async function POST(req: NextRequest) {
     let memePageUrl: string | undefined;
     
     if (shouldIncludeMeme && memeText && validated.includeMeme) {
-      try {
-        // TODO: Check user's meme limit before generating
-        const memeResult = await imgflipService.generateAutomeme(memeText);
-        memeUrl = memeResult.url;
-        memePageUrl = memeResult.pageUrl;
-        
-        // TODO: Track meme usage
-        console.log('Generated meme:', memeUrl);
-      } catch (error) {
-        console.error('Meme generation failed:', error);
-        // Continue without meme
+      console.log('Attempting meme generation:', { shouldIncludeMeme, memeText, includeMeme: validated.includeMeme });
+      
+      if (!imgflipService.isConfigured()) {
+        console.warn('Meme generation skipped: Imgflip credentials not configured');
+      } else {
+        try {
+          // TODO: Check user's meme limit before generating
+          const memeResult = await imgflipService.generateAutomeme(memeText);
+          memeUrl = memeResult.url;
+          memePageUrl = memeResult.pageUrl;
+          
+          // TODO: Track meme usage
+          console.log('Generated meme successfully:', { memeUrl, memePageUrl });
+        } catch (error) {
+          console.error('Meme generation failed:', error);
+          // Continue without meme
+        }
       }
+    } else {
+      console.log('Meme generation skipped:', { shouldIncludeMeme, memeText, includeMeme: validated.includeMeme });
     }
 
     // Step 5: Generate final reply
@@ -143,6 +193,8 @@ export async function POST(req: NextRequest) {
         perplexityData,
         replyLength: validated.replyLength || 'short',
         enableStyleMatching: validated.enableStyleMatching ?? true,
+        useCustomStyle: validated.useCustomStyle,
+        userId: validated.userId,
       }),
     });
 

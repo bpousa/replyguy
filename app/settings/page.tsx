@@ -18,6 +18,7 @@ import {
   Loader2,
   Save
 } from 'lucide-react';
+import { WriteLikeMeSettings } from '@/app/components/write-like-me-settings';
 
 
 export default function SettingsPage() {
@@ -228,6 +229,11 @@ export default function SettingsPage() {
           </div>
         </div>
       </Card>
+
+      {/* Write Like Me Section - Only show for Pro/Business plans */}
+      {subscription?.subscription_plans?.enable_write_like_me && (
+        <WriteLikeMeSettings />
+      )}
 
       {/* Preferences Section */}
       <Card className="p-6 mb-6">

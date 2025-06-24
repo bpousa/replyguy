@@ -25,6 +25,8 @@ const requestSchema = z.object({
   perplexityData: z.string().optional(),
   replyLength: z.enum(['short', 'medium', 'long']).optional(),
   enableStyleMatching: z.boolean().optional(),
+  useCustomStyle: z.boolean().optional(),
+  userId: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -49,8 +51,29 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Get custom style if enabled
+    let customStyleInstructions = '';
+    if (validated.useCustomStyle && validated.userId) {
+      try {
+        const { createServerClient } = await import('@/app/lib/auth');
+        const { cookies } = await import('next/headers');
+        const cookieStore = cookies();
+        const supabase = createServerClient(cookieStore);
+        
+        const { data: activeStyle } = await supabase
+          .rpc('get_user_active_style', { p_user_id: validated.userId })
+          .single();
+          
+        if (activeStyle?.style_instructions) {
+          customStyleInstructions = activeStyle.style_instructions;
+        }
+      } catch (error) {
+        console.error('Failed to get custom style:', error);
+      }
+    }
+
     // Build generation prompt
-    const prompt = buildGenerationPrompt(validated, charLimit, styleInstructions);
+    const prompt = buildGenerationPrompt(validated, charLimit, styleInstructions, customStyleInstructions);
 
     // Call Claude 3.5 Sonnet for final generation
     const message = await anthropic.messages.create({
@@ -98,7 +121,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-function buildGenerationPrompt(input: any, charLimit: number, styleInstructions: string): string {
+function buildGenerationPrompt(input: any, charLimit: number, styleInstructions: string, customStyleInstructions: string = ''): string {
   const antiAIPrompt = `
 CRITICAL - Avoid these AI patterns:
 - NEVER start with: "Great point", "Absolutely", "I think", "Indeed", "Fascinating", "Fair enough", "Well,", "So,", "Oh,"
@@ -120,7 +143,7 @@ Write a ${input.selectedType.name} reply that:
 - Tone: ${input.tone}
 - Character limit: ${charLimit}
 ${input.perplexityData ? `\n- Naturally weave in this info: ${input.perplexityData}` : ''}
-${styleInstructions}
+${customStyleInstructions ? customStyleInstructions : styleInstructions}
 
 ${antiAIPrompt}
 

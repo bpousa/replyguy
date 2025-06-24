@@ -34,7 +34,7 @@ export default function RootLayout({
           </div>
           
           {/* Main content */}
-          <div className="relative z-10">
+          <div className="relative z-10 min-h-screen flex flex-col">
             {children}
           </div>
         </div>

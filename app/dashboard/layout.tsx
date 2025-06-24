@@ -16,14 +16,13 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
-const supabase = createBrowserClient();
-
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const supabase = createBrowserClient();
   const [user, setUser] = useState<any>(null);
   const [subscription, setSubscription] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -75,7 +74,7 @@ export default function DashboardLayout({
     return () => {
       authListener?.unsubscribe();
     };
-  }, [router]);
+  }, [router]); // eslint-disable-line react-hooks/exhaustive-deps
   
   const handleSignOut = async () => {
     try {

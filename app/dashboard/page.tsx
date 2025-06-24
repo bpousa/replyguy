@@ -9,9 +9,9 @@ import { toast } from 'react-hot-toast';
 import { DailyGoalTracker } from '@/app/components/daily-goal-tracker';
 import { createBrowserClient } from '@/app/lib/auth';
 
-const supabase = createBrowserClient();
 
 export default function HomePage() {
+  const supabase = createBrowserClient();
   const [generatedReply, setGeneratedReply] = useState<GeneratedReply | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [dailyCount, setDailyCount] = useState(0);
@@ -65,7 +65,7 @@ export default function HomePage() {
     };
     
     loadUserData();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleGenerate = async (input: UserInput) => {
     if (!user) {

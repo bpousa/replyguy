@@ -1,23 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@/app/lib/auth';
 import { toast } from 'react-hot-toast';
 import { Button } from '@/app/components/ui/button';
 import { Sparkles, Loader2 } from 'lucide-react';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = createBrowserClient();
 
 export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  useEffect(() => {
+    // Check for error in URL params
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('error') === 'confirmation_failed') {
+      toast.error('Email confirmation failed. Please try again.');
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,7 +144,8 @@ export default function LoginPage() {
             )}
           </Button>
 
-          <div className="relative">
+          {/* OAuth temporarily disabled */}
+          {/* <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-300" />
             </div>
@@ -190,7 +196,7 @@ export default function LoginPage() {
               </svg>
               GitHub
             </Button>
-          </div>
+          </div> */}
         </form>
       </div>
     </div>

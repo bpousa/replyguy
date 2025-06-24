@@ -2,15 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@/app/lib/auth';
 import { toast } from 'react-hot-toast';
 import { Button } from '@/app/components/ui/button';
 import { Sparkles, Loader2, ArrowLeft } from 'lucide-react';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = createBrowserClient();
 
 export default function ResetPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);

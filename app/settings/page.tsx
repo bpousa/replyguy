@@ -19,10 +19,10 @@ import {
   Save
 } from 'lucide-react';
 
-const supabase = createBrowserClient();
 
 export default function SettingsPage() {
   const router = useRouter();
+  const supabase = createBrowserClient();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [user, setUser] = useState<any>(null);

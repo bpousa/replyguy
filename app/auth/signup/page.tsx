@@ -3,15 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@/app/lib/auth';
 import { toast } from 'react-hot-toast';
 import { Button } from '@/app/components/ui/button';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles, Loader2, CheckCircle } from 'lucide-react';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabase = createBrowserClient();
 
 export default function SignupPage() {
   const router = useRouter();
@@ -19,6 +16,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,8 +51,9 @@ export default function SignupPage() {
         return;
       }
 
-      toast.success('Check your email to confirm your account!');
-      router.push('/auth/login');
+      // Show success message
+      setShowSuccess(true);
+      toast.success('Account created successfully!');
     } catch (error: any) {
       console.error('Signup error:', error);
       toast.error(error.message || 'Failed to sign up');
@@ -89,18 +88,39 @@ export default function SignupPage() {
             <Sparkles className="w-8 h-8 text-purple-600" />
             <span className="text-2xl font-bold gradient-text">ReplyGuy</span>
           </Link>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            Create your account
-          </h2>
-          <p className="mt-2 text-gray-600">
-            Already have an account?{' '}
-            <Link href="/auth/login" className="text-purple-600 hover:text-purple-500">
-              Sign in
-            </Link>
-          </p>
+          {!showSuccess ? (
+            <>
+              <h2 className="mt-6 text-3xl font-bold text-gray-900">
+                Create your account
+              </h2>
+              <p className="mt-2 text-gray-600">
+                Already have an account?{' '}
+                <Link href="/auth/login" className="text-purple-600 hover:text-purple-500">
+                  Sign in
+                </Link>
+              </p>
+            </>
+          ) : (
+            <>
+              <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+              <h2 className="mt-6 text-3xl font-bold text-gray-900">
+                Check your email!
+              </h2>
+              <p className="mt-2 text-gray-600">
+                We&apos;ve sent a confirmation link to <strong>{email}</strong>
+              </p>
+              <p className="mt-4 text-sm text-gray-500">
+                Click the link in your email to complete your registration and start creating amazing replies!
+              </p>
+              <Link href="/auth/login" className="mt-6 inline-block text-purple-600 hover:text-purple-500">
+                Back to login
+              </Link>
+            </>
+          )}
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        {!showSuccess && (
+          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -167,7 +187,8 @@ export default function SignupPage() {
             )}
           </Button>
 
-          <div className="relative">
+          {/* OAuth temporarily disabled */}
+          {/* <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-300" />
             </div>
@@ -218,7 +239,7 @@ export default function SignupPage() {
               </svg>
               GitHub
             </Button>
-          </div>
+          </div> */}
 
           <p className="mt-4 text-xs text-center text-gray-600">
             By signing up, you agree to our{' '}
@@ -231,6 +252,7 @@ export default function SignupPage() {
             </Link>
           </p>
         </form>
+        )}
       </div>
     </div>
   );

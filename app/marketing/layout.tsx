@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { Button } from '@/app/components/ui/button';
+import { Footer } from '@/app/components/footer';
+import { Sparkles } from 'lucide-react';
 
 export default function MarketingLayout({
   children,
@@ -12,7 +14,7 @@ export default function MarketingLayout({
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
             <Link href="/" className="flex items-center space-x-2">
-              <span className="text-2xl">🤖</span>
+              <Sparkles className="w-6 h-6 text-purple-600" />
               <span className="text-xl font-bold text-gray-900">ReplyGuy</span>
             </Link>
             
@@ -29,12 +31,12 @@ export default function MarketingLayout({
             </div>
             
             <div className="flex items-center space-x-4">
-              <Link href="/login">
+              <Link href="/auth/login">
                 <Button variant="ghost" size="sm">
                   Sign In
                 </Button>
               </Link>
-              <Link href="/signup">
+              <Link href="/auth/signup">
                 <Button size="sm">
                   Get Started
                 </Button>
@@ -44,53 +46,9 @@ export default function MarketingLayout({
         </div>
       </nav>
       
-      <main>{children}</main>
+      <main className="flex-grow">{children}</main>
       
-      <footer className="border-t bg-gray-50 py-12 mt-24">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <span className="text-2xl">🤖</span>
-                <span className="text-lg font-bold">ReplyGuy</span>
-              </div>
-              <p className="text-sm text-gray-600">
-                AI-powered replies that actually sound human.
-              </p>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold mb-3">Product</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li><Link href="/#features" className="hover:text-gray-900">Features</Link></li>
-                <li><Link href="/pricing" className="hover:text-gray-900">Pricing</Link></li>
-                <li><Link href="/#how-it-works" className="hover:text-gray-900">How it Works</Link></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold mb-3">Company</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li><Link href="/about" className="hover:text-gray-900">About</Link></li>
-                <li><Link href="/blog" className="hover:text-gray-900">Blog</Link></li>
-                <li><Link href="/contact" className="hover:text-gray-900">Contact</Link></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold mb-3">Legal</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li><Link href="/privacy" className="hover:text-gray-900">Privacy Policy</Link></li>
-                <li><Link href="/terms" className="hover:text-gray-900">Terms of Service</Link></li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="mt-8 pt-8 border-t text-center text-sm text-gray-600">
-            © 2025 ReplyGuy. All rights reserved.
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

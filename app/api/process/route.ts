@@ -14,6 +14,11 @@ interface UserData {
   };
 }
 
+interface CurrentUsage {
+  total_replies: number;
+  total_memes: number;
+}
+
 // This is the main orchestrator endpoint that calls all other endpoints
 
 // Request validation schema
@@ -63,9 +68,9 @@ export async function POST(req: NextRequest) {
         // Get current usage
         const { data: usage } = await supabase
           .rpc('get_current_usage', { p_user_id: userId })
-          .single();
+          .single() as { data: CurrentUsage | null };
           
-        const currentUsage = usage || { total_replies: 0, total_memes: 0 };
+        const currentUsage: CurrentUsage = usage || { total_replies: 0, total_memes: 0 };
         
         // Check reply limit
         if (currentUsage.total_replies >= userData.subscription_plans.reply_limit) {

@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/app/lib/auth';
 import { cookies } from 'next/headers';
 
+interface CurrentUsage {
+  total_replies: number;
+  total_memes: number;
+  total_suggestions: number;
+}
+
+interface SubscriptionPlan {
+  id: string;
+  name: string;
+  reply_limit: number;
+  meme_limit: number;
+  suggestion_limit: number;
+}
+
 export async function POST(req: NextRequest) {
   const cookieStore = cookies();
   const supabase = createServerClient(cookieStore);
@@ -45,9 +59,9 @@ export async function POST(req: NextRequest) {
     // Get current usage
     const { data: usage } = await supabase
       .rpc('get_current_usage', { p_user_id: user.id })
-      .single();
+      .single() as { data: CurrentUsage | null };
 
-    const plan = userData.subscription_plans || {
+    const plan: SubscriptionPlan = userData.subscription_plans || {
       id: 'free',
       name: 'Free',
       reply_limit: 10,
@@ -55,7 +69,7 @@ export async function POST(req: NextRequest) {
       suggestion_limit: 0
     };
 
-    const currentUsage = usage || {
+    const currentUsage: CurrentUsage = usage || {
       total_replies: 0,
       total_memes: 0,
       total_suggestions: 0

@@ -38,7 +38,7 @@ export default function SignupPage() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
@@ -51,9 +51,11 @@ export default function SignupPage() {
         return;
       }
 
+      console.log('Signup successful:', data);
+
       // Show success message
       setShowSuccess(true);
-      toast.success('Account created successfully!');
+      toast.success('Account created successfully! Please check your email to confirm.');
     } catch (error: any) {
       console.error('Signup error:', error);
       toast.error(error.message || 'Failed to sign up');

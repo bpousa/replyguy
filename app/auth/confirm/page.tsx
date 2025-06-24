@@ -26,23 +26,13 @@ export default function ConfirmPage() {
           });
 
           if (!error) {
-            // If it's a signup confirmation, create the user record
-            if (type === 'signup') {
-              const { data: { user } } = await supabase.auth.getUser();
-              
-              if (user) {
-                // Create user record in our database
-                await supabase.from('users').insert({
-                  id: user.id,
-                  email: user.email,
-                  daily_goal: 10,
-                  timezone: 'America/New_York',
-                });
-              }
-            }
-
-            // Redirect to dashboard
-            router.push('/dashboard');
+            // Session set successfully
+            console.log('Email confirmed successfully');
+            
+            // Small delay to ensure session is fully established
+            setTimeout(() => {
+              router.push('/dashboard');
+            }, 100);
           } else {
             console.error('Error setting session:', error);
             router.push('/auth/login?error=confirmation_failed');

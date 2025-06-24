@@ -1,15 +1,18 @@
 import { NextResponse } from 'next/server';
 import { NextRequest } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   
-  // This callback handles the redirect from Supabase after magic link verification
-  // Supabase has already set the session cookies, we just need to redirect
+  // Log for debugging
+  console.log('Auth callback hit with URL:', request.url);
+  console.log('Search params:', requestUrl.searchParams.toString());
   
-  // Create a response that redirects to dashboard
-  const response = NextResponse.redirect(new URL('/dashboard', requestUrl.origin));
+  // After Supabase processes the magic link, it redirects here
+  // The session should already be established via cookies
+  
+  // Redirect to loading page to give Supabase time to establish session
+  const response = NextResponse.redirect(new URL('/auth/loading', requestUrl.origin));
   
   return response;
 }

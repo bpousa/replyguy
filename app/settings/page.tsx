@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { createBrowserClient } from '@/app/lib/auth';
 import { Button } from '@/app/components/ui/button';
 import { Card } from '@/app/components/ui/card';
@@ -16,7 +17,8 @@ import {
   Globe, 
   Shield,
   Loader2,
-  Save
+  Save,
+  ArrowLeft
 } from 'lucide-react';
 import { WriteLikeMeSettings } from '@/app/components/write-like-me-settings';
 
@@ -66,20 +68,29 @@ export default function SettingsPage() {
         }));
       }
 
-      // Get subscription from user record
-      const { data: userWithPlan } = await supabase
+      // Get user with subscription info
+      const { data: userWithSub } = await supabase
         .from('users')
-        .select('*, subscription_plans!subscription_tier(*)')
+        .select('*')
         .eq('id', user.id)
         .single();
         
-      if (userWithPlan?.subscription_plans) {
-        setSubscription({
-          plan_id: userWithPlan.subscription_tier,
-          subscription_plans: userWithPlan.subscription_plans,
-          status: userWithPlan.subscription_status,
-          current_period_end: userWithPlan.subscription_current_period_end
-        });
+      if (userWithSub?.subscription_tier) {
+        // Get plan details separately
+        const { data: plan } = await supabase
+          .from('subscription_plans')
+          .select('*')
+          .eq('id', userWithSub.subscription_tier)
+          .single();
+          
+        if (plan) {
+          setSubscription({
+            plan_id: userWithSub.subscription_tier,
+            subscription_plans: plan,
+            status: userWithSub.subscription_status,
+            current_period_end: userWithSub.subscription_current_period_end
+          });
+        }
       }
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -142,7 +153,15 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Settings</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+        <Link href="/dashboard">
+          <Button variant="outline" size="sm">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </Link>
+      </div>
 
       {/* Profile Section */}
       <Card className="p-6 mb-6">
@@ -234,7 +253,7 @@ export default function SettingsPage() {
       </Card>
 
       {/* Write Like Me Section - Only show for Pro/Business plans */}
-      {subscription?.subscription_plans?.enable_write_like_me && (
+      {(subscription?.subscription_plans?.enable_write_like_me || subscription?.plan_id === 'professional' || subscription?.plan_id === 'enterprise') && (
         <WriteLikeMeSettings />
       )}
 

@@ -8,8 +8,7 @@ import { cookies } from 'next/headers';
 interface UserData {
   subscription_tier: string;
   subscription_plans?: {
-    reply_limit: number;
-    meme_limit: number;
+    monthly_limit: number;
     suggestion_limit: number;
   };
 }
@@ -73,25 +72,26 @@ export async function POST(req: NextRequest) {
         const currentUsage: CurrentUsage = usage || { total_replies: 0, total_memes: 0 };
         
         // Check reply limit
-        if (currentUsage.total_replies >= userData.subscription_plans.reply_limit) {
+        if (currentUsage.total_replies >= userData.subscription_plans.monthly_limit) {
           return NextResponse.json(
             { 
               error: 'Monthly reply limit reached',
               upgradeUrl: '/pricing',
-              limit: userData.subscription_plans.reply_limit,
+              limit: userData.subscription_plans.monthly_limit,
               used: currentUsage.total_replies
             },
             { status: 429 }
           );
         }
         
-        // Check meme limit if meme requested
-        if (validated.includeMeme && currentUsage.total_memes >= userData.subscription_plans.meme_limit) {
+        // Check meme limit if meme requested (default 50 for all paid plans)
+        const memeLimit = userData.subscription_tier === 'free' ? 0 : 50;
+        if (validated.includeMeme && currentUsage.total_memes >= memeLimit) {
           return NextResponse.json(
             { 
               error: 'Monthly meme limit reached',
               upgradeUrl: '/pricing',
-              limit: userData.subscription_plans.meme_limit,
+              limit: memeLimit,
               used: currentUsage.total_memes
             },
             { status: 429 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { createBrowserClient } from '@/app/lib/auth';
 import { Button } from '@/app/components/ui/button';
 import { Card } from '@/app/components/ui/card';
@@ -12,7 +13,8 @@ import {
   Check,
   ArrowRight,
   Calendar,
-  Zap
+  Zap,
+  ArrowLeft
 } from 'lucide-react';
 
 export default function BillingPage() {
@@ -100,7 +102,15 @@ export default function BillingPage() {
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Billing & Usage</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Billing & Usage</h1>
+        <Link href="/dashboard">
+          <Button variant="outline" size="sm">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </Link>
+      </div>
 
       {/* Current Plan */}
       <Card className="p-6 mb-6">

@@ -11,9 +11,11 @@ interface CurrentUsage {
 interface SubscriptionPlan {
   id: string;
   name: string;
-  reply_limit: number;
-  meme_limit: number;
+  monthly_limit: number;
   suggestion_limit: number;
+  enable_style_matching?: boolean;
+  enable_write_like_me?: boolean;
+  enable_perplexity_guidance?: boolean;
 }
 
 export async function POST(req: NextRequest) {
@@ -64,8 +66,7 @@ export async function POST(req: NextRequest) {
     const plan: SubscriptionPlan = userData.subscription_plans || {
       id: 'free',
       name: 'Free',
-      reply_limit: 10,
-      meme_limit: 0,
+      monthly_limit: 10,
       suggestion_limit: 0
     };
 
@@ -85,13 +86,13 @@ export async function POST(req: NextRequest) {
     const mappedPlanId = planMapping[plan.id] || plan.id;
 
     // Check if user can generate more replies
-    const canGenerate = currentUsage.total_replies < plan.reply_limit;
-    const canGenerateMeme = plan.meme_limit > 0 && currentUsage.total_memes < plan.meme_limit;
+    const canGenerate = currentUsage.total_replies < plan.monthly_limit;
+    const canGenerateMeme = currentUsage.total_memes < 50; // Default meme limit
     const canUseSuggestions = plan.suggestion_limit === -1 || currentUsage.total_suggestions < plan.suggestion_limit;
 
     // Calculate remaining
-    const repliesRemaining = plan.reply_limit - currentUsage.total_replies;
-    const memesRemaining = plan.meme_limit - currentUsage.total_memes;
+    const repliesRemaining = plan.monthly_limit - currentUsage.total_replies;
+    const memesRemaining = 50 - currentUsage.total_memes; // Default meme limit
     const suggestionsRemaining = plan.suggestion_limit === -1 ? 'unlimited' : plan.suggestion_limit - currentUsage.total_suggestions;
 
     return NextResponse.json({
@@ -101,15 +102,17 @@ export async function POST(req: NextRequest) {
       limits: {
         plan_id: mappedPlanId,
         plan_name: plan.name,
-        reply_limit: plan.reply_limit,
+        reply_limit: plan.monthly_limit,
         replies_used: currentUsage.total_replies,
-        meme_limit: plan.meme_limit,
+        meme_limit: 50, // Default meme limit
         memes_used: currentUsage.total_memes,
         suggestion_limit: plan.suggestion_limit,
         suggestions_used: currentUsage.total_suggestions,
         repliesRemaining,
         memesRemaining,
         suggestionsRemaining,
+        enable_style_matching: plan.enable_style_matching || false,
+        enable_write_like_me: plan.enable_write_like_me || false,
       },
       upgradeUrl: !canGenerate ? '/pricing' : null,
     });

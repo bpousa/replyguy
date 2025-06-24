@@ -37,19 +37,29 @@ export default function HomePage() {
         setDailyGoal(userData.daily_goal);
       }
       
-      // Get subscription from user record
-      const { data: userWithPlan } = await supabase
+      // Get user with subscription info
+      const { data: userWithSub } = await supabase
         .from('users')
-        .select('*, subscription_plans!subscription_tier(*)')
+        .select('*')
         .eq('id', user.id)
         .single();
         
-      if (userWithPlan?.subscription_plans) {
-        setSubscription({
-          plan_id: userWithPlan.subscription_tier,
-          subscription_plans: userWithPlan.subscription_plans,
-          status: userWithPlan.subscription_status
-        });
+      if (userWithSub?.subscription_tier) {
+        // Get plan details separately
+        const { data: plan } = await supabase
+          .from('subscription_plans')
+          .select('*')
+          .eq('id', userWithSub.subscription_tier)
+          .single();
+          
+        if (plan) {
+          setSubscription({
+            plan_id: userWithSub.subscription_tier,
+            subscription_plans: plan,
+            status: userWithSub.subscription_status,
+            memes_used: 0 // TODO: Get from usage tracking
+          });
+        }
       }
       
       // Get today's usage

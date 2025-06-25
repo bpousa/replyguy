@@ -44,12 +44,12 @@ export async function POST(req: NextRequest) {
 
 Generate a search query that will find EXACTLY what the user requested.
 Focus on finding:
-- Recent statistics or data (2023-2024)
+- Recent statistics or data (last 1-2 years)
 - Current trends and percentages
 - Official reports or studies
 - Specific numbers and facts
 
-Make the query specific and include relevant terms like "statistics", "data", "report", "study", "percentage", "trends", "2024", etc.
+Make the query specific and include relevant terms like "statistics", "data", "report", "study", "percentage", "trends", "recent", "latest", etc.
 
 Search query:`
       : `Context:
@@ -59,17 +59,17 @@ User's response idea: "${validated.responseIdea}"
 Generate a search query to find relevant CURRENT information, statistics, or trends about this topic.
 
 Guidelines:
-- Focus on recent data (2023-2024) to provide information beyond typical LLM knowledge cutoffs
+- Focus on recent data (last 1-2 years) to provide information beyond typical LLM knowledge cutoffs
 - Include terms that will return concrete numbers, percentages, or specific facts
 - Consider what statistics would be most relevant to the user's response idea
 - If location matters, include it (USA, global, specific cities)
 - Think broadly - could be economic data, social trends, tech stats, health data, etc.
 
 Good query patterns:
-- "[topic] statistics 2024 trends report"
-- "[topic] data percentage change 2023-2024"
-- "[topic] latest numbers study [location]"
-- "current [topic] rates statistics [year]"
+- "[topic] statistics recent trends report"
+- "[topic] data percentage change latest"
+- "[topic] current numbers study [location]"
+- "recent [topic] rates statistics trends"
 
 Search query:`;
 
@@ -102,7 +102,7 @@ Search query:`;
             content: `Search for: ${searchQuery}
 
 Return ONLY concrete statistics, facts, and data with specific numbers. Focus on:
-- Recent statistics (2023-2024 preferred) that would be beyond typical AI knowledge
+- Recent statistics (last 1-2 years preferred) that would be beyond typical AI knowledge
 - Exact percentages, numbers, or measurable trends
 - Credible sources (government reports, studies, official data)
 - Current events or developments related to the topic

@@ -1,0 +1,597 @@
+[
+  {
+    "category": "Humor & Wit",
+    "reply_name": "The Witty Comeback",
+    "description": "A clever, humorous retort that plays off the original tweet's content, often using wordplay or a clever twist.",
+    "example_original_tweet": "Just spilled coffee all over my laptop.",
+    "example_reply": "Congrats, now you have a JavaScript machine!"
+  },
+  {
+    "category": "Humor & Wit",
+    "reply_name": "The Punny Reply",
+    "description": "A reply that uses a pun related to the original tweet's topic for a lighthearted and groan-worthily good effect.",
+    "example_original_tweet": "I can't believe how expensive lightbulbs are getting.",
+    "example_reply": "It's a bright idea to stock up now!"
+  },
+  {
+    "category": "Humor & Wit",
+    "reply_name": "The Sarcastic Echo",
+    "description": "Agreeing with or mimicking the original tweet in a sarcastic or exaggerated way to create a humorous effect.",
+    "example_original_tweet": "I love when my computer decides to update in the middle of a crucial presentation.",
+    "example_reply": "Oh, absolutely. It's the thrill of the unknown that really makes the workday exciting."
+  },
+  {
+    "category": "Humor & Wit",
+    "reply_name": "The Self-Deprecating Joke",
+    "description": "A humorous reply that pokes fun at oneself in a relatable way, often in response to a shared struggle.",
+    "example_original_tweet": "My plants are thriving. I'm basically a botanist now.",
+    "example_reply": "Meanwhile, I looked at a cactus and it wilted. Teach me your ways."
+  },
+  {
+    "category": "Humor & Wit",
+    "reply_name": "The Dramatic Overreaction",
+    "description": "Exaggerating your emotional response to a tweet for comedic effect.",
+    "example_original_tweet": "They just announced a sequel to my favorite movie.",
+    "example_reply": "I just screamed so loud my neighbors called 911."
+  },
+  {
+    "category": "Humor & Wit",
+    "reply_name": "The Unexpected Twist",
+    "description": "A reply that starts with a seemingly serious response but ends with a humorous and unforeseen punchline.",
+    "example_original_tweet": "What's the best way to become a morning person?",
+    "example_reply": "Plot twist: the alarm clock was the villain all along."
+  },
+  {
+    "category": "Humor & Wit",
+    "reply_name": "The Clever Analogy",
+    "description": "Comparing the situation in the tweet to something else in a witty and insightful way.",
+    "example_original_tweet": "Trying to explain a meme to my parents.",
+    "example_reply": "This is like trying to teach a cat to do your taxes."
+  },
+  {
+    "category": "Humor & Wit",
+    "reply_name": "The Username Checks Out",
+    "description": "Pointing out when a user's reply or the original tweet's content hilariously aligns with their username.",
+    "example_original_tweet": "(From a user named @Procrastinator) 'I'll start my diet tomorrow.'",
+    "example_reply": "Username checks out."
+  },
+  {
+    "category": "Humor & Wit",
+    "reply_name": "The Didn't Need to Know",
+    "description": "A playful way to express that the original tweet contained a little too much information (TMI).",
+    "example_original_tweet": "Just found a ten-year-old sandwich in my couch cushions.",
+    "example_reply": "I could've gone my whole life without knowing that, but here we are."
+  },
+  {
+    "category": "Humor & Wit",
+    "reply_name": "The Fake Expert",
+    "description": "Pretending to be a professional in a made-up field to humorously comment on the tweet.",
+    "example_original_tweet": "My snack drawer at work is a national treasure.",
+    "example_reply": "As a certified snackologist, I can confirm this is a world-class collection."
+  },
+  {
+    "category": "Humor & Wit",
+    "reply_name": "The Alter Ego Reply",
+    "description": "Replying from the perspective of an inanimate object or animal mentioned in the original tweet.",
+    "example_original_tweet": "(A picture of a cat knocking over a glass of water)",
+    "example_reply": "(Replying as the cat) 'And I'll do it again.'"
+  },
+  {
+    "category": "Humor & Wit",
+    "reply_name": "The Dark Humor",
+    "description": "Using dark or slightly edgy humor to make light of serious situations.",
+    "example_original_tweet": "My bank account after Black Friday.",
+    "example_reply": "Bold of you to assume there was anything there before Black Friday."
+  },
+  {
+    "category": "Humor & Wit",
+    "reply_name": "The Exaggerated Flex",
+    "description": "Humorously bragging about mundane accomplishments as if they're major achievements.",
+    "example_original_tweet": "Finally did my laundry after 3 weeks.",
+    "example_reply": "Save some productivity for the rest of us, overachiever."
+  },
+  {
+    "category": "Agreement & Relatability",
+    "reply_name": "The Relatable Confession",
+    "description": "Admitting to a personal, often quirky, habit or feeling that you suspect many others secretly share.",
+    "example_original_tweet": "I hate talking on the phone. Just text me.",
+    "example_reply": "I thought I was the only one who rehearses the phone call in my head before I dial."
+  },
+  {
+    "category": "Agreement & Relatability",
+    "reply_name": "The Emphatic Agreement",
+    "description": "Using short, common internet slang to express strong and immediate agreement or relatability.",
+    "example_original_tweet": "Adulting is just Googling how to do things.",
+    "example_reply": "This. So much this."
+  },
+  {
+    "category": "Agreement & Relatability",
+    "reply_name": "The Same Energy",
+    "description": "A concise reply to show that you feel the exact same way as the original poster.",
+    "example_original_tweet": "I need a 6-month vacation, twice a year.",
+    "example_reply": "Big same."
+  },
+  {
+    "category": "Agreement & Relatability",
+    "reply_name": "The Deep Resonance",
+    "description": "Expressing that the tweet connected with you on a deep, emotional, or almost spiritual level.",
+    "example_original_tweet": "That feeling when you find a typo in an email you just sent to your boss.",
+    "example_reply": "Oof, I felt that in my soul."
+  },
+  {
+    "category": "Agreement & Relatability",
+    "reply_name": "The Too Real Acknowledgment",
+    "description": "Acknowledging that the tweet is so accurate and relatable that it's almost painful.",
+    "example_original_tweet": "My bank account after I pay all my bills.",
+    "example_reply": "This is painfully accurate."
+  },
+  {
+    "category": "Agreement & Relatability",
+    "reply_name": "The I'm in This Photo",
+    "description": "A humorous way of saying a tweet is so relatable it feels like a personal attack or description of you.",
+    "example_original_tweet": "My brain trying to remember a word: [Buffering GIF]",
+    "example_reply": "I'm in this photo and I don't like it."
+  },
+  {
+    "category": "Agreement & Relatability",
+    "reply_name": "The How Did You Know",
+    "description": "Acting as if the tweet was written specifically about you, highlighting its extreme relatability.",
+    "example_original_tweet": "You're not lazy, you're just in 'energy-saving mode'.",
+    "example_reply": "Why is this tweet personally attacking me?"
+  },
+  {
+    "category": "Agreement & Relatability",
+    "reply_name": "The I Can't Be the Only One",
+    "description": "Expressing a personal experience and asking for validation that you are not alone in it.",
+    "example_original_tweet": "I always have to watch a movie with subtitles on, even if it's in my native language.",
+    "example_reply": "I can't be the only one who does this, right?"
+  },
+  {
+    "category": "Agreement & Relatability",
+    "reply_name": "The Mood",
+    "description": "A simple declaration that the tweet perfectly captures your current state of mind.",
+    "example_original_tweet": "Just want to sleep for 72 hours straight.",
+    "example_reply": "Mood."
+  },
+  {
+    "category": "Agreement & Relatability",
+    "reply_name": "The Story of My Life",
+    "description": "Indicating that the tweet describes a recurring pattern in your existence.",
+    "example_original_tweet": "Makes plans. Immediately regrets making plans.",
+    "example_reply": "Story of my life."
+  },
+  {
+    "category": "Praise & Support",
+    "reply_name": "The Supportive Hype",
+    "description": "Offering genuine encouragement, validation, or cheerleading to someone.",
+    "example_original_tweet": "Feeling really discouraged with my job search.",
+    "example_reply": "You got this! The right opportunity is just around the corner. 🔥"
+  },
+  {
+    "category": "Praise & Support",
+    "reply_name": "The Not All Heroes Wear Capes",
+    "description": "Praising someone for a helpful or kind action using a popular, heroic compliment.",
+    "example_original_tweet": "Shout out to the stranger who paid for my coffee this morning.",
+    "example_reply": "Not all heroes wear capes!"
+  },
+  {
+    "category": "Praise & Support",
+    "reply_name": "The Chef's Kiss",
+    "description": "Using short, expressive phrases to compliment the quality or perfection of something.",
+    "example_original_tweet": "(An artist sharing their work) 'My latest painting.'",
+    "example_reply": "This is a masterpiece. *chef's kiss*"
+  },
+  {
+    "category": "Praise & Support",
+    "reply_name": "The You Win the Internet",
+    "description": "A hyperbolic compliment declaring that the original tweet or its subject is the best thing online that day.",
+    "example_original_tweet": "(A video of a dog performing an incredible trick)",
+    "example_reply": "Okay, that's it. You win the internet today."
+  },
+  {
+    "category": "Praise & Support",
+    "reply_name": "The Nailed It",
+    "description": "A simple, direct, and effective way to say that the original poster perfectly articulated or accomplished something.",
+    "example_original_tweet": "Here's my attempt at explaining quantum physics in a single tweet...",
+    "example_reply": "Nailed it."
+  },
+  {
+    "category": "Praise & Support",
+    "reply_name": "The Standing Ovation",
+    "description": "Expressing overwhelming approval through the metaphor of applause.",
+    "example_original_tweet": "Finally stood up to my toxic boss today.",
+    "example_reply": "👏👏👏 Standing ovation for this!"
+  },
+  {
+    "category": "Praise & Support",
+    "reply_name": "The Proud Parent",
+    "description": "Expressing pride in someone's achievement as if you were their parent.",
+    "example_original_tweet": "Just got my PhD!",
+    "example_reply": "Look at you go! So proud of you! 🎓"
+  },
+  {
+    "category": "Creative & Interactive",
+    "reply_name": "The Meme Drop",
+    "description": "Replying with a currently trending and relevant meme or GIF that perfectly encapsulates a reaction.",
+    "example_original_tweet": "My to-do list is longer than a CVS receipt.",
+    "example_reply": "[Image of the 'This is Fine' dog meme]"
+  },
+  {
+    "category": "Creative & Interactive",
+    "reply_name": "The Pop Culture Reference",
+    "description": "Tying your reply to a trending or classic movie, TV show, song, or celebrity moment.",
+    "example_original_tweet": "My family arguing about where to eat for dinner.",
+    "example_reply": "This is giving major 'Succession' vibes."
+  },
+  {
+    "category": "Creative & Interactive",
+    "reply_name": "The Emoji Only Reply",
+    "description": "Using only a sequence of emojis to convey a complex emotion, reaction, or story.",
+    "example_original_tweet": "Just finished a project that's been haunting me for weeks.",
+    "example_reply": "🎉🥳🙌💯"
+  },
+  {
+    "category": "Creative & Interactive",
+    "reply_name": "The One Word Zinger",
+    "description": "Using a single, impactful word to convey a complete thought or feeling.",
+    "example_original_tweet": "(A picture of a perfectly organized desk)",
+    "example_reply": "Goals."
+  },
+  {
+    "category": "Creative & Interactive",
+    "reply_name": "The Nostalgia Bomb",
+    "description": "Replying by reminiscing about a past era or experience triggered by the original tweet.",
+    "example_original_tweet": "(A picture of a 90s-era cell phone)",
+    "example_reply": "This takes me back to 2005 and the sound of T9 texting. Simpler times."
+  },
+  {
+    "category": "Creative & Interactive",
+    "reply_name": "The Soundtrack Reply",
+    "description": "Quoting a relevant song lyric that humorously or poignantly relates to the original tweet.",
+    "example_original_tweet": "I can't believe it's Monday again.",
+    "example_reply": "Hello darkness, my old friend..."
+  },
+  {
+    "category": "Creative & Interactive",
+    "reply_name": "The I Volunteer as Tribute",
+    "description": "Humorously offering yourself up for a task or experience mentioned in the tweet, often with a pop culture reference.",
+    "example_original_tweet": "We need someone to taste test all these new cookie flavors.",
+    "example_reply": "I volunteer as tribute."
+  },
+  {
+    "category": "Creative & Interactive",
+    "reply_name": "The Pet Pic Reply",
+    "description": "Replying with a cute picture of your pet, often positioned as your pet's opinion on the matter.",
+    "example_original_tweet": "Working from home is great but I get lonely.",
+    "example_reply": "My assistant says you need more coworker time. [photo of dog staring at screen]"
+  },
+  {
+    "category": "Creative & Interactive",
+    "reply_name": "The Mood Board",
+    "description": "Replying with a collage of images (often reaction faces) that collectively express your feelings about the tweet.",
+    "example_original_tweet": "How my week is going.",
+    "example_reply": "[collage of 4 images: a screaming face, a tired cat, someone crying, a dumpster fire]"
+  },
+  {
+    "category": "Creative & Interactive",
+    "reply_name": "The Can't Unsee",
+    "description": "Pointing out a detail in an image or tweet that, once seen, cannot be ignored, changing the context.",
+    "example_original_tweet": "(A picture with an optical illusion in the background)",
+    "example_reply": "The vase in the back looks like two faces... and now I can't unsee it!"
+  },
+  {
+    "category": "Creative & Interactive",
+    "reply_name": "The Reverse Uno",
+    "description": "A playful reply that flips the script or question back onto the original poster.",
+    "example_original_tweet": "Describe yourself in one word.",
+    "example_reply": "Legend. Now you!"
+  },
+  {
+    "category": "Creative & Interactive",
+    "reply_name": "The Time Traveler",
+    "description": "Pretending to be from the future or past to comment on the tweet.",
+    "example_original_tweet": "Wonder what 2025 will be like.",
+    "example_reply": "Greetings from 2025. We still don't have flying cars but coffee is $15."
+  },
+  {
+    "category": "Creative & Interactive",
+    "reply_name": "The Plot Twist",
+    "description": "Adding an unexpected fictional element to the narrative.",
+    "example_original_tweet": "Running late to work again.",
+    "example_reply": "Plot twist: You're the CEO and everyone's waiting for you."
+  },
+  {
+    "category": "Value & Information",
+    "reply_name": "The Helpful Tip",
+    "description": "Providing a useful piece of advice, a practical solution, or a link to a helpful article, tool, or resource.",
+    "example_original_tweet": "My phone battery dies so fast!",
+    "example_reply": "Try turning off background app refresh. It's a game-changer! This article explains how: [link]"
+  },
+  {
+    "category": "Value & Information",
+    "reply_name": "The Fact Check",
+    "description": "Providing a polite correction, a source, or additional clarifying information to a tweet.",
+    "example_original_tweet": "The Eiffel Tower was gifted to France by the USA.",
+    "example_reply": "Actually, it was designed and built by French engineers for the 1889 World's Fair! A common misconception."
+  },
+  {
+    "category": "Value & Information",
+    "reply_name": "The Content Saver",
+    "description": "A reply indicating that you're saving the tweet's content for future use, signaling its value.",
+    "example_original_tweet": "Here is a thread of 10 free tools that will save you hours.",
+    "example_reply": "Screenshotting this for future reference! Thank you."
+  },
+  {
+    "category": "Value & Information",
+    "reply_name": "The Expert Take",
+    "description": "Providing an insightful opinion or analysis based on your professional expertise in a particular field.",
+    "example_original_tweet": "Interesting new marketing campaign from [Brand].",
+    "example_reply": "From a branding perspective, the use of nostalgia is smart, but they risk alienating their Gen Z audience."
+  },
+  {
+    "category": "Value & Information",
+    "reply_name": "The Resource Share",
+    "description": "Sharing additional resources that complement or expand on the original tweet.",
+    "example_original_tweet": "Learning Python has changed my life.",
+    "example_reply": "If you're enjoying Python, you might love this free course on data science: [link]"
+  },
+  {
+    "category": "Value & Information",
+    "reply_name": "The Personal Experience",
+    "description": "Sharing a relevant personal anecdote that provides practical insight.",
+    "example_original_tweet": "Thinking about starting a podcast.",
+    "example_reply": "Started mine last year. Best tip: batch record episodes. Saves so much time!"
+  },
+  {
+    "category": "Conversation Starter",
+    "reply_name": "The Thread Starter Question",
+    "description": "Asking a simple, open-ended question to encourage the original poster and others to elaborate or continue the conversation.",
+    "example_original_tweet": "Just visited the most beautiful beach.",
+    "example_reply": "That looks amazing! What happened next?"
+  },
+  {
+    "category": "Conversation Starter",
+    "reply_name": "The Deeper Dive Question",
+    "description": "Asking a follow-up question that encourages the original poster to think more critically or abstractly about the topic.",
+    "example_original_tweet": "Just read an interesting article on the future of AI.",
+    "example_reply": "Interesting! What are your thoughts on the ethical implications of AI-driven decision-making in that context?"
+  },
+  {
+    "category": "Conversation Starter",
+    "reply_name": "The Tell Me More",
+    "description": "A direct and simple invitation for the original poster to provide more details about their tweet.",
+    "example_original_tweet": "I have a controversial opinion about the latest season of this show.",
+    "example_reply": "Wait, tell me more... I'm intrigued."
+  },
+  {
+    "category": "Conversation Starter",
+    "reply_name": "The Tag a Friend",
+    "description": "Tagging another user who would find the original tweet relevant, funny, or interesting, thereby expanding the conversation.",
+    "example_original_tweet": "This new sci-fi show is amazing!",
+    "example_reply": "@bestie this is so us, we need to watch this ASAP!"
+  },
+  {
+    "category": "Conversation Starter",
+    "reply_name": "The Did We Just Become Best Friends",
+    "description": "Expressing an instant, humorous connection with the original poster based on a shared opinion or experience.",
+    "example_original_tweet": "My life philosophy is that there's no such thing as too much garlic.",
+    "example_reply": "Did we just become best friends?!"
+  },
+  {
+    "category": "Conversation Starter",
+    "reply_name": "The What Happened Next",
+    "description": "Expressing curiosity about the outcome of a situation.",
+    "example_original_tweet": "So I accidentally sent that email to my boss instead of my friend...",
+    "example_reply": "Oh no! What happened next?"
+  },
+  {
+    "category": "Conversation Starter",
+    "reply_name": "The Debate Starter",
+    "description": "Posing a thought-provoking question related to the tweet to spark discussion.",
+    "example_original_tweet": "Coffee shops are the best place to work.",
+    "example_reply": "Interesting! Do you find the background noise helps or hurts your focus?"
+  },
+  {
+    "category": "Opinion & Challenge",
+    "reply_name": "The Hot Take",
+    "description": "Sharing a bold, controversial, or against-the-grain opinion to spark debate and discussion.",
+    "example_original_tweet": "What's a food everyone loves but you hate?",
+    "example_reply": "Unpopular opinion: Bacon is overrated."
+  },
+  {
+    "category": "Opinion & Challenge",
+    "reply_name": "The This You",
+    "description": "A confrontational reply that calls out perceived hypocrisy by quote-tweeting or linking to a person's past conflicting tweet.",
+    "example_original_tweet": "(User tweets: 'I hate drama.')",
+    "example_reply": "This you? [links to an old, dramatic tweet from the same user]"
+  },
+  {
+    "category": "Opinion & Challenge",
+    "reply_name": "The Contrarian View",
+    "description": "Respectfully disagreeing with the original tweet and providing a well-articulated argument to support your different perspective.",
+    "example_original_tweet": "Email marketing is dead.",
+    "example_reply": "I see your point about oversaturation, but I'd argue that highly personalized email campaigns are more effective than ever."
+  },
+  {
+    "category": "Opinion & Challenge",
+    "reply_name": "The Devil's Advocate",
+    "description": "Presenting an opposing viewpoint for the sake of argument, even if you don't necessarily believe it.",
+    "example_original_tweet": "Remote work is the future.",
+    "example_reply": "Playing devil's advocate: what about the loss of spontaneous collaboration and mentorship?"
+  },
+  {
+    "category": "Opinion & Challenge",
+    "reply_name": "The Reality Check",
+    "description": "Providing a grounding perspective to an overly optimistic or unrealistic tweet.",
+    "example_original_tweet": "Just quit your job and follow your dreams!",
+    "example_reply": "Great advice if you have 6 months of savings. Not everyone has that privilege."
+  },
+  {
+    "category": "Meta & Platform-Specific",
+    "reply_name": "The Quote Tweet in Reply",
+    "description": "Instead of a direct reply, you quote tweet it, adding your commentary above it so it appears in your own timeline as well as the replies.",
+    "example_original_tweet": "(Original Tweet to be replied to)",
+    "example_reply": "(In your own tweet) 'This. Needs. To. Be. Said. Louder. [Quote Tweeted original post appears below]'"
+  },
+  {
+    "category": "Meta & Platform-Specific",
+    "reply_name": "The Mic Drop",
+    "description": "A reply that signifies you've made a final, unanswerable point, often ending a debate.",
+    "example_original_tweet": "You've ignored all the evidence I've provided.",
+    "example_reply": "And that's on facts. *mic drop*"
+  },
+  {
+    "category": "Meta & Platform-Specific",
+    "reply_name": "The Take My Money",
+    "description": "A hyperbolic expression of strong desire for a product or service mentioned in the tweet.",
+    "example_original_tweet": "(A brand reveals a cool new product)",
+    "example_reply": "SHUT UP AND TAKE MY MONEY!"
+  },
+  {
+    "category": "Meta & Platform-Specific",
+    "reply_name": "The Wait What",
+    "description": "A reply that expresses genuine or feigned confusion, shock, or surprise at the content of a tweet.",
+    "example_original_tweet": "You can use a cheese grater to get the skin off ginger.",
+    "example_reply": "Wait... what? My life has been a lie."
+  },
+  {
+    "category": "Meta & Platform-Specific",
+    "reply_name": "The Can't Stop Laughing",
+    "description": "Expressing uncontrollable laughter, often using internet slang to show how funny you found the tweet.",
+    "example_original_tweet": "(A video of someone slipping comically on ice)",
+    "example_reply": "I'm wheezing 😂😂😂"
+  },
+  {
+    "category": "Meta & Platform-Specific",
+    "reply_name": "The Ratio",
+    "description": "A reply designed to get more likes than the original tweet, often pointing out something problematic.",
+    "example_original_tweet": "I don't tip because service workers should just get better jobs.",
+    "example_reply": "Tell me you've never worked in service without telling me you've never worked in service."
+  },
+  {
+    "category": "Meta & Platform-Specific",
+    "reply_name": "The Community Note",
+    "description": "Providing context or correction in the style of Twitter's Community Notes.",
+    "example_original_tweet": "This new law will destroy small businesses!",
+    "example_reply": "Context: The law only applies to businesses with over 500 employees. Source: [link]"
+  },
+  {
+    "category": "Emotional & Empathetic",
+    "reply_name": "The Virtual Hug",
+    "description": "Offering comfort and support through a warm, empathetic message.",
+    "example_original_tweet": "Having such a hard day today.",
+    "example_reply": "Sending you a big virtual hug. Tomorrow will be better. 💙"
+  },
+  {
+    "category": "Emotional & Empathetic",
+    "reply_name": "The Been There",
+    "description": "Expressing empathy by sharing that you've experienced something similar.",
+    "example_original_tweet": "Anxiety is really kicking my butt today.",
+    "example_reply": "Been there. Remember it's okay to not be okay. You've got this."
+  },
+  {
+    "category": "Emotional & Empathetic",
+    "reply_name": "The Validation",
+    "description": "Affirming someone's feelings or experiences as valid and important.",
+    "example_original_tweet": "Is it wrong that I'm still upset about this after a week?",
+    "example_reply": "Your feelings are valid. Healing takes time. Be kind to yourself."
+  },
+  {
+    "category": "Emotional & Empathetic",
+    "reply_name": "The Check In",
+    "description": "Following up on someone who seems to be struggling.",
+    "example_original_tweet": "Not sure how much more of this I can take.",
+    "example_reply": "Hey, checking in. How are you holding up? Here if you need to talk."
+  },
+  {
+    "category": "Analytical & Thoughtful",
+    "reply_name": "The Data Point",
+    "description": "Adding relevant statistics or data to support or challenge the tweet.",
+    "example_original_tweet": "Electric cars are the future.",
+    "example_reply": "Interesting perspective. Did you know EV sales grew 35% last year? The momentum is real."
+  },
+  {
+    "category": "Analytical & Thoughtful",
+    "reply_name": "The Nuanced Take",
+    "description": "Providing a balanced perspective that acknowledges multiple viewpoints.",
+    "example_original_tweet": "Social media is ruining society.",
+    "example_reply": "It's complicated. While it has issues, it's also connected marginalized communities and democratized information."
+  },
+  {
+    "category": "Analytical & Thoughtful",
+    "reply_name": "The Historical Context",
+    "description": "Providing historical perspective to current events or trends.",
+    "example_original_tweet": "Cancel culture is out of control.",
+    "example_reply": "Interestingly, public shaming has existed throughout history. What's new is the speed and scale."
+  },
+  {
+    "category": "Analytical & Thoughtful",
+    "reply_name": "The Systems Thinking",
+    "description": "Analyzing the broader system or structure behind an issue.",
+    "example_original_tweet": "Why is healthy food so expensive?",
+    "example_reply": "It's a complex issue involving agricultural subsidies, food deserts, and supply chain economics."
+  },
+  {
+    "category": "Playful & Flirty",
+    "reply_name": "The Smooth Operator",
+    "description": "A charming, flirtatious reply that's playful but respectful.",
+    "example_original_tweet": "Coffee is my love language.",
+    "example_reply": "Is this your way of asking me out for coffee? Because yes. ☕"
+  },
+  {
+    "category": "Playful & Flirty",
+    "reply_name": "The Wink Wink",
+    "description": "Using innuendo or double meaning in a playful way.",
+    "example_original_tweet": "I'm really good with my hands.",
+    "example_reply": "I bet you're great at... pottery. 😏"
+  },
+  {
+    "category": "Playful & Flirty",
+    "reply_name": "The Slide Into DMs",
+    "description": "Jokingly suggesting taking the conversation private.",
+    "example_original_tweet": "Looking for someone who appreciates dad jokes.",
+    "example_reply": "BRB, crafting the perfect dad joke for your DMs."
+  },
+  {
+    "category": "Professional & Networking",
+    "reply_name": "The LinkedIn Energy",
+    "description": "Responding with excessive professional enthusiasm.",
+    "example_original_tweet": "Got the job!",
+    "example_reply": "Thrilled to see you embark on this exciting new chapter! Let's connect and explore synergies!"
+  },
+  {
+    "category": "Professional & Networking",
+    "reply_name": "The Opportunity Knock",
+    "description": "Identifying a potential collaboration or business opportunity.",
+    "example_original_tweet": "Looking for a graphic designer.",
+    "example_reply": "I've worked with @amazingdesigner - their portfolio is incredible. Happy to make an intro!"
+  },
+  {
+    "category": "Professional & Networking",
+    "reply_name": "The Thought Leader",
+    "description": "Sharing industry insights or trends related to the tweet.",
+    "example_original_tweet": "Marketing is changing so fast.",
+    "example_reply": "Absolutely. The shift to AI-personalization is reshaping everything. Exciting times ahead!"
+  },
+  {
+    "category": "Supportive Community",
+    "reply_name": "The Cheerleader",
+    "description": "Enthusiastically supporting someone's goals or achievements.",
+    "example_original_tweet": "Day 1 of learning to code!",
+    "example_reply": "YES! You've got this! Can't wait to see what you build! 🚀"
+  },
+  {
+    "category": "Supportive Community",
+    "reply_name": "The Accountability Partner",
+    "description": "Offering to help someone stay on track with their goals.",
+    "example_original_tweet": "Going to try to write every day this month.",
+    "example_reply": "Love this! Want to be accountability buddies? I'm doing the same!"
+  },
+  {
+    "category": "Supportive Community",
+    "reply_name": "The Celebration",
+    "description": "Joining in to celebrate someone's success, no matter how small.",
+    "example_original_tweet": "Finally fixed that bug that's been haunting me for days!",
+    "example_reply": "VICTORY! 🎉 That feeling when the code finally works! Celebrate those wins!"
+  }
+]

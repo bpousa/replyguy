@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import OpenAI from 'openai';
 import { ReplyType } from '@/app/lib/types';
-import replyTypesData from '@/data/reply-types.json';
+import replyTypesData from '@/data/all-reply-types.json';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -84,20 +84,33 @@ export async function POST(req: NextRequest) {
 }
 
 function filterReplyTypes(responseType: string, tone: string): ReplyType[] {
-  // Simple filtering based on category mapping
+  // Map response types to relevant categories
   const categoryMap: Record<string, string[]> = {
-    agree: ['Agreement & Relatability', 'Praise & Support'],
-    disagree: ['Opinion & Challenge'],
-    neutral: ['Value & Information', 'Conversation Starter'],
-    other: ['Humor & Wit', 'Creative & Interactive'],
+    agree: ['Agreement & Relatability', 'Praise & Support', 'Supportive Community', 'Emotional & Empathetic'],
+    disagree: ['Opinion & Challenge', 'Analytical & Thoughtful'],
+    neutral: ['Value & Information', 'Conversation Starter', 'Professional & Networking', 'Analytical & Thoughtful'],
+    other: ['Humor & Wit', 'Creative & Interactive', 'Meta & Platform-Specific', 'Playful & Flirty'],
   };
 
   const relevantCategories = categoryMap[responseType] || [];
   
+  // Also consider tone for additional filtering
+  const toneCategories: Record<string, string[]> = {
+    professional: ['Professional & Networking', 'Analytical & Thoughtful', 'Value & Information'],
+    casual: ['Humor & Wit', 'Creative & Interactive', 'Agreement & Relatability'],
+    empathetic: ['Emotional & Empathetic', 'Supportive Community', 'Praise & Support'],
+    sarcastic: ['Humor & Wit', 'Opinion & Challenge', 'Meta & Platform-Specific'],
+    enthusiastic: ['Praise & Support', 'Supportive Community', 'Creative & Interactive'],
+    analytical: ['Analytical & Thoughtful', 'Value & Information', 'Opinion & Challenge'],
+  };
+
+  const toneCats = toneCategories[tone.toLowerCase()] || [];
+  const allRelevantCategories = [...new Set([...relevantCategories, ...toneCats])];
+  
   return replyTypesData
-    .filter(type => relevantCategories.includes(type.category))
-    .map(type => ({
-      id: type.reply_name.toLowerCase().replace(/\s+/g, '_'),
+    .filter((type: any) => allRelevantCategories.includes(type.category))
+    .map((type: any) => ({
+      id: type.reply_name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, ''),
       name: type.reply_name,
       category: type.category,
       pattern: type.description,
@@ -109,11 +122,22 @@ function filterReplyTypes(responseType: string, tone: string): ReplyType[] {
 }
 
 function extractTags(type: any): string[] {
-  const tags = [type.category.toLowerCase()];
-  if (type.description.includes('question')) tags.push('question');
-  if (type.description.includes('humor')) tags.push('humor');
-  if (type.description.includes('support')) tags.push('supportive');
-  return tags;
+  const tags = [type.category.toLowerCase().replace(/[^a-z0-9]/g, '_')];
+  const desc = type.description.toLowerCase();
+  
+  // Extract various tags based on description content
+  if (desc.includes('question')) tags.push('question');
+  if (desc.includes('humor') || desc.includes('funny') || desc.includes('comedic')) tags.push('humor');
+  if (desc.includes('support') || desc.includes('encourage')) tags.push('supportive');
+  if (desc.includes('sarcas')) tags.push('sarcastic');
+  if (desc.includes('empat')) tags.push('empathetic');
+  if (desc.includes('debate') || desc.includes('argument')) tags.push('debate');
+  if (desc.includes('data') || desc.includes('fact')) tags.push('informative');
+  if (desc.includes('personal')) tags.push('personal');
+  if (desc.includes('profession')) tags.push('professional');
+  if (desc.includes('emotion')) tags.push('emotional');
+  
+  return [...new Set(tags)];
 }
 
 function buildClassificationPrompt(

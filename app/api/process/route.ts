@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
     }
     
     if (process.env.NODE_ENV === 'development') {
-      console.log('Selected reply types:', selectedTypes.map(t => t.name));
+      console.log('Selected reply types:', selectedTypes.map((t: any) => t.name));
     }
 
     // Step 3: Reason about the best reply type

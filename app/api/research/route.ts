@@ -18,9 +18,18 @@ const requestSchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     // Check if Perplexity is enabled
-    if (!process.env.PERPLEXITY_API_KEY || process.env.NEXT_PUBLIC_ENABLE_PERPLEXITY === 'false') {
+    if (!process.env.PERPLEXITY_API_KEY) {
+      console.error('Perplexity API key not found');
       return NextResponse.json(
-        { error: 'Perplexity search is not enabled' },
+        { error: 'Perplexity search is not enabled - missing API key' },
+        { status: 400 }
+      );
+    }
+    
+    if (process.env.NEXT_PUBLIC_ENABLE_PERPLEXITY === 'false') {
+      console.warn('Perplexity is disabled by environment variable');
+      return NextResponse.json(
+        { error: 'Perplexity search is disabled' },
         { status: 400 }
       );
     }
@@ -29,35 +38,54 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validated = requestSchema.parse(body);
 
-    // Generate search query using GPT-3.5
+    // Generate search query using GPT-4o
     const queryPrompt = validated.guidance 
-      ? `Tweet: "${validated.originalTweet}"
-User wants to: ${validated.responseIdea}
-Guidance: ${validated.guidance}
+      ? `The user has provided specific research guidance: "${validated.guidance}"
 
-Generate a search query based on the guidance to find specific facts, statistics, or current events.
+Generate a search query that will find EXACTLY what the user requested.
+Focus on finding:
+- Recent statistics or data (2023-2024)
+- Current trends and percentages
+- Official reports or studies
+- Specific numbers and facts
+
+Make the query specific and include relevant terms like "statistics", "data", "report", "study", "percentage", "trends", "2024", etc.
+
 Search query:`
-      : `Tweet: "${validated.originalTweet}"
-User wants to: ${validated.responseIdea}
-Response type: ${validated.responseType}
+      : `Context:
+Tweet: "${validated.originalTweet}"
+User's response idea: "${validated.responseIdea}"
 
-Generate a search query to find:
-- Recent statistics or data (with dates)
-- Current events or news (last 6 months)
-- Specific facts with sources
-- Real numbers or percentages
+Generate a search query to find relevant CURRENT information, statistics, or trends about this topic.
 
-Focus on concrete, verifiable information.
+Guidelines:
+- Focus on recent data (2023-2024) to provide information beyond typical LLM knowledge cutoffs
+- Include terms that will return concrete numbers, percentages, or specific facts
+- Consider what statistics would be most relevant to the user's response idea
+- If location matters, include it (USA, global, specific cities)
+- Think broadly - could be economic data, social trends, tech stats, health data, etc.
+
+Good query patterns:
+- "[topic] statistics 2024 trends report"
+- "[topic] data percentage change 2023-2024"
+- "[topic] latest numbers study [location]"
+- "current [topic] rates statistics [year]"
+
 Search query:`;
 
     const queryCompletion = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [{ role: 'user', content: queryPrompt }],
       temperature: 0.3,
-      max_tokens: 30,
+      max_tokens: 50, // Increased for better query generation
     });
 
     const searchQuery = queryCompletion.choices[0].message.content?.trim() || '';
+    
+    console.log('=== PERPLEXITY RESEARCH DEBUG ===');
+    console.log('Original guidance:', validated.guidance);
+    console.log('Generated search query:', searchQuery);
+    console.log('Query prompt tokens used:', queryCompletion.usage);
 
     // Call Perplexity API
     const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -73,14 +101,18 @@ Search query:`;
             role: 'user',
             content: `Search for: ${searchQuery}
 
-Provide 2-3 specific facts that are:
-- Recent (include dates when possible)
-- Concrete (numbers, percentages, specific events)
-- Sourced (mention the source)
-- Relevant to the topic
+Return ONLY concrete statistics, facts, and data with specific numbers. Focus on:
+- Recent statistics (2023-2024 preferred) that would be beyond typical AI knowledge
+- Exact percentages, numbers, or measurable trends
+- Credible sources (government reports, studies, official data)
+- Current events or developments related to the topic
 
-Format each fact clearly with its source.
-Avoid generalizations or vague statements.`,
+Format your response as bullet points with specific data points. Examples:
+- "X increased/decreased by Y% in 2024 according to [Source]"
+- "[Location] reported Z [metric] as of [Date]"
+- "Study shows [specific finding with numbers]"
+
+IMPORTANT: Focus on providing factual, numerical data that directly relates to the search query. Include diverse statistics if available, not just one type of data.`,
           },
         ],
         temperature: 0.2,
@@ -95,7 +127,21 @@ Avoid generalizations or vague statements.`,
     }
 
     const perplexityData = await perplexityResponse.json();
-    const searchResults = perplexityData.choices[0].message.content || '';
+    let searchResults = perplexityData.choices[0].message.content || '';
+    
+    // Check if results contain actual statistics
+    const hasNumbers = /\d+%|\d+\s*(percent|million|thousand|billion)|\d{4}/.test(searchResults);
+    
+    if (!hasNumbers && searchResults.length > 0) {
+      // Log warning if no numbers found
+      console.warn('Perplexity returned results without concrete statistics:', searchResults);
+      searchResults = `${searchResults} [Note: Specific statistics requested but not found in search results]`;
+    }
+    
+    console.log('Perplexity raw response:', searchResults);
+    console.log('Contains numbers:', hasNumbers);
+    console.log('Results length:', searchResults.length);
+    console.log('=== END PERPLEXITY DEBUG ===');
 
     // Calculate costs - GPT-4o pricing
     const queryPromptTokens = queryCompletion.usage?.prompt_tokens || 0;

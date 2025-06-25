@@ -75,14 +75,13 @@ export async function POST(req: NextRequest) {
     // Build generation prompt
     const prompt = buildGenerationPrompt(validated, charLimit, styleInstructions, customStyleInstructions);
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Generation prompt preview:', {
-        idea: validated.responseIdea,
-        type: validated.selectedType.name,
-        hasPerplexity: !!validated.perplexityData,
-        charLimit
-      });
-    }
+    console.log('=== GENERATION INPUT DEBUG ===');
+    console.log('Has Perplexity data:', !!validated.perplexityData);
+    console.log('Perplexity data content:', validated.perplexityData || 'None');
+    console.log('Response idea:', validated.responseIdea);
+    console.log('Selected type:', validated.selectedType.name);
+    console.log('Prompt includes research section:', prompt.includes('CRITICAL RESEARCH DATA'));
+    console.log('=== END GENERATION INPUT DEBUG ===');
 
     // Call Claude 3.5 Sonnet for final generation
     const message = await anthropic.messages.create({
@@ -140,19 +139,35 @@ CRITICAL - Avoid these AI patterns:
 - MAXIMUM 1 emoji per reply (prefer zero)
 - NO excessive positivity or enthusiasm
 - NO em dashes (—) or semicolons
-- Write like you're texting a friend, not writing an essay`;
+- Write like you're texting a friend, not writing an essay
+
+EXCEPTION: When including research data/statistics, be precise with numbers and facts. Stats should sound natural, not overly formal.`;
 
   return `
 Original tweet: "${input.originalTweet}"
 
-CRITICAL - You MUST express this core message: "${input.responseIdea}"
-${input.perplexityData ? `\nIMPORTANT - Include these facts/stats in your reply: ${input.perplexityData}` : ''}
+${input.perplexityData ? `
+🚨 CRITICAL RESEARCH DATA - MUST INCLUDE IN YOUR REPLY:
+${input.perplexityData}
 
-Create a reply that:
-1. FIRST AND FOREMOST: Conveys the user's intended message above
-2. Uses the ${input.selectedType.name} pattern as a style guide
-3. Maintains ${input.tone} tone
-4. Stays under ${charLimit} characters
+The user specifically requested this factual information. You MUST incorporate these statistics/facts into your response. Make them a natural part of your reply while expressing the user's intended message.
+` : ''}
+
+Your task: Create a reply that expresses this message: "${input.responseIdea}"
+
+${input.perplexityData ? `
+REQUIREMENTS (in order of importance):
+1. Include the research data/statistics provided above
+2. Express the user's core message: "${input.responseIdea}"
+3. Make it sound natural and conversational
+4. Follow the ${input.selectedType.name} style pattern
+5. Maintain ${input.tone} tone
+6. Stay under ${charLimit} characters` : `
+REQUIREMENTS:
+1. Express the user's core message: "${input.responseIdea}"
+2. Use the ${input.selectedType.name} pattern as a style guide
+3. Maintain ${input.tone} tone
+4. Stay under ${charLimit} characters`}
 
 Style guidance:
 - Pattern: ${input.selectedType.pattern}
@@ -161,10 +176,8 @@ ${customStyleInstructions ? customStyleInstructions : styleInstructions}
 
 ${antiAIPrompt}
 
-Remember:
-- The user's message "${input.responseIdea}" is your PRIMARY goal
-- Everything else is secondary - adapt the style to fit the message, not vice versa
-- If research data was provided, it MUST be included naturally
+${input.perplexityData ? `
+⚠️ FINAL CHECK: Before writing your reply, ensure you've included the statistics/facts from the research data above. They should feel like a natural part of your response, not an afterthought.` : ''}
 
 Write the reply (just the text, no quotes):`;
 }

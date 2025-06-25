@@ -144,9 +144,11 @@ export async function POST(req: NextRequest) {
           perplexityData = researchData.data.searchResults;
           costs.perplexityQuery = researchData.data.cost;
           
-          if (process.env.NODE_ENV === 'development') {
-            console.log('Perplexity data received:', perplexityData);
-          }
+          console.log('=== PROCESS PERPLEXITY DEBUG ===');
+          console.log('Search query used:', researchData.data.searchQuery);
+          console.log('Perplexity data received:', perplexityData);
+          console.log('Data length:', perplexityData?.length || 0);
+          console.log('=== END PROCESS PERPLEXITY DEBUG ===');
         }
       } catch (error) {
         console.error('Research failed, continuing without it:', error);
@@ -219,6 +221,12 @@ export async function POST(req: NextRequest) {
       console.log('Include meme:', shouldIncludeMeme);
     }
 
+    // Log perplexity data status before generation
+    console.log('=== BEFORE GENERATION ===');
+    console.log('Has Perplexity data:', !!perplexityData);
+    console.log('Perplexity data preview:', perplexityData ? perplexityData.substring(0, 200) + '...' : 'None');
+    console.log('=== END BEFORE GENERATION ===');
+    
     // Step 4: Generate meme if needed
     let memeUrl: string | undefined;
     let memePageUrl: string | undefined;
@@ -264,11 +272,18 @@ export async function POST(req: NextRequest) {
     });
 
     if (!generateResponse.ok) {
+      const errorData = await generateResponse.json();
+      console.error('Generation failed:', errorData);
       throw new Error('Generation failed');
     }
 
     const generateData = await generateResponse.json();
     costs.generation = generateData.data.cost;
+    
+    console.log('=== FINAL GENERATION RESULT ===');
+    console.log('Generated reply includes stats:', generateData.data.reply.includes('%') || generateData.data.reply.includes('statistic'));
+    console.log('Reply preview:', generateData.data.reply.substring(0, 200) + '...');
+    console.log('=== END GENERATION RESULT ===');
 
     // Calculate total cost
     costs.total = Object.values(costs).reduce((sum, cost) => sum + cost, 0);

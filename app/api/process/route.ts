@@ -113,6 +113,18 @@ export async function POST(req: NextRequest) {
     
     let perplexityData: string | undefined;
 
+    // Log input for debugging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Process request:', {
+        tweet: validated.originalTweet.substring(0, 50) + '...',
+        idea: validated.responseIdea,
+        type: validated.responseType,
+        tone: validated.tone,
+        research: validated.needsResearch,
+        guidance: validated.perplexityGuidance
+      });
+    }
+
     // Step 1: Optional Perplexity research
     if (validated.needsResearch) {
       try {
@@ -131,6 +143,10 @@ export async function POST(req: NextRequest) {
           const researchData = await researchResponse.json();
           perplexityData = researchData.data.searchResults;
           costs.perplexityQuery = researchData.data.cost;
+          
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Perplexity data received:', perplexityData);
+          }
         }
       } catch (error) {
         console.error('Research failed, continuing without it:', error);
@@ -143,6 +159,7 @@ export async function POST(req: NextRequest) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         originalTweet: validated.originalTweet,
+        responseIdea: validated.responseIdea,
         responseType: validated.responseType,
         tone: validated.tone,
         perplexityData,
@@ -168,6 +185,10 @@ export async function POST(req: NextRequest) {
         examples: ['Here\'s something that might help...', 'One thing to consider is...']
       }];
     }
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Selected reply types:', selectedTypes.map(t => t.name));
+    }
 
     // Step 3: Reason about the best reply type
     const reasonResponse = await fetch(new URL('/api/reason', req.url), {
@@ -192,6 +213,11 @@ export async function POST(req: NextRequest) {
     const shouldIncludeMeme = reasonData.data.includeMeme;
     const memeText = reasonData.data.memeText;
     costs.reasoning = reasonData.data.cost;
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Final selected type:', selectedType.name);
+      console.log('Include meme:', shouldIncludeMeme);
+    }
 
     // Step 4: Generate meme if needed
     let memeUrl: string | undefined;

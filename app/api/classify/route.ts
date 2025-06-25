@@ -12,6 +12,7 @@ const openai = new OpenAI({
 // Request validation schema
 const requestSchema = z.object({
   originalTweet: z.string().min(1).max(500),
+  responseIdea: z.string().min(1).max(2000),
   responseType: z.enum(['agree', 'disagree', 'neutral', 'other']),
   tone: z.string(),
   perplexityData: z.string().optional(),
@@ -125,13 +126,19 @@ function buildClassificationPrompt(
 
   return `
 Given this tweet: "${input.originalTweet}"
+User wants to say: "${input.responseIdea}"
 Tone: ${input.tone}
 ${input.perplexityData ? `Additional context: ${input.perplexityData}` : ''}
 
-Select the 3 best reply patterns from these options:
+Select the 3 best reply patterns that would allow the user to naturally express their idea:
 ${candidateList}
 
-Consider which patterns best match the tone and context.
+CRITICAL: Choose patterns that best support expressing the user's intended message.
+Consider:
+1. Which patterns allow the user to say what they want?
+2. Which match the desired tone?
+3. Which fit the context?
+
 Return only the numbers of your top 3 choices, separated by commas.`;
 }
 

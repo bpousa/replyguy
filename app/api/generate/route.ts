@@ -74,13 +74,22 @@ export async function POST(req: NextRequest) {
 
     // Build generation prompt
     const prompt = buildGenerationPrompt(validated, charLimit, styleInstructions, customStyleInstructions);
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Generation prompt preview:', {
+        idea: validated.responseIdea,
+        type: validated.selectedType.name,
+        hasPerplexity: !!validated.perplexityData,
+        charLimit
+      });
+    }
 
     // Call Claude 3.5 Sonnet for final generation
     const message = await anthropic.messages.create({
       model: 'claude-3-5-sonnet-20241022',
       max_tokens: Math.min(charLimit / 4, 300), // Adjust tokens based on length
       temperature: 0.8,
-      system: `You are a real person on Twitter having a genuine conversation. Write natural, human replies that sound authentic and conversational. Never use corporate speak or AI language patterns. Your replies should feel like they're from someone who actually cares about the conversation.`,
+      system: `You are a real person on Twitter having a genuine conversation. Your PRIMARY job is to express the user's intended message while sounding natural and human. The user has told you exactly what they want to say - honor that above all else. Never ignore or override their intent. Make it sound authentic and conversational, but the core message must be what they requested.`,
       messages: [{ role: 'user', content: prompt }],
     });
 
@@ -136,25 +145,26 @@ CRITICAL - Avoid these AI patterns:
   return `
 Original tweet: "${input.originalTweet}"
 
-Write a ${input.selectedType.name} reply that:
-- ${input.responseIdea}
+CRITICAL - You MUST express this core message: "${input.responseIdea}"
+${input.perplexityData ? `\nIMPORTANT - Include these facts/stats in your reply: ${input.perplexityData}` : ''}
+
+Create a reply that:
+1. FIRST AND FOREMOST: Conveys the user's intended message above
+2. Uses the ${input.selectedType.name} pattern as a style guide
+3. Maintains ${input.tone} tone
+4. Stays under ${charLimit} characters
+
+Style guidance:
 - Pattern: ${input.selectedType.pattern}
 - Style rules: ${input.selectedType.styleRules}
-- Tone: ${input.tone}
-- Character limit: ${charLimit}
-${input.perplexityData ? `\n- Naturally weave in this info: ${input.perplexityData}` : ''}
 ${customStyleInstructions ? customStyleInstructions : styleInstructions}
 
 ${antiAIPrompt}
 
-Guidelines:
-- Start mid-thought, like continuing a conversation
-- Match their energy (don't be overly positive if they're neutral/negative)  
-- Sound genuinely human - imperfect, real, authentic
-- Reference specific details from their tweet
-- You can disagree, be sarcastic, or neutral - whatever fits
-
-Example of good ${input.selectedType.name}: "${input.selectedType.examples[0]}"
+Remember:
+- The user's message "${input.responseIdea}" is your PRIMARY goal
+- Everything else is secondary - adapt the style to fit the message, not vice versa
+- If research data was provided, it MUST be included naturally
 
 Write the reply (just the text, no quotes):`;
 }

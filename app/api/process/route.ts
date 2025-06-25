@@ -154,11 +154,19 @@ export async function POST(req: NextRequest) {
     }
 
     const classifyData = await classifyResponse.json();
-    const selectedTypes = classifyData.data.selectedTypes;
+    let selectedTypes = classifyData.data.selectedTypes;
     costs.classification = classifyData.data.cost;
 
     if (selectedTypes.length === 0) {
-      throw new Error('No suitable reply types found');
+      // Fallback to a generic reply type
+      console.warn('No suitable reply types found, using fallback');
+      selectedTypes = [{
+        id: 'helpful-tip',
+        name: 'The Helpful Tip',
+        pattern: 'Share useful advice or insights',
+        style_rules: 'Be helpful and constructive. Focus on providing value.',
+        examples: ['Here\'s something that might help...', 'One thing to consider is...']
+      }];
     }
 
     // Step 3: Reason about the best reply type

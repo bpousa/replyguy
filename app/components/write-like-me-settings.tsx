@@ -44,7 +44,9 @@ export function WriteLikeMeSettings() {
 
   const loadStyles = async () => {
     try {
-      const response = await fetch('/api/user-style');
+      const response = await fetch('/api/user-style', {
+        credentials: 'include'
+      });
       const data = await response.json();
       
       if (response.ok) {
@@ -74,6 +76,7 @@ export function WriteLikeMeSettings() {
       const response = await fetch('/api/user-style', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           name: newStyleName || 'My Style',
           sampleTweets: validSamples,
@@ -110,6 +113,7 @@ export function WriteLikeMeSettings() {
       const response = await fetch('/api/user-style', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           styleId,
           name: style.name,
@@ -137,6 +141,7 @@ export function WriteLikeMeSettings() {
       const response = await fetch('/api/user-style', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           styleId,
           isActive: true,
@@ -167,6 +172,7 @@ export function WriteLikeMeSettings() {
     try {
       const response = await fetch(`/api/user-style?styleId=${styleId}`, {
         method: 'DELETE',
+        credentials: 'include',
       });
 
       if (response.ok) {

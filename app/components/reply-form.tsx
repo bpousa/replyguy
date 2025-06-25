@@ -42,17 +42,29 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
     ...subscription.subscription_plans,
     memes_used: subscription.memes_used || 0
   } : {
-    max_tweet_length: 2000,
-    max_response_idea_length: 2000,
-    max_reply_length: 2000,
-    enable_long_replies: true,
-    enable_style_matching: true,
-    enable_perplexity_guidance: true,
-    enable_memes: true,
-    meme_limit: 50,
-    memes_used: 12,
+    max_tweet_length: 280,
+    max_response_idea_length: 500,
+    max_reply_length: 280,
+    enable_long_replies: false,
+    enable_style_matching: false,
+    enable_perplexity_guidance: false,
+    enable_memes: false,
+    meme_limit: 0,
+    memes_used: 0,
     enable_write_like_me: false
   };
+  
+  // Override meme settings based on subscription tier
+  if (subscription?.plan_id) {
+    const memeLimits: Record<string, number> = {
+      'free': 0,
+      'growth': 10,      // X Basic
+      'professional': 50, // X Pro
+      'enterprise': 100   // X Business
+    };
+    userPlan.meme_limit = memeLimits[subscription.plan_id] || 0;
+    userPlan.enable_memes = userPlan.meme_limit > 0;
+  }
   
   // Filter reply lengths based on plan
   const availableReplyLengths = REPLY_LENGTHS.filter(length => {
@@ -68,7 +80,9 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
       if (!user || !userPlan.enable_write_like_me) return;
       
       try {
-        const response = await fetch('/api/user-style');
+        const response = await fetch('/api/user-style', {
+          credentials: 'include'
+        });
         if (response.ok) {
           const data = await response.json();
           const activeStyle = data.styles?.find((s: any) => s.is_active);

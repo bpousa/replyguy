@@ -67,7 +67,7 @@ Search query:`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'pplx-7b-online',
+        model: 'sonar-small-online',
         messages: [
           {
             role: 'user',
@@ -85,6 +85,8 @@ Avoid generalizations or vague statements.`,
         ],
         temperature: 0.2,
         max_tokens: 200,
+        return_citations: true,
+        search_recency_filter: 'month',
       }),
     });
 

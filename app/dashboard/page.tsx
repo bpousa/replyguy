@@ -29,12 +29,12 @@ export default function HomePage() {
       // Get user's settings
       const { data: userData } = await supabase
         .from('users')
-        .select('daily_goal')
+        .select('daily_goal, timezone')
         .eq('id', user.id)
         .single();
         
-      if (userData?.daily_goal) {
-        setDailyGoal(userData.daily_goal);
+      if (userData) {
+        setDailyGoal(userData.daily_goal || 10);
       }
       
       // Get user with subscription info
@@ -53,11 +53,16 @@ export default function HomePage() {
           .single();
           
         if (plan) {
+          // Get current month's meme usage
+          const { data: currentUsage } = await supabase
+            .rpc('get_current_usage', { p_user_id: user.id })
+            .single() as { data: { total_replies: number; total_memes: number } | null };
+          
           setSubscription({
             plan_id: userWithSub.subscription_tier,
             subscription_plans: plan,
             status: userWithSub.subscription_status,
-            memes_used: 0 // TODO: Get from usage tracking
+            memes_used: currentUsage?.total_memes || 0
           });
         }
       }

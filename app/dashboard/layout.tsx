@@ -56,18 +56,27 @@ export default function DashboardLayout({
         
         setUser(user);
         
-        // Get user's subscription
-        const { data: sub } = await supabase
-          .from('subscriptions')
-          .select(`
-            *,
-            subscription_plans (*)
-          `)
-          .eq('user_id', user.id)
-          .eq('status', 'active')
+        // Get user's subscription from users table
+        const { data: userData } = await supabase
+          .from('users')
+          .select('subscription_tier')
+          .eq('id', user.id)
           .single();
           
-        setSubscription(sub);
+        if (userData?.subscription_tier) {
+          // Get plan details
+          const { data: plan } = await supabase
+            .from('subscription_plans')
+            .select('*')
+            .eq('id', userData.subscription_tier)
+            .single();
+            
+          if (plan) {
+            setSubscription({
+              subscription_plans: plan
+            });
+          }
+        }
       } catch (error) {
         console.error('Auth error:', error);
         router.push('/auth/login');

@@ -313,12 +313,19 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
     })
     .eq('stripe_subscription_id', subscriptionId);
 
-  // Update payment failed timestamp
+  // Get current retry count
+  const { data: currentSub } = await supabase
+    .from('subscriptions')
+    .select('payment_retry_count')
+    .eq('stripe_subscription_id', subscriptionId)
+    .single();
+
+  // Update payment failed timestamp and increment retry count
   await supabase
     .from('subscriptions')
     .update({
       payment_failed_at: new Date().toISOString(),
-      payment_retry_count: supabase.sql`COALESCE(payment_retry_count, 0) + 1`
+      payment_retry_count: (currentSub?.payment_retry_count || 0) + 1
     })
     .eq('stripe_subscription_id', subscriptionId);
 
@@ -400,7 +407,7 @@ async function handleTrialWillEnd(subscription: Stripe.Subscription) {
         userId: user.id,
         type: 'trial_ending',
         metadata: {
-          productName: subscription.items.data[0]?.description || 'Premium',
+          productName: subscription.items.data[0]?.price.nickname || 'Premium',
           trialEndDate: trialEndDate.toLocaleDateString()
         }
       })

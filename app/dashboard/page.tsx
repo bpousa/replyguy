@@ -10,6 +10,7 @@ import { DailyGoalTracker } from '@/app/components/daily-goal-tracker';
 import { createBrowserClient } from '@/app/lib/auth';
 import UpgradeModal from '@/app/components/upgrade-modal';
 import { SubscriptionStatusBanner } from '@/app/components/subscription-status-banner';
+import { PlanBadge } from '@/app/components/plan-badge';
 
 
 export default function HomePage() {
@@ -236,9 +237,10 @@ export default function HomePage() {
               ReplyGuy
             </h1>
           </div>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
+          <p className="text-lg text-gray-600 dark:text-gray-400 mb-4">
             Create authentic, human-like replies to tweets with AI
           </p>
+          <PlanBadge />
         </div>
 
         {/* Daily Goal Tracker */}

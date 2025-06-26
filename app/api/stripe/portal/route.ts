@@ -43,14 +43,20 @@ export async function POST(req: NextRequest) {
 
     if (!userData?.stripe_customer_id) {
       return NextResponse.json(
-        { error: 'No billing information found' },
-        { status: 404 }
+        { 
+          error: 'No billing information found',
+          message: 'Please complete a purchase to set up billing',
+          requiresCheckout: true
+        },
+        { status: 422 }
       );
     }
 
     // Get return URL from request or use default
     const body = await req.json().catch(() => ({}));
-    const returnUrl = body.returnUrl || `${process.env.NEXT_PUBLIC_APP_URL}/settings`;
+    const baseReturnUrl = body.returnUrl || `${process.env.NEXT_PUBLIC_APP_URL}/settings`;
+    // Add billingUpdated parameter to the return URL
+    const returnUrl = `${baseReturnUrl}${baseReturnUrl.includes('?') ? '&' : '?'}billingUpdated=1`;
 
     // Create Stripe billing portal session
     const portalSession = await stripe.billingPortal.sessions.create({

@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Switch } from './ui/switch';
 import { AlertCircle, Sparkles, RefreshCw, Lightbulb } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { UpgradeModal } from './upgrade-modal';
+import { DetailedUpgradeModal } from './upgrade-modal';
 
 interface ReplyFormProps {
   onSubmit: (input: UserInput) => Promise<void>;
@@ -448,7 +448,7 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
     </form>
 
     {/* Upgrade Modal */}
-    <UpgradeModal
+    <DetailedUpgradeModal
       isOpen={showUpgradeModal}
       onClose={() => setShowUpgradeModal(false)}
       limitType={upgradeLimitType}

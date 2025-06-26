@@ -20,7 +20,7 @@ interface UpgradeModalProps {
   }>;
 }
 
-export function UpgradeModal({
+export function DetailedUpgradeModal({
   isOpen,
   onClose,
   limitType,

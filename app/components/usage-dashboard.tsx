@@ -39,7 +39,7 @@ export function UsageDashboard({ userId }: { userId: string }) {
       // Get current usage
       const { data: currentUsage } = await supabase
         .rpc('get_current_usage', { p_user_id: userId })
-        .single();
+        .single() as { data: { total_replies: number; total_memes: number; total_suggestions: number } | null };
       
       // Get user subscription details
       const { data: userData } = await supabase
@@ -58,7 +58,21 @@ export function UsageDashboard({ userId }: { userId: string }) {
           )
         `)
         .eq('id', userId)
-        .single();
+        .single() as { 
+          data: {
+            subscription_tier: string;
+            subscriptions?: Array<{
+              status: string;
+              current_period_end: string;
+              subscription_plans: {
+                monthly_limit: number;
+                meme_limit?: number;
+                suggestion_limit: number;
+                enable_perplexity_guidance: boolean;
+              };
+            }>;
+          } | null 
+        };
       
       if (userData && currentUsage) {
         const subscription = userData.subscriptions?.[0];
@@ -142,14 +156,14 @@ export function UsageDashboard({ userId }: { userId: string }) {
     return null;
   }
 
-  const tierColors = {
+  const tierColors: Record<string, string> = {
     free: 'text-gray-600',
     growth: 'text-blue-600',
     professional: 'text-purple-600',
     enterprise: 'text-orange-600'
   };
 
-  const tierNames = {
+  const tierNames: Record<string, string> = {
     free: 'Free',
     growth: 'X Basic',
     professional: 'X Pro',

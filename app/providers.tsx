@@ -1,11 +1,14 @@
 'use client';
 
 import { PlanProvider } from './contexts/plan-context';
+import { AuthProvider } from './contexts/auth-context';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <PlanProvider>
-      {children}
-    </PlanProvider>
+    <AuthProvider>
+      <PlanProvider>
+        {children}
+      </PlanProvider>
+    </AuthProvider>
   );
 }

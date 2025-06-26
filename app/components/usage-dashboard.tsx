@@ -37,9 +37,23 @@ export function UsageDashboard({ userId }: { userId: string }) {
       setLoading(true);
       
       // Get current usage
-      const { data: currentUsage } = await supabase
-        .rpc('get_current_usage', { p_user_id: userId })
-        .single() as { data: { total_replies: number; total_memes: number; total_suggestions: number } | null };
+      let currentUsage = null;
+      try {
+        const { data } = await supabase
+          .rpc('get_current_usage', { p_user_id: userId })
+          .single()
+          .throwOnError() as { data: { total_replies: number; total_memes: number; total_suggestions: number } | null };
+        
+        currentUsage = data;
+        console.log('[usage-dashboard] Current usage fetched:', currentUsage);
+      } catch (usageError) {
+        console.error('[usage-dashboard] Failed to fetch current usage:', {
+          error: usageError,
+          userId,
+          message: usageError instanceof Error ? usageError.message : 'Unknown error'
+        });
+        // Continue with null usage - UI will show zeros
+      }
       
       // Get user subscription details
       const { data: userData } = await supabase

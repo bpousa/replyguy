@@ -61,15 +61,28 @@ export default function HomePage() {
       if (userWithSub?.subscriptions?.[0]) {
         const subscription = userWithSub.subscriptions[0];
         // Get current month's meme usage
-        const { data: currentUsage } = await supabase
-          .rpc('get_current_usage', { p_user_id: user.id })
-          .single() as { data: { total_replies: number; total_memes: number } | null };
+        let memesUsed = 0;
+        try {
+          const { data: currentUsage } = await supabase
+            .rpc('get_current_usage', { p_user_id: user.id })
+            .single()
+            .throwOnError() as { data: { total_replies: number; total_memes: number } | null };
           
+          memesUsed = currentUsage?.total_memes || 0;
+          console.log('[dashboard] Current usage fetched:', currentUsage);
+        } catch (usageError) {
+          console.error('[dashboard] Failed to fetch current usage:', {
+            error: usageError,
+            userId: user.id,
+            message: usageError instanceof Error ? usageError.message : 'Unknown error'
+          });
+        }
+        
         setSubscription({
           plan_id: subscription.plan_id,
           subscription_plans: subscription.subscription_plans,
           status: subscription.status,
-          memes_used: currentUsage?.total_memes || 0
+          memes_used: memesUsed
         });
       }
       
@@ -188,19 +201,39 @@ export default function HomePage() {
       });
       
       // Update daily count using the database function
-      await supabase.rpc('track_daily_usage', {
-        p_user_id: user.id,
-        p_usage_type: 'reply',
-        p_count: 1
-      });
+      try {
+        await supabase.rpc('track_daily_usage', {
+          p_user_id: user.id,
+          p_usage_type: 'reply',
+          p_count: 1
+        }).throwOnError();
+        
+        console.log('[dashboard] ✅ Reply usage tracked successfully');
+      } catch (trackError) {
+        console.error('[dashboard] Failed to track reply usage:', {
+          error: trackError,
+          userId: user.id,
+          message: trackError instanceof Error ? trackError.message : 'Unknown error'
+        });
+      }
       
       // Also track meme if generated
       if (result.data.memeUrl) {
-        await supabase.rpc('track_daily_usage', {
-          p_user_id: user.id,
-          p_usage_type: 'meme',
-          p_count: 1
-        });
+        try {
+          await supabase.rpc('track_daily_usage', {
+            p_user_id: user.id,
+            p_usage_type: 'meme',
+            p_count: 1
+          }).throwOnError();
+          
+          console.log('[dashboard] ✅ Meme usage tracked successfully');
+        } catch (trackError) {
+          console.error('[dashboard] Failed to track meme usage:', {
+            error: trackError,
+            userId: user.id,
+            message: trackError instanceof Error ? trackError.message : 'Unknown error'
+          });
+        }
       }
       
       setDailyCount(prev => prev + 1);

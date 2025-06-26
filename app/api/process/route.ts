@@ -89,11 +89,25 @@ export async function POST(req: NextRequest) {
       const activeSubscription = userData?.subscriptions?.[0];
       if (activeSubscription?.subscription_plans) {
         // Get current usage
-        const { data: usage } = await supabase
-          .rpc('get_current_usage', { p_user_id: userId })
-          .single() as { data: CurrentUsage | null };
+        let currentUsage: CurrentUsage = { total_replies: 0, total_memes: 0 };
+        try {
+          const { data: usage } = await supabase
+            .rpc('get_current_usage', { p_user_id: userId })
+            .single()
+            .throwOnError() as { data: CurrentUsage | null };
           
-        const currentUsage: CurrentUsage = usage || { total_replies: 0, total_memes: 0 };
+          if (usage) {
+            currentUsage = usage;
+            console.log('[process] Current usage fetched:', currentUsage);
+          }
+        } catch (usageError) {
+          console.error('[process] Failed to fetch current usage:', {
+            error: usageError,
+            userId,
+            message: usageError instanceof Error ? usageError.message : 'Unknown error'
+          });
+          // Continue with default zero usage
+        }
         const plan = activeSubscription.subscription_plans;
         
         // Check reply limit
@@ -419,24 +433,25 @@ export async function POST(req: NextRequest) {
     // Track usage for authenticated users
     if (userId !== 'anonymous') {
       try {
-        // Track the reply generation
-        const { error: trackError } = await supabase
+        // Track the reply generation - use throwOnError to ensure we know if it fails
+        await supabase
           .rpc('track_daily_usage', {
             p_user_id: userId,
             p_usage_type: 'reply',
             p_count: 1
-          });
+          })
+          .throwOnError();
 
-        if (trackError) {
-          console.error('Failed to track usage:', trackError);
-        } else {
-          console.log('✅ Usage tracked successfully');
-        }
-
+        console.log('[process] ✅ Usage tracked successfully for user:', userId);
+        
         // Meme tracking is already handled in the /api/meme endpoint
       } catch (trackingError) {
-        // Don't fail the request if tracking fails
-        console.error('Usage tracking error:', trackingError);
+        // Log the full error for debugging but don't fail the request
+        console.error('[process] Failed to track usage:', {
+          error: trackingError,
+          userId,
+          message: trackingError instanceof Error ? trackingError.message : 'Unknown error'
+        });
       }
     }
 

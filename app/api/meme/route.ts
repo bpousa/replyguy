@@ -99,14 +99,25 @@ export async function POST(req: NextRequest) {
 
     // Track meme usage if user is authenticated
     if (validated.userId && validated.userId !== 'anonymous') {
-      const cookieStore = cookies();
-      const supabase = createServerClient(cookieStore);
+      try {
+        const cookieStore = cookies();
+        const supabase = createServerClient(cookieStore);
 
-      await supabase.rpc('track_daily_usage', {
-        p_user_id: validated.userId,
-        p_usage_type: 'meme',
-        p_count: 1
-      });
+        await supabase.rpc('track_daily_usage', {
+          p_user_id: validated.userId,
+          p_usage_type: 'meme',
+          p_count: 1
+        }).throwOnError();
+        
+        console.log('[meme] ✅ Usage tracked successfully for user:', validated.userId);
+      } catch (trackingError) {
+        // Log the full error for debugging but don't fail the request
+        console.error('[meme] Failed to track usage:', {
+          error: trackingError,
+          userId: validated.userId,
+          message: trackingError instanceof Error ? trackingError.message : 'Unknown error'
+        });
+      }
     }
 
     return NextResponse.json({

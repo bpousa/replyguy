@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createBrowserClient } from '@/app/lib/auth';
+import { useAuth } from '@/app/contexts/auth-context';
 import { toast } from 'react-hot-toast';
 import { Loader2, CheckCircle, CreditCard } from 'lucide-react';
 import { Button } from '@/app/components/ui/button';
@@ -11,10 +11,8 @@ export default function CheckoutRedirectPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const planId = searchParams.get('plan');
-  const supabase = createBrowserClient();
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, status, refreshSession } = useAuth();
   const [isRedirecting, setIsRedirecting] = useState(false);
-  const [user, setUser] = useState<any>(null);
 
   const planNames: Record<string, string> = {
     'growth': 'X Basic',
@@ -23,60 +21,24 @@ export default function CheckoutRedirectPage() {
   };
 
   useEffect(() => {
-    checkAuth();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const checkAuth = async () => {
-    // First try to get the session (this might be more reliable than getUser right after email confirmation)
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError || !session) {
-      console.log('No session found, attempting to refresh...');
+    // If not authenticated after a few seconds, redirect to login
+    if (status === 'unauthenticated') {
+      const timer = setTimeout(() => {
+        console.log('[checkout-redirect] No auth after timeout, redirecting to login');
+        router.push('/auth/login?error=session_required');
+      }, 3000);
       
-      // Try to refresh the session
-      const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
-      
-      if (refreshError || !refreshedSession) {
-        console.error('Failed to establish session:', refreshError);
-        // Give it one more attempt with a delay
-        setTimeout(async () => {
-          const { data: { user: retryUser } } = await supabase.auth.getUser();
-          if (!retryUser) {
-            router.push('/auth/login?error=session_failed');
-          } else {
-            setUser(retryUser);
-            setIsLoading(false);
-          }
-        }, 1000);
-        return;
-      }
-      
-      setUser(refreshedSession.user);
-      setIsLoading(false);
-      return;
+      return () => clearTimeout(timer);
     }
-    
-    setUser(session.user);
-    setIsLoading(false);
-  };
+  }, [status, router]);
 
   const proceedToCheckout = async () => {
     if (!planId || !user) return;
 
     setIsRedirecting(true);
+    console.log('[checkout-redirect] Starting checkout for plan:', planId);
 
     try {
-      // Ensure we have a fresh session before making the API call
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session) {
-        console.log('No session before checkout, attempting refresh...');
-        const { error: refreshError } = await supabase.auth.refreshSession();
-        if (refreshError) {
-          throw new Error('Authentication failed. Please sign in again.');
-        }
-      }
-      
       const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -87,18 +49,17 @@ export default function CheckoutRedirectPage() {
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const error = await response.json();
+        console.error('[checkout-redirect] Checkout failed:', response.status, data);
         
-        // If we get a 401, try one more time with a fresh session
+        // If we get a 401, try refreshing the session once
         if (response.status === 401) {
-          console.log('Got 401, attempting to refresh session and retry...');
-          await supabase.auth.refreshSession();
+          console.log('[checkout-redirect] Got 401, refreshing session...');
+          await refreshSession();
           
-          // Wait a moment for cookies to propagate
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          // Retry the request
+          // Retry the request after refresh
           const retryResponse = await fetch('/api/stripe/checkout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -110,32 +71,49 @@ export default function CheckoutRedirectPage() {
           });
           
           if (retryResponse.ok) {
-            const { url } = await retryResponse.json();
-            window.location.href = url;
+            const retryData = await retryResponse.json();
+            console.log('[checkout-redirect] Retry successful, redirecting to Stripe');
+            window.location.href = retryData.url;
             return;
           }
+          
+          const retryError = await retryResponse.json();
+          throw new Error(retryError.error || 'Authentication failed after refresh');
         }
         
-        throw new Error(error.error || 'Failed to create checkout session');
+        throw new Error(data.error || 'Failed to create checkout session');
       }
-
-      const { url } = await response.json();
       
+      console.log('[checkout-redirect] Checkout successful, redirecting to Stripe');
       // Redirect to Stripe checkout
-      window.location.href = url;
+      window.location.href = data.url;
     } catch (error) {
-      console.error('Checkout error:', error);
+      console.error('[checkout-redirect] Checkout error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to start checkout');
       setIsRedirecting(false);
     }
   };
 
-  if (isLoading) {
+  // Show loading state while auth is being determined
+  if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-purple-600 mx-auto mb-4" />
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">Verifying your session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Wait for authentication
+  if (status === 'unauthenticated') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-purple-600 mx-auto mb-4" />
+          <p className="text-gray-600">Establishing session...</p>
+          <p className="text-sm text-gray-500 mt-2">This may take a few seconds after email verification.</p>
         </div>
       </div>
     );

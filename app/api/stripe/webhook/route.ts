@@ -190,6 +190,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     .update({ stripe_customer_id: customerId })
     .eq('id', userId);
 
+  // Calculate billing anchor day
+  const billingAnchorDay = new Date(subscription.current_period_start * 1000).getDate();
+
   // Create subscription record
   await supabase
     .from('subscriptions')
@@ -200,6 +203,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       status: subscription.status,
       current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
       current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+      billing_anchor_day: billingAnchorDay,
     });
 }
 

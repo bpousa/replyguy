@@ -62,12 +62,22 @@ export async function GET(req: NextRequest) {
     }
 
     // Get current usage
-    const { data: usage, error: usageError } = await supabase
-      .rpc('get_current_usage', { p_user_id: user.id })
-      .single();
-
-    if (usageError) {
-      console.error('Error fetching usage:', usageError);
+    let usage = null;
+    try {
+      const { data } = await supabase
+        .rpc('get_current_usage', { p_user_id: user.id })
+        .single()
+        .throwOnError();
+      
+      usage = data;
+      console.log('[user-plan] Usage fetched successfully:', usage);
+    } catch (usageError) {
+      console.error('[user-plan] Failed to fetch usage:', {
+        error: usageError,
+        userId: user.id,
+        message: usageError instanceof Error ? usageError.message : 'Unknown error'
+      });
+      // Continue with null usage - don't fail the whole request
     }
 
     // Handle case where user has no subscription (free plan)

@@ -37,10 +37,25 @@ export const createServerClient = (cookieStore: ReturnType<typeof cookies>) => {
         },
         set(name: string, value: string, options: any) {
           try {
-            cookieStore.set({ name, value, ...options });
+            // Ensure proper cookie options for auth cookies
+            const cookieOptions = {
+              name,
+              value,
+              ...options,
+              // Override with secure defaults for auth cookies
+              ...(name.includes('sb-') || name.includes('supabase') ? {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax' as const,
+                path: '/',
+              } : {})
+            };
+            
+            console.log(`[auth] Setting cookie: ${name}, httpOnly: ${cookieOptions.httpOnly}, secure: ${cookieOptions.secure}`);
+            cookieStore.set(cookieOptions);
           } catch (error) {
             // This is critical for auth - log the full error
-            console.error('Failed to set cookie:', name, error);
+            console.error('[auth] Failed to set cookie:', name, error);
             // Re-throw if it's an auth cookie as this will break authentication
             if (name.includes('sb-') || name.includes('supabase')) {
               throw error;

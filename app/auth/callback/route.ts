@@ -5,84 +5,98 @@ import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
-  const plan = requestUrl.searchParams.get('plan');
   const code = requestUrl.searchParams.get('code');
   const next = requestUrl.searchParams.get('next');
-  const cookieStore = cookies();
+  const plan = requestUrl.searchParams.get('plan');
+  const error = requestUrl.searchParams.get('error');
+  const error_description = requestUrl.searchParams.get('error_description');
   
-  // Log for debugging
-  console.log('[auth-callback] Hit with URL:', request.url);
-  console.log('[auth-callback] Plan:', plan, 'Code:', !!code, 'Next:', next);
-  
-  // Create supabase client with proper cookie handling
-  const supabase = createServerClient(cookieStore);
-  
-  // Exchange code for session if present
-  if (code) {
-    try {
-      console.log('[auth-callback] Exchanging code for session...');
-      const { data: { session }, error } = await supabase.auth.exchangeCodeForSession(code);
-      
-      if (error) {
-        console.error('[auth-callback] Failed to exchange code:', error);
-        return NextResponse.redirect(new URL('/auth/error?message=Invalid%20authentication%20code', requestUrl.origin));
-      }
-      
-      if (!session) {
-        console.error('[auth-callback] No session returned from code exchange');
-        return NextResponse.redirect(new URL('/auth/error?message=Failed%20to%20establish%20session', requestUrl.origin));
-      }
-      
-      console.log('[auth-callback] Code exchanged successfully for user:', session.user.email);
-      
-      // Verify the session is accessible
-      const { data: { session: verifiedSession } } = await supabase.auth.getSession();
-      if (!verifiedSession) {
-        console.error('[auth-callback] Session not accessible after exchange');
-        return NextResponse.redirect(new URL('/auth/error?message=Session%20verification%20failed', requestUrl.origin));
-      }
-      
-      // Determine redirect URL based on whether a plan was selected
-      let redirectUrl: URL;
-      if (plan) {
-        // User selected a plan, go to checkout
-        redirectUrl = new URL('/auth/checkout-redirect', requestUrl.origin);
-        redirectUrl.searchParams.set('plan', plan);
-      } else if (next) {
-        // Redirect to the 'next' URL if provided
-        redirectUrl = new URL(next, requestUrl.origin);
-      } else {
-        // Default to confirmation page
-        redirectUrl = new URL('/auth/confirm', requestUrl.origin);
-      }
-      
-      console.log('[auth-callback] Redirecting to:', redirectUrl.toString());
-      
-      // Create response with explicit cookie forwarding
-      const response = NextResponse.redirect(redirectUrl);
-      
-      // Forward all cookies from the cookie store to ensure they're set
-      cookieStore.getAll().forEach((cookie) => {
-        if (cookie.name.includes('sb-') || cookie.name.includes('supabase')) {
-          response.cookies.set({
-            name: cookie.name,
-            value: cookie.value,
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            path: '/'
-          });
-        }
-      });
-      
-      return response;
-    } catch (error) {
-      console.error('[auth-callback] Unexpected error:', error);
-      return NextResponse.redirect(new URL('/auth/error?message=Authentication%20failed', requestUrl.origin));
-    }
+  console.log('[auth-callback] Received callback:', {
+    code: !!code,
+    next,
+    plan,
+    error,
+    error_description,
+    url: request.url
+  });
+
+  // Handle Supabase auth errors
+  if (error) {
+    console.error('[auth-callback] Auth error:', error, error_description);
+    return NextResponse.redirect(
+      new URL(`/auth/error?message=${encodeURIComponent(error_description || error)}`, requestUrl.origin)
+    );
   }
-  
-  // No code parameter - this shouldn't happen in normal flow
-  console.error('[auth-callback] No code parameter provided');
-  return NextResponse.redirect(new URL('/auth/error?message=Missing%20authentication%20code', requestUrl.origin));
+
+  if (!code) {
+    console.error('[auth-callback] No code parameter provided');
+    return NextResponse.redirect(
+      new URL('/auth/error?message=Missing%20authentication%20code', requestUrl.origin)
+    );
+  }
+
+  try {
+    const cookieStore = cookies();
+    const supabase = createServerClient(cookieStore);
+    
+    // Exchange the code for a session
+    console.log('[auth-callback] Exchanging code for session...');
+    const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+    
+    if (exchangeError) {
+      console.error('[auth-callback] Exchange error:', exchangeError);
+      return NextResponse.redirect(
+        new URL(`/auth/error?message=${encodeURIComponent(exchangeError.message)}`, requestUrl.origin)
+      );
+    }
+    
+    if (!data.session) {
+      console.error('[auth-callback] No session in exchange response');
+      return NextResponse.redirect(
+        new URL('/auth/error?message=No%20session%20created', requestUrl.origin)
+      );
+    }
+    
+    console.log('[auth-callback] Session created successfully:', {
+      userId: data.session.user.id,
+      email: data.session.user.email,
+      expiresAt: data.session.expires_at
+    });
+    
+    // The session should now be automatically stored in cookies by Supabase
+    // Let's verify it's accessible
+    const { data: { session: verifySession } } = await supabase.auth.getSession();
+    
+    if (!verifySession) {
+      console.error('[auth-callback] Session verification failed - session not persisted');
+      // Don't fail here, continue with redirect as cookies might propagate
+    } else {
+      console.log('[auth-callback] Session verified successfully');
+    }
+    
+    // Determine where to redirect
+    let redirectTo = '/dashboard'; // Default destination
+    
+    if (plan) {
+      // User selected a plan during signup
+      redirectTo = `/auth/checkout-redirect?plan=${plan}`;
+    } else if (next) {
+      // Explicit next destination
+      redirectTo = next;
+    } else if (data.session.user.user_metadata?.selected_plan) {
+      // Plan was stored in user metadata during signup
+      redirectTo = `/auth/checkout-redirect?plan=${data.session.user.user_metadata.selected_plan}`;
+    }
+    
+    console.log('[auth-callback] Redirecting to:', redirectTo);
+    
+    // Create redirect response - let Supabase handle cookie setting
+    return NextResponse.redirect(new URL(redirectTo, requestUrl.origin));
+    
+  } catch (error) {
+    console.error('[auth-callback] Unexpected error:', error);
+    return NextResponse.redirect(
+      new URL('/auth/error?message=Authentication%20failed', requestUrl.origin)
+    );
+  }
 }

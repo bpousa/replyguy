@@ -56,7 +56,37 @@ export default function SignupPage() {
         return;
       }
 
-      // Show success message
+      // In development mode, try to sign in immediately (email auto-confirmed)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[signup] Development mode - attempting immediate sign-in...');
+        
+        // Wait a moment for the account to be created
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Try to sign in
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+        
+        if (signInData?.session) {
+          console.log('[signup] Auto sign-in successful in dev mode');
+          toast.success('Account created and signed in! (Dev mode)');
+          
+          // Redirect based on plan selection
+          if (planId) {
+            router.push(`/auth/checkout-redirect?plan=${planId}`);
+          } else {
+            router.push('/dashboard');
+          }
+          return;
+        } else {
+          console.log('[signup] Auto sign-in failed in dev mode:', signInError);
+          // Fall through to normal email confirmation flow
+        }
+      }
+
+      // Show success message for production
       setShowSuccess(true);
       toast.success('Account created successfully! Please check your email to confirm.');
     } catch (error: any) {

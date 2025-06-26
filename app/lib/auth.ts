@@ -17,7 +17,15 @@ export const createBrowserClient = () => {
           storageKey: 'replyguy-auth',
           storage: typeof window !== 'undefined' ? window.localStorage : undefined,
           autoRefreshToken: true,
-          detectSessionInUrl: true
+          detectSessionInUrl: true,
+          // Additional options for better session handling
+          flowType: 'pkce',
+          debug: process.env.NODE_ENV === 'development'
+        },
+        global: {
+          headers: {
+            'x-client-info': 'replyguy-web'
+          }
         }
       }
     );
@@ -48,6 +56,8 @@ export const createServerClient = (cookieStore: ReturnType<typeof cookies>) => {
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: 'lax' as const,
                 path: '/',
+                // Add max age for better persistence (7 days)
+                maxAge: 60 * 60 * 24 * 7
               } : {})
             };
             

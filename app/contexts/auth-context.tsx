@@ -6,8 +6,11 @@ import { User } from '@supabase/supabase-js';
 
 interface AuthContextValue {
   user: User | null;
-  status: 'loading' | 'authenticated' | 'unauthenticated';
+  status: 'loading' | 'authenticated' | 'unauthenticated' | 'error';
+  error: Error | null;
   refreshSession: () => Promise<void>;
+  checkSession: () => Promise<void>;
+  isSessionExpired: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -15,7 +18,51 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [status, setStatus] = useState<AuthContextValue['status']>('loading');
+  const [error, setError] = useState<Error | null>(null);
+  const [isSessionExpired, setIsSessionExpired] = useState(false);
   const supabase = createBrowserClient();
+
+  const checkSession = async () => {
+    try {
+      console.log('[auth-context] Checking session...');
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('[auth-context] Session error:', sessionError);
+        setError(sessionError);
+        setStatus('error');
+        return;
+      }
+      
+      if (session) {
+        // Check if session is expired
+        const expiresAt = new Date(session.expires_at || 0).getTime();
+        const now = new Date().getTime();
+        const isExpired = expiresAt < now;
+        
+        setIsSessionExpired(isExpired);
+        
+        if (isExpired) {
+          console.log('[auth-context] Session expired, attempting refresh...');
+          await refreshSession();
+        } else {
+          console.log('[auth-context] Valid session found for:', session.user.email);
+          setUser(session.user);
+          setStatus('authenticated');
+          setError(null);
+        }
+      } else {
+        console.log('[auth-context] No session found');
+        setUser(null);
+        setStatus('unauthenticated');
+        setError(null);
+      }
+    } catch (err) {
+      console.error('[auth-context] Unexpected error checking session:', err);
+      setError(err instanceof Error ? err : new Error('Session check failed'));
+      setStatus('error');
+    }
+  };
 
   const refreshSession = async () => {
     try {
@@ -26,6 +73,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('[auth-context] Failed to refresh session:', error);
         setUser(null);
         setStatus('unauthenticated');
+        setError(error);
+        setIsSessionExpired(true);
         return;
       }
       
@@ -33,44 +82,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('[auth-context] Session refreshed for:', session.user.email);
         setUser(session.user);
         setStatus('authenticated');
+        setError(null);
+        setIsSessionExpired(false);
       } else {
         setUser(null);
         setStatus('unauthenticated');
+        setError(null);
+        setIsSessionExpired(false);
       }
     } catch (error) {
       console.error('[auth-context] Unexpected error refreshing session:', error);
       setUser(null);
-      setStatus('unauthenticated');
+      setStatus('error');
+      setError(error instanceof Error ? error : new Error('Session refresh failed'));
     }
   };
 
   useEffect(() => {
     // Initial session check
-    const checkSession = async () => {
-      try {
-        console.log('[auth-context] Checking initial session...');
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('[auth-context] Error getting session:', error);
-          setStatus('unauthenticated');
-          return;
-        }
-        
-        if (session) {
-          console.log('[auth-context] Initial session found for:', session.user.email);
-          setUser(session.user);
-          setStatus('authenticated');
-        } else {
-          console.log('[auth-context] No initial session found');
-          setStatus('unauthenticated');
-        }
-      } catch (error) {
-        console.error('[auth-context] Unexpected error checking session:', error);
-        setStatus('unauthenticated');
-      }
-    };
-
     checkSession();
 
     // Subscribe to auth state changes
@@ -81,11 +110,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           setUser(session?.user || null);
           setStatus(session ? 'authenticated' : 'unauthenticated');
+          setError(null);
+          setIsSessionExpired(false);
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setStatus('unauthenticated');
+          setError(null);
+          setIsSessionExpired(false);
         } else if (event === 'USER_UPDATED') {
           setUser(session?.user || null);
+        } else if (event === 'PASSWORD_RECOVERY') {
+          // Handle password recovery flow
+          console.log('[auth-context] Password recovery initiated');
         }
       }
     );
@@ -98,7 +134,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value: AuthContextValue = {
     user,
     status,
+    error,
     refreshSession,
+    checkSession,
+    isSessionExpired,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

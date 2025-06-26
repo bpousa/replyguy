@@ -6,11 +6,19 @@ import { createServerClient } from '@/app/lib/auth';
 import { cookies } from 'next/headers';
 
 interface UserData {
-  subscription_tier: string;
-  subscription_plans?: {
-    monthly_limit: number;
-    suggestion_limit: number;
-  };
+  id: string;
+  email: string;
+  subscriptions?: Array<{
+    status: string;
+    plan_id: string;
+    subscription_plans: {
+      id: string;
+      monthly_limit: number;
+      suggestion_limit: number;
+      meme_limit: number;
+      enable_memes: boolean;
+    };
+  }>;
 }
 
 interface CurrentUsage {
@@ -56,28 +64,45 @@ export async function POST(req: NextRequest) {
     
     // Check user limits
     if (userId !== 'anonymous') {
-      // Get user data with plan
+      // Get user data with active subscription and plan
       const { data: userData } = await supabase
         .from('users')
-        .select('*, subscription_plans!subscription_tier(*)')
+        .select(`
+          id,
+          email,
+          subscriptions!inner(
+            status,
+            plan_id,
+            subscription_plans!inner(
+              id,
+              monthly_limit,
+              suggestion_limit,
+              meme_limit,
+              enable_memes
+            )
+          )
+        `)
         .eq('id', userId)
+        .eq('subscriptions.status', 'active')
         .single() as { data: UserData | null };
         
-      if (userData?.subscription_plans) {
+      const activeSubscription = userData?.subscriptions?.[0];
+      if (activeSubscription?.subscription_plans) {
         // Get current usage
         const { data: usage } = await supabase
           .rpc('get_current_usage', { p_user_id: userId })
           .single() as { data: CurrentUsage | null };
           
         const currentUsage: CurrentUsage = usage || { total_replies: 0, total_memes: 0 };
+        const plan = activeSubscription.subscription_plans;
         
         // Check reply limit
-        if (currentUsage.total_replies >= userData.subscription_plans.monthly_limit) {
+        if (currentUsage.total_replies >= plan.monthly_limit) {
           return NextResponse.json(
             { 
               error: 'Monthly reply limit reached',
               upgradeUrl: '/pricing',
-              limit: userData.subscription_plans.monthly_limit,
+              limit: plan.monthly_limit,
               used: currentUsage.total_replies
             },
             { status: 429 }
@@ -85,24 +110,21 @@ export async function POST(req: NextRequest) {
         }
         
         // Check meme limit if meme requested
-        const memeLimits: Record<string, number> = {
-          'free': 0,
-          'growth': 10,      // X Basic
-          'professional': 50, // X Pro
-          'enterprise': 100   // X Business
-        };
-        const memeLimit = memeLimits[userData.subscription_tier] || 0;
-        
-        if (validated.includeMeme && currentUsage.total_memes >= memeLimit) {
-          return NextResponse.json(
-            { 
-              error: 'Monthly meme limit reached',
-              upgradeUrl: '/pricing',
-              limit: memeLimit,
-              used: currentUsage.total_memes
-            },
-            { status: 429 }
-          );
+        if (validated.includeMeme && plan.enable_memes) {
+          if (currentUsage.total_memes >= plan.meme_limit) {
+            return NextResponse.json(
+              { 
+                error: 'Monthly meme limit reached',
+                upgradeUrl: '/pricing',
+                limit: plan.meme_limit,
+                used: currentUsage.total_memes
+              },
+              { status: 429 }
+            );
+          }
+        } else if (validated.includeMeme && !plan.enable_memes) {
+          // User requested meme but their plan doesn't support it
+          validated.includeMeme = false;
         }
       }
     }
@@ -270,17 +292,29 @@ export async function POST(req: NextRequest) {
     if (shouldIncludeMeme && memeText && validated.includeMeme) {
       console.log('🎨 Attempting meme generation:', { shouldIncludeMeme, memeText, includeMeme: validated.includeMeme });
       
-      if (!imgflipService.isConfigured()) {
-        console.warn('⚠️ Meme generation skipped: Imgflip credentials not configured');
-      } else {
-        try {
-          const memeResult = await imgflipService.generateAutomeme(memeText);
-          memeUrl = memeResult.url;
-          memePageUrl = memeResult.pageUrl;
+      try {
+        const memeResponse = await fetch(new URL('/api/meme', req.url), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: memeText,
+            userId: userId
+          }),
+        });
+
+        if (memeResponse.ok) {
+          const memeData = await memeResponse.json();
+          memeUrl = memeData.url;
+          memePageUrl = memeData.pageUrl;
           console.log('✅ Meme generated successfully:', { memeUrl, memePageUrl });
-        } catch (error) {
-          console.error('❌ Meme generation failed:', error);
+        } else {
+          const error = await memeResponse.json();
+          console.warn('⚠️ Meme generation failed:', error);
+          // Don't fail the entire request if meme generation fails
         }
+      } catch (error) {
+        console.error('❌ Meme generation error:', error);
+        // Don't fail the entire request if meme generation fails
       }
     } else {
       console.log('🚫 Meme generation skipped:', { shouldIncludeMeme, memeText, includeMeme: validated.includeMeme });
@@ -387,15 +421,8 @@ export async function POST(req: NextRequest) {
         const { error: trackError } = await supabase
           .rpc('track_daily_usage', {
             p_user_id: userId,
-            p_action_type: 'reply_generated',
-            p_metadata: {
-              reply_type: result.replyType,
-              included_meme: !!memeUrl,
-              used_research: researchDataReceived,
-              cost: costs.total,
-              processing_time: processingTime,
-              request_id: requestId
-            }
+            p_usage_type: 'reply',
+            p_count: 1
           });
 
         if (trackError) {
@@ -404,25 +431,7 @@ export async function POST(req: NextRequest) {
           console.log('✅ Usage tracked successfully');
         }
 
-        // Track meme generation separately if included
-        if (memeUrl) {
-          const { error: memeTrackError } = await supabase
-            .rpc('track_daily_usage', {
-              p_user_id: userId,
-              p_action_type: 'meme_generated',
-              p_metadata: {
-                meme_url: memeUrl,
-                meme_page_url: memePageUrl,
-                request_id: requestId
-              }
-            });
-
-          if (memeTrackError) {
-            console.error('Failed to track meme usage:', memeTrackError);
-          } else {
-            console.log('✅ Meme usage tracked successfully');
-          }
-        }
+        // Meme tracking is already handled in the /api/meme endpoint
       } catch (trackingError) {
         // Don't fail the request if tracking fails
         console.error('Usage tracking error:', trackingError);

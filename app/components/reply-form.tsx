@@ -54,18 +54,6 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
     enable_write_like_me: false
   };
   
-  // Override meme settings based on subscription tier
-  if (subscription?.plan_id) {
-    const memeLimits: Record<string, number> = {
-      'free': 0,
-      'growth': 10,      // X Basic
-      'professional': 50, // X Pro
-      'enterprise': 100   // X Business
-    };
-    userPlan.meme_limit = memeLimits[subscription.plan_id] || 0;
-    userPlan.enable_memes = userPlan.meme_limit > 0;
-  }
-  
   // Filter reply lengths based on plan
   const availableReplyLengths = REPLY_LENGTHS.filter(length => {
     if (!userPlan.enable_long_replies && length.value !== 'short') {

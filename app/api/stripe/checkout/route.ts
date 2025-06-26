@@ -1,21 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { stripeService } from '@/app/lib/services/stripe.service';
+import { createServerClient } from '@/app/lib/auth';
+import { cookies } from 'next/headers';
 
 const requestSchema = z.object({
-  planId: z.enum(['basic', 'pro', 'business', 'enterprise']),
+  planId: z.enum(['free', 'pro', 'business']),
   billingCycle: z.enum(['monthly', 'yearly']).optional().default('monthly'),
   email: z.string().email().optional(),
 });
 
 export async function POST(req: NextRequest) {
+  const cookieStore = cookies();
+  const supabase = createServerClient(cookieStore);
+  
   try {
+    // Get authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Please sign in to subscribe' },
+        { status: 401 }
+      );
+    }
+    
     const body = await req.json();
     const { planId, billingCycle, email } = requestSchema.parse(body);
 
-    // TODO: Get authenticated user ID
-    // For now, create a temporary user ID
-    const userId = 'temp-' + Date.now();
+    const userId = user.id;
+    const userEmail = email || user.email;
 
     // Get the plan details
     const plans = await stripeService.getSubscriptionPlans();
@@ -46,7 +60,7 @@ export async function POST(req: NextRequest) {
       priceId,
       successUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?success=true`,
       cancelUrl: `${process.env.NEXT_PUBLIC_APP_URL}/pricing?canceled=true`,
-      customerEmail: email,
+      customerEmail: userEmail,
       billingCycle,
     });
 

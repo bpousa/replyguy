@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/app/components/ui/dialog';
 import { Button } from '@/app/components/ui/button';
 import { ArrowRight, Zap, Check } from 'lucide-react';
@@ -119,6 +120,123 @@ export function UpgradeModal({
               Maybe Later
             </Button>
           </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Simple upgrade modal for rate limit errors
+interface SimpleUpgradeModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  message?: string;
+}
+
+export default function UpgradeModal({ isOpen, onClose, message }: SimpleUpgradeModalProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const handleUpgrade = async (planId: string) => {
+    try {
+      setIsLoading(true);
+      
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planId,
+          billingCycle: 'monthly'
+        })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create checkout session');
+      }
+      
+      const { url } = await response.json();
+      window.location.href = url;
+    } catch (error) {
+      console.error('Checkout error:', error);
+      alert(error instanceof Error ? error.message : 'Failed to start checkout');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const plans = [
+    {
+      id: 'pro',
+      name: 'Pro',
+      price: '$19',
+      features: [
+        '500 replies per month',
+        '50 memes per month',
+        'Advanced AI suggestions',
+        'Priority support'
+      ]
+    },
+    {
+      id: 'business',
+      name: 'Business',
+      price: '$49',
+      features: [
+        '2,000 replies per month',
+        '200 memes per month',
+        'Real-time Perplexity search',
+        'Premium support'
+      ]
+    }
+  ];
+  
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            <Zap className="w-5 h-5 text-purple-600" />
+            Upgrade Your Plan
+          </DialogTitle>
+          <DialogDescription className="text-base mt-2">
+            {message || "You've reached your plan limits. Upgrade to continue creating amazing content!"}
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="mt-6 space-y-4">
+          {plans.map((plan) => (
+            <div key={plan.id} className="border rounded-lg p-4 hover:border-purple-500 transition-colors">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <h3 className="font-semibold text-lg">{plan.name}</h3>
+                  <p className="text-2xl font-bold text-purple-600 mt-1">{plan.price}/month</p>
+                </div>
+              </div>
+              
+              <ul className="space-y-2 mb-4">
+                {plan.features.map((feature, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                    <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+              
+              <Button 
+                className="w-full" 
+                onClick={() => handleUpgrade(plan.id)}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Loading...' : `Upgrade to ${plan.name}`}
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          ))}
+        </div>
+        
+        <div className="mt-4 text-center">
+          <Button variant="ghost" onClick={onClose} disabled={isLoading}>
+            Maybe Later
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

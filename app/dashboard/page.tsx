@@ -8,6 +8,7 @@ import { Sparkles } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { DailyGoalTracker } from '@/app/components/daily-goal-tracker';
 import { createBrowserClient } from '@/app/lib/auth';
+import UpgradeModal from '@/app/components/upgrade-modal';
 
 
 export default function HomePage() {
@@ -18,6 +19,8 @@ export default function HomePage() {
   const [dailyGoal, setDailyGoal] = useState(10);
   const [user, setUser] = useState<any>(null);
   const [subscription, setSubscription] = useState<any>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState('');
   
   useEffect(() => {
     const loadUserData = async () => {
@@ -157,6 +160,16 @@ export default function HomePage() {
       const result = await response.json();
 
       if (!response.ok) {
+        // Check for rate limit errors
+        if (response.status === 429 && result.limit && result.used) {
+          const limitType = result.error.includes('meme') ? 'meme' : 'reply';
+          setUpgradeMessage(
+            `You've reached your monthly ${limitType} limit (${result.used}/${result.limit}). ` +
+            `Upgrade your plan to continue creating amazing content!`
+          );
+          setShowUpgradeModal(true);
+          return;
+        }
         throw new Error(result.error || 'Failed to generate reply');
       }
 
@@ -315,6 +328,13 @@ export default function HomePage() {
           </p>
         </footer>
       </div>
+      
+      {/* Upgrade Modal */}
+      <UpgradeModal 
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        message={upgradeMessage}
+      />
     </main>
   );
 }

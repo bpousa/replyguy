@@ -380,6 +380,55 @@ export async function POST(req: NextRequest) {
     
     console.log(`🏁 ============ END PIPELINE [${requestId}] ============\n`);
 
+    // Track usage for authenticated users
+    if (userId !== 'anonymous') {
+      try {
+        // Track the reply generation
+        const { error: trackError } = await supabase
+          .rpc('track_daily_usage', {
+            p_user_id: userId,
+            p_action_type: 'reply_generated',
+            p_metadata: {
+              reply_type: result.replyType,
+              included_meme: !!memeUrl,
+              used_research: researchDataReceived,
+              cost: costs.total,
+              processing_time: processingTime,
+              request_id: requestId
+            }
+          });
+
+        if (trackError) {
+          console.error('Failed to track usage:', trackError);
+        } else {
+          console.log('✅ Usage tracked successfully');
+        }
+
+        // Track meme generation separately if included
+        if (memeUrl) {
+          const { error: memeTrackError } = await supabase
+            .rpc('track_daily_usage', {
+              p_user_id: userId,
+              p_action_type: 'meme_generated',
+              p_metadata: {
+                meme_url: memeUrl,
+                meme_page_url: memePageUrl,
+                request_id: requestId
+              }
+            });
+
+          if (memeTrackError) {
+            console.error('Failed to track meme usage:', memeTrackError);
+          } else {
+            console.log('✅ Meme usage tracked successfully');
+          }
+        }
+      } catch (trackingError) {
+        // Don't fail the request if tracking fails
+        console.error('Usage tracking error:', trackingError);
+      }
+    }
+
     return NextResponse.json({ data: result });
   } catch (error) {
     if (error instanceof z.ZodError) {

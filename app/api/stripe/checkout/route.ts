@@ -15,15 +15,18 @@ export async function POST(req: NextRequest) {
   const supabase = createServerClient(cookieStore);
   
   try {
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Get authenticated session first (more reliable than getUser)
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
-    if (authError || !user) {
+    if (sessionError || !session) {
+      console.error('No session found:', sessionError);
       return NextResponse.json(
         { error: 'Please sign in to subscribe' },
         { status: 401 }
       );
     }
+    
+    const user = session.user;
     
     const body = await req.json();
     const { planId, billingCycle, email } = requestSchema.parse(body);

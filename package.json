@@ -11,6 +11,8 @@
     "type-check": "tsc --noEmit",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed": "tsx scripts/seed-reply-types.ts",
+    "replay-webhooks": "tsx scripts/replay-webhooks.ts",
+    "sync-stripe-plans": "tsx scripts/sync-stripe-plans.ts",
     "test": "jest --watch",
     "test:ci": "jest"
   },

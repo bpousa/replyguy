@@ -27,12 +27,36 @@ export default function CheckoutRedirectPage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const checkAuth = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push('/auth/login');
+    // First try to get the session (this might be more reliable than getUser right after email confirmation)
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !session) {
+      console.log('No session found, attempting to refresh...');
+      
+      // Try to refresh the session
+      const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError || !refreshedSession) {
+        console.error('Failed to establish session:', refreshError);
+        // Give it one more attempt with a delay
+        setTimeout(async () => {
+          const { data: { user: retryUser } } = await supabase.auth.getUser();
+          if (!retryUser) {
+            router.push('/auth/login?error=session_failed');
+          } else {
+            setUser(retryUser);
+            setIsLoading(false);
+          }
+        }, 1000);
+        return;
+      }
+      
+      setUser(refreshedSession.user);
+      setIsLoading(false);
       return;
     }
-    setUser(user);
+    
+    setUser(session.user);
     setIsLoading(false);
   };
 

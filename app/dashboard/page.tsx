@@ -9,6 +9,7 @@ import { toast } from 'react-hot-toast';
 import { DailyGoalTracker } from '@/app/components/daily-goal-tracker';
 import { createBrowserClient } from '@/app/lib/auth';
 import UpgradeModal from '@/app/components/upgrade-modal';
+import { SubscriptionStatusBanner } from '@/app/components/subscription-status-banner';
 
 
 export default function HomePage() {
@@ -224,6 +225,9 @@ export default function HomePage() {
   return (
     <main className="min-h-screen py-12 px-4">
       <div className="max-w-6xl mx-auto">
+        {/* Subscription Status Banner */}
+        <SubscriptionStatusBanner />
+        
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-3 mb-4">

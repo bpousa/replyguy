@@ -29,49 +29,123 @@ export async function POST(req: NextRequest) {
 
   let event: Stripe.Event;
 
-  try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    );
-  } catch (err) {
-    console.error('Webhook signature verification failed:', err);
-    return NextResponse.json(
-      { error: 'Invalid signature' },
-      { status: 400 }
-    );
+  // Handle replay requests (from our replay script)
+  if (signature === 'replay') {
+    try {
+      event = JSON.parse(body) as Stripe.Event;
+      console.log(`Processing replay event ${event.id} (${event.type})`);
+    } catch (err) {
+      console.error('Failed to parse replay event:', err);
+      return NextResponse.json(
+        { error: 'Invalid replay event format' },
+        { status: 400 }
+      );
+    }
+  } else {
+    // Normal webhook signature verification
+    try {
+      event = stripe.webhooks.constructEvent(
+        body,
+        signature,
+        process.env.STRIPE_WEBHOOK_SECRET!
+      );
+    } catch (err) {
+      console.error('Webhook signature verification failed:', err);
+      return NextResponse.json(
+        { error: 'Invalid signature' },
+        { status: 400 }
+      );
+    }
   }
 
   try {
-    switch (event.type) {
-      case 'checkout.session.completed': {
-        const session = event.data.object as Stripe.Checkout.Session;
-        await handleCheckoutCompleted(session);
-        break;
+    // Check if event has already been processed (idempotency)
+    const { data: existingEvent } = await supabase
+      .from('stripe_webhook_events')
+      .select('id')
+      .eq('stripe_event_id', event.id)
+      .single();
+
+    if (existingEvent) {
+      console.log(`Event ${event.id} already processed, skipping`);
+      return NextResponse.json({ received: true, skipped: true });
+    }
+
+    // Store the event
+    const { error: insertError } = await supabase
+      .from('stripe_webhook_events')
+      .insert({
+        stripe_event_id: event.id,
+        event_type: event.type,
+        payload: event,
+        status: 'processing'
+      });
+
+    if (insertError && insertError.code !== '23505') { // Ignore unique constraint violation
+      console.error('Failed to store webhook event:', insertError);
+    }
+
+    // Process the event
+    try {
+      switch (event.type) {
+        case 'checkout.session.completed': {
+          const session = event.data.object as Stripe.Checkout.Session;
+          await handleCheckoutCompleted(session);
+          break;
+        }
+
+        case 'customer.subscription.created':
+        case 'customer.subscription.updated': {
+          const subscription = event.data.object as Stripe.Subscription;
+          await handleSubscriptionUpdate(subscription, event.type);
+          break;
+        }
+
+        case 'customer.subscription.deleted': {
+          const subscription = event.data.object as Stripe.Subscription;
+          await handleSubscriptionDeleted(subscription);
+          break;
+        }
+
+        case 'invoice.payment_failed': {
+          const invoice = event.data.object as Stripe.Invoice;
+          await handlePaymentFailed(invoice);
+          break;
+        }
+
+        case 'invoice.payment_succeeded': {
+          const invoice = event.data.object as Stripe.Invoice;
+          await handlePaymentSucceeded(invoice);
+          break;
+        }
+
+        case 'customer.subscription.trial_will_end': {
+          const subscription = event.data.object as Stripe.Subscription;
+          await handleTrialWillEnd(subscription);
+          break;
+        }
+
+        default:
+          console.log(`Unhandled event type: ${event.type}`);
       }
 
-      case 'customer.subscription.created':
-      case 'customer.subscription.updated': {
-        const subscription = event.data.object as Stripe.Subscription;
-        await handleSubscriptionUpdate(subscription);
-        break;
-      }
+      // Mark event as processed
+      await supabase
+        .from('stripe_webhook_events')
+        .update({ status: 'processed' })
+        .eq('stripe_event_id', event.id);
 
-      case 'customer.subscription.deleted': {
-        const subscription = event.data.object as Stripe.Subscription;
-        await handleSubscriptionDeleted(subscription);
-        break;
-      }
-
-      case 'invoice.payment_failed': {
-        const invoice = event.data.object as Stripe.Invoice;
-        await handlePaymentFailed(invoice);
-        break;
-      }
-
-      default:
-        console.log(`Unhandled event type: ${event.type}`);
+    } catch (processingError) {
+      // Mark event as failed
+      await supabase
+        .from('stripe_webhook_events')
+        .update({ 
+          status: 'failed',
+          error_message: processingError instanceof Error ? processingError.message : 'Unknown error'
+        })
+        .eq('stripe_event_id', event.id);
+      
+      throw processingError;
     }
 
     return NextResponse.json({ received: true });
@@ -129,7 +203,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     });
 }
 
-async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
+async function handleSubscriptionUpdate(subscription: Stripe.Subscription, eventType: string) {
   const priceId = subscription.items.data[0].price.id;
 
   // Find the plan based on price ID
@@ -144,17 +218,73 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     return;
   }
 
-  // Update subscription record
+  // Get current subscription state for logging
+  const { data: currentSub } = await supabase
+    .from('subscriptions')
+    .select('id, status, plan_id')
+    .eq('stripe_subscription_id', subscription.id)
+    .single();
+
+  // Calculate billing anchor day
+  const billingAnchorDay = new Date(subscription.current_period_start * 1000).getDate();
+
+  // Update subscription record with all relevant fields
+  const updateData: any = {
+    plan_id: plan.id,
+    status: subscription.status,
+    current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+    current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+    cancel_at_period_end: subscription.cancel_at_period_end,
+    billing_anchor_day: billingAnchorDay,
+  };
+
+  // Handle trial period
+  if (subscription.trial_end) {
+    updateData.trialing_until = new Date(subscription.trial_end * 1000).toISOString();
+  }
+
+  // Clear payment failed flag if status is active
+  if (subscription.status === 'active') {
+    updateData.payment_failed_at = null;
+    updateData.payment_retry_count = 0;
+  }
+
   await supabase
     .from('subscriptions')
-    .update({
-      plan_id: plan.id,
-      status: subscription.status,
-      current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-      current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-      cancel_at_period_end: subscription.cancel_at_period_end,
-    })
+    .update(updateData)
     .eq('stripe_subscription_id', subscription.id);
+
+  // Log state change if there was a change
+  if (currentSub && (currentSub.status !== subscription.status || currentSub.plan_id !== plan.id)) {
+    await supabase
+      .from('subscription_state_log')
+      .insert({
+        subscription_id: currentSub.id,
+        stripe_subscription_id: subscription.id,
+        old_status: currentSub.status,
+        new_status: subscription.status,
+        old_plan_id: currentSub.plan_id,
+        new_plan_id: plan.id,
+        metadata: { event_type: eventType, price_id: priceId }
+      });
+  }
+
+  // Handle specific status transitions
+  if (subscription.status === 'past_due' || subscription.status === 'canceled' || subscription.status === 'unpaid') {
+    // Update user's subscription_tier to free immediately
+    const { data: sub } = await supabase
+      .from('subscriptions')
+      .select('user_id')
+      .eq('stripe_subscription_id', subscription.id)
+      .single();
+
+    if (sub) {
+      await supabase
+        .from('users')
+        .update({ subscription_tier: 'free' })
+        .eq('id', sub.user_id);
+    }
+  }
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
@@ -183,5 +313,97 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
     })
     .eq('stripe_subscription_id', subscriptionId);
 
-  // TODO: Send email notification to user
+  // Update payment failed timestamp
+  await supabase
+    .from('subscriptions')
+    .update({
+      payment_failed_at: new Date().toISOString(),
+      payment_retry_count: supabase.sql`COALESCE(payment_retry_count, 0) + 1`
+    })
+    .eq('stripe_subscription_id', subscriptionId);
+
+  // Send email notification to user
+  const { data: user } = await supabase
+    .from('users')
+    .select('id')
+    .eq('stripe_customer_id', invoice.customer)
+    .single();
+    
+  if (user) {
+    const nextRetryDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000); // 3 days from now
+    
+    await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/stripe/send-payment-notification`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: user.id,
+        type: 'payment_failed',
+        metadata: {
+          productName: invoice.lines.data[0]?.description || 'Premium',
+          retryDate: nextRetryDate.toLocaleDateString()
+        }
+      })
+    });
+  }
+}
+
+async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
+  const subscriptionId = invoice.subscription as string;
+
+  if (!subscriptionId) {
+    return;
+  }
+
+  // Clear payment failed status
+  await supabase
+    .from('subscriptions')
+    .update({
+      status: 'active',
+      payment_failed_at: null,
+      payment_retry_count: 0
+    })
+    .eq('stripe_subscription_id', subscriptionId);
+
+  // Restore user's subscription tier
+  const { data: sub } = await supabase
+    .from('subscriptions')
+    .select('user_id, plan_id')
+    .eq('stripe_subscription_id', subscriptionId)
+    .single();
+
+  if (sub) {
+    await supabase
+      .from('users')
+      .update({ subscription_tier: sub.plan_id })
+      .eq('id', sub.user_id);
+  }
+}
+
+async function handleTrialWillEnd(subscription: Stripe.Subscription) {
+  // This gives us a 3-day warning before trial ends
+  console.log(`Trial ending soon for subscription ${subscription.id}`);
+  
+  // Get user from customer ID
+  const { data: user } = await supabase
+    .from('users')
+    .select('id')
+    .eq('stripe_customer_id', subscription.customer)
+    .single();
+    
+  if (user && subscription.trial_end) {
+    const trialEndDate = new Date(subscription.trial_end * 1000);
+    
+    await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/stripe/send-payment-notification`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: user.id,
+        type: 'trial_ending',
+        metadata: {
+          productName: subscription.items.data[0]?.description || 'Premium',
+          trialEndDate: trialEndDate.toLocaleDateString()
+        }
+      })
+    });
+  }
 }

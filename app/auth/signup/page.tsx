@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createBrowserClient } from '@/app/lib/auth';
 import { toast } from 'react-hot-toast';
@@ -12,6 +12,8 @@ const supabase = createBrowserClient();
 
 export default function SignupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const planId = searchParams.get('plan');
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,7 +40,10 @@ export default function SignupPage() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${window.location.origin}/auth/callback${planId ? `?plan=${planId}` : ''}`,
+          data: {
+            selected_plan: planId || 'free'
+          }
         },
       });
 

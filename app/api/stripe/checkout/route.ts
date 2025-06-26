@@ -5,7 +5,7 @@ import { createServerClient } from '@/app/lib/auth';
 import { cookies } from 'next/headers';
 
 const requestSchema = z.object({
-  planId: z.enum(['free', 'pro', 'business']),
+  planId: z.enum(['free', 'growth', 'professional', 'enterprise']),
   billingCycle: z.enum(['monthly', 'yearly']).optional().default('monthly'),
   email: z.string().email().optional(),
 });

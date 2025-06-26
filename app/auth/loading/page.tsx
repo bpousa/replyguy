@@ -1,13 +1,15 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@/app/lib/auth';
 import { Loader2 } from 'lucide-react';
 
 // This page gives Supabase time to establish the session after magic link
 export default function AuthLoadingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const planId = searchParams.get('plan');
   const supabase = createBrowserClient();
 
   useEffect(() => {
@@ -20,8 +22,14 @@ export default function AuthLoadingPage() {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session) {
-        // Session found, redirect to dashboard
-        router.push('/dashboard');
+        // Session found
+        if (planId && planId !== 'free') {
+          // User selected a paid plan, redirect to checkout confirmation page
+          router.push(`/auth/checkout-redirect?plan=${planId}`);
+        } else {
+          // No plan selected or free plan, go to dashboard
+          router.push('/dashboard');
+        }
       } else if (attempts >= maxAttempts) {
         // No session after multiple attempts
         router.push('/auth/login?error=session_not_found');

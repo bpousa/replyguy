@@ -21,7 +21,7 @@ export function SubscriptionStatusBanner() {
 
   useEffect(() => {
     checkSubscriptionStatus();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const checkSubscriptionStatus = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -103,7 +103,7 @@ export function SubscriptionStatusBanner() {
             <div className="mt-2 text-sm text-yellow-700">
               <p>
                 Your subscription will end on {new Date(subscription.current_period_end).toLocaleDateString()}.
-                You'll lose access to premium features after this date.
+                You&apos;ll lose access to premium features after this date.
               </p>
             </div>
             <div className="mt-4 flex items-center gap-3">
@@ -138,7 +138,7 @@ export function SubscriptionStatusBanner() {
             </h3>
             <div className="mt-2 text-sm text-gray-700">
               <p>
-                Your subscription has been canceled. You're now on the free plan with limited features.
+                Your subscription has been canceled. You&apos;re now on the free plan with limited features.
               </p>
             </div>
             <div className="mt-4 flex items-center gap-3">

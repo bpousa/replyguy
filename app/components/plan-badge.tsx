@@ -26,12 +26,13 @@ export function PlanBadge() {
   const isActive = subscription?.status === 'active' || subscription?.status === 'trialing';
 
   // Plan name mapping
-  const planDisplayName = {
+  const planNameMap: Record<string, string> = {
     free: 'Free Plan',
     growth: 'X Basic',
     professional: 'X Pro',
     enterprise: 'X Business',
-  }[plan.id] || plan.name;
+  };
+  const planDisplayName = planNameMap[plan.id] || plan.name;
 
   // Determine badge variant and icon
   let variant: 'default' | 'secondary' | 'destructive' | 'outline' = 'default';

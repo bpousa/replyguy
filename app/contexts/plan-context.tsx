@@ -203,5 +203,5 @@ export function usePlan() {
 
 // Utility function to refresh plan data globally (for webhooks)
 export function refreshGlobalPlan() {
-  mutate((key) => typeof key === 'string' && key.startsWith('/api/user/plan'));
+  mutate((key: any) => typeof key === 'string' && key.startsWith('/api/user/plan'));
 }

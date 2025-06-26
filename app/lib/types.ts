@@ -2,6 +2,26 @@
 
 export type ResponseType = 'agree' | 'disagree' | 'neutral' | 'other';
 
+// Subscription and plan types
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  monthly_limit: number;
+  suggestion_limit: number;
+  meme_limit: number;
+  max_reply_length: number;
+  enable_memes: boolean;
+  enable_style_matching: boolean;
+  enable_write_like_me: boolean;
+  enable_perplexity_guidance: boolean;
+  enable_long_replies: boolean;
+  enable_sentiment_boost: boolean;
+  enable_humor_boost: boolean;
+  enable_formality_control: boolean;
+  stripe_price_id_monthly?: string;
+  stripe_price_id_yearly?: string;
+}
+
 export type Tone = 
   | 'humorous' 
   | 'professional' 

@@ -30,7 +30,7 @@ export function UsageDashboard({ userId }: { userId: string }) {
 
   useEffect(() => {
     loadUsageStats();
-  }, [userId]);
+  }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadUsageStats = async () => {
     try {

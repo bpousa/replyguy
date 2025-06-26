@@ -41,7 +41,7 @@ export default function AuthLoadingPage() {
     
     // Start checking after a short delay
     setTimeout(checkSession, 1000);
-  }, [router, supabase]);
+  }, [router, supabase, planId]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">

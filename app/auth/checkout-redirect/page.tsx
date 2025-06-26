@@ -24,7 +24,7 @@ export default function CheckoutRedirectPage() {
 
   useEffect(() => {
     checkAuth();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -97,7 +97,7 @@ export default function CheckoutRedirectPage() {
             Complete Your {planNames[planId || ''] || 'Selected'} Plan Setup
           </h3>
           <p className="text-gray-600 text-sm mb-4">
-            You're one step away from unlocking powerful AI-powered reply generation.
+            You&apos;re one step away from unlocking powerful AI-powered reply generation.
           </p>
           <ul className="text-left text-sm text-gray-600 mb-6 space-y-2">
             <li>✓ Secure payment via Stripe</li>

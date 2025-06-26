@@ -310,7 +310,9 @@ export async function POST(req: NextRequest) {
         } else {
           const error = await memeResponse.json();
           console.warn('⚠️ Meme generation failed:', error);
+          console.warn('Failed meme text was:', memeText);
           // Don't fail the entire request if meme generation fails
+          // This is a nice-to-have feature, not critical
         }
       } catch (error) {
         console.error('❌ Meme generation error:', error);

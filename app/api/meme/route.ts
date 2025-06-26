@@ -128,6 +128,17 @@ export async function POST(req: NextRequest) {
           { status: 402 }
         );
       }
+      if (error.message.includes('Could not find a suitable meme template')) {
+        // Log the failed text for debugging
+        console.log('Failed meme text:', validated.text);
+        return NextResponse.json(
+          { 
+            error: 'Could not generate meme for this text',
+            suggestion: 'The AI needs to use more meme-friendly phrases'
+          },
+          { status: 422 }
+        );
+      }
     }
 
     console.error('Meme generation error:', error);

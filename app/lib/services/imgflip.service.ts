@@ -64,6 +64,10 @@ export class ImgflipService {
 
       if (!data.success) {
         console.error('Imgflip automeme error:', data.error_message);
+        // If no meme was predicted, provide a more helpful error
+        if (data.error_message?.includes('No meme was predicted')) {
+          throw new Error('Could not find a suitable meme template for this text. Try a more meme-worthy phrase!');
+        }
         throw new Error(data.error_message || 'Failed to generate meme');
       }
 

@@ -113,20 +113,25 @@ export async function POST(req: NextRequest) {
     
     let perplexityData: string | undefined;
 
-    // Log input for debugging
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Process request:', {
-        tweet: validated.originalTweet.substring(0, 50) + '...',
-        idea: validated.responseIdea,
-        type: validated.responseType,
-        tone: validated.tone,
-        research: validated.needsResearch,
-        guidance: validated.perplexityGuidance
-      });
-    }
+    // Create unique request ID for tracking
+    const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    console.log(`\n🚀 ============ REPLYGUY PIPELINE START [${requestId}] ============`);
+    console.log('📥 INPUT:', {
+      userId: userId !== 'anonymous' ? userId : 'anonymous',
+      tweet: validated.originalTweet,
+      responseIdea: validated.responseIdea,
+      responseType: validated.responseType,
+      tone: validated.tone,
+      needsResearch: validated.needsResearch,
+      researchGuidance: validated.perplexityGuidance,
+      replyLength: validated.replyLength,
+      timestamp: new Date().toISOString()
+    });
 
     // Step 1: Optional Perplexity research
     if (validated.needsResearch) {
+      console.log(`\n🔍 ============ STEP 1: RESEARCH [${requestId}] ============`);
       try {
         const researchResponse = await fetch(new URL('/api/research', req.url), {
           method: 'POST',
@@ -144,18 +149,32 @@ export async function POST(req: NextRequest) {
           perplexityData = researchData.data.searchResults;
           costs.perplexityQuery = researchData.data.cost;
           
-          console.log('=== PROCESS PERPLEXITY DEBUG ===');
-          console.log('Search query used:', researchData.data.searchQuery);
-          console.log('Perplexity data received:', perplexityData);
-          console.log('Data length:', perplexityData?.length || 0);
-          console.log('=== END PROCESS PERPLEXITY DEBUG ===');
+          console.log('✅ RESEARCH SUCCESS:');
+          console.log('📊 Search Query Generated:', researchData.data.searchQuery);
+          console.log('📈 Perplexity Results:', perplexityData);
+          console.log('💰 Research Cost:', costs.perplexityQuery);
+          console.log(`📏 Data Length: ${perplexityData?.length || 0} characters`);
+        } else {
+          console.log('❌ RESEARCH FAILED - HTTP Status:', researchResponse.status);
         }
       } catch (error) {
-        console.error('Research failed, continuing without it:', error);
+        console.error('❌ RESEARCH ERROR:', error);
       }
+    } else {
+      console.log(`\n🚫 ============ STEP 1: RESEARCH SKIPPED [${requestId}] ============`);
     }
 
     // Step 2: Classify and select reply types
+    console.log(`\n🏷️ ============ STEP 2: CLASSIFICATION [${requestId}] ============`);
+    console.log('📤 Classification Input:', {
+      originalTweet: validated.originalTweet,
+      responseIdea: validated.responseIdea,
+      responseType: validated.responseType,
+      tone: validated.tone,
+      hasPerplexityData: !!perplexityData,
+      perplexityDataPreview: perplexityData ? perplexityData.substring(0, 100) + '...' : 'None'
+    });
+    
     const classifyResponse = await fetch(new URL('/api/classify', req.url), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -169,6 +188,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!classifyResponse.ok) {
+      console.log('❌ CLASSIFICATION FAILED - HTTP Status:', classifyResponse.status);
       throw new Error('Classification failed');
     }
 
@@ -177,8 +197,7 @@ export async function POST(req: NextRequest) {
     costs.classification = classifyData.data.cost;
 
     if (selectedTypes.length === 0) {
-      // Fallback to a generic reply type
-      console.warn('No suitable reply types found, using fallback');
+      console.warn('⚠️ No suitable reply types found, using fallback');
       selectedTypes = [{
         id: 'helpful-tip',
         name: 'The Helpful Tip',
@@ -188,11 +207,22 @@ export async function POST(req: NextRequest) {
       }];
     }
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Selected reply types:', selectedTypes.map((t: any) => t.name));
-    }
+    console.log('✅ CLASSIFICATION SUCCESS:');
+    console.log('🎯 Selected Reply Types:', selectedTypes.map((t: any) => t.name));
+    console.log('💰 Classification Cost:', costs.classification);
 
     // Step 3: Reason about the best reply type
+    console.log(`\n🧠 ============ STEP 3: REASONING [${requestId}] ============`);
+    console.log('📤 Reasoning Input:', {
+      originalTweet: validated.originalTweet,
+      responseIdea: validated.responseIdea,
+      tone: validated.tone,
+      selectedTypesCount: selectedTypes.length,
+      selectedTypeNames: selectedTypes.map((t: any) => t.name),
+      hasPerplexityData: !!perplexityData,
+      enableMemes: validated.includeMeme && imgflipService.isConfigured()
+    });
+    
     const reasonResponse = await fetch(new URL('/api/reason', req.url), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -207,6 +237,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (!reasonResponse.ok) {
+      console.log('❌ REASONING FAILED - HTTP Status:', reasonResponse.status);
       throw new Error('Reasoning failed');
     }
 
@@ -216,45 +247,50 @@ export async function POST(req: NextRequest) {
     const memeText = reasonData.data.memeText;
     costs.reasoning = reasonData.data.cost;
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Final selected type:', selectedType.name);
-      console.log('Include meme:', shouldIncludeMeme);
-    }
+    console.log('✅ REASONING SUCCESS:');
+    console.log('🎯 Final Selected Type:', selectedType.name);
+    console.log('🎭 Include Meme:', shouldIncludeMeme);
+    console.log('💰 Reasoning Cost:', costs.reasoning);
+    if (memeText) console.log('🖼️ Meme Text:', memeText);
 
-    // Log perplexity data status before generation
-    console.log('=== BEFORE GENERATION ===');
-    console.log('Has Perplexity data:', !!perplexityData);
-    console.log('Perplexity data preview:', perplexityData ? perplexityData.substring(0, 200) + '...' : 'None');
-    console.log('=== END BEFORE GENERATION ===');
-    
-    // Step 4: Generate meme if needed
+    // Step 4: Generate meme if needed (before main generation)
+    console.log(`\n🖼️ ============ STEP 4: MEME GENERATION [${requestId}] ============`);
     let memeUrl: string | undefined;
     let memePageUrl: string | undefined;
     
     if (shouldIncludeMeme && memeText && validated.includeMeme) {
-      console.log('Attempting meme generation:', { shouldIncludeMeme, memeText, includeMeme: validated.includeMeme });
+      console.log('🎨 Attempting meme generation:', { shouldIncludeMeme, memeText, includeMeme: validated.includeMeme });
       
       if (!imgflipService.isConfigured()) {
-        console.warn('Meme generation skipped: Imgflip credentials not configured');
+        console.warn('⚠️ Meme generation skipped: Imgflip credentials not configured');
       } else {
         try {
-          // TODO: Check user's meme limit before generating
           const memeResult = await imgflipService.generateAutomeme(memeText);
           memeUrl = memeResult.url;
           memePageUrl = memeResult.pageUrl;
-          
-          // TODO: Track meme usage
-          console.log('Generated meme successfully:', { memeUrl, memePageUrl });
+          console.log('✅ Meme generated successfully:', { memeUrl, memePageUrl });
         } catch (error) {
-          console.error('Meme generation failed:', error);
-          // Continue without meme
+          console.error('❌ Meme generation failed:', error);
         }
       }
     } else {
-      console.log('Meme generation skipped:', { shouldIncludeMeme, memeText, includeMeme: validated.includeMeme });
+      console.log('🚫 Meme generation skipped:', { shouldIncludeMeme, memeText, includeMeme: validated.includeMeme });
     }
 
     // Step 5: Generate final reply
+    console.log(`\n✍️ ============ STEP 5: FINAL GENERATION [${requestId}] ============`);
+    console.log('📤 Generation Input:', {
+      originalTweet: validated.originalTweet,
+      responseIdea: validated.responseIdea,
+      tone: validated.tone,
+      selectedType: selectedType.name,
+      hasPerplexityData: !!perplexityData,
+      perplexityDataPreview: perplexityData ? perplexityData.substring(0, 150) + '...' : 'None',
+      replyLength: validated.replyLength || 'short',
+      enableStyleMatching: validated.enableStyleMatching ?? true,
+      useCustomStyle: validated.useCustomStyle
+    });
+    
     const generateResponse = await fetch(new URL('/api/generate', req.url), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -273,17 +309,18 @@ export async function POST(req: NextRequest) {
 
     if (!generateResponse.ok) {
       const errorData = await generateResponse.json();
-      console.error('Generation failed:', errorData);
+      console.error('❌ GENERATION FAILED:', errorData);
       throw new Error('Generation failed');
     }
 
     const generateData = await generateResponse.json();
     costs.generation = generateData.data.cost;
     
-    console.log('=== FINAL GENERATION RESULT ===');
-    console.log('Generated reply includes stats:', generateData.data.reply.includes('%') || generateData.data.reply.includes('statistic'));
-    console.log('Reply preview:', generateData.data.reply.substring(0, 200) + '...');
-    console.log('=== END GENERATION RESULT ===');
+    console.log('✅ GENERATION SUCCESS:');
+    console.log('📝 Final Reply:', generateData.data.reply);
+    console.log('📊 Contains Numbers/Stats:', /\d+%|\d+\s*(percent|million|thousand|billion)|\d{4}/.test(generateData.data.reply));
+    console.log('🔍 Contains "according to":', generateData.data.reply.toLowerCase().includes('according to'));
+    console.log('💰 Generation Cost:', costs.generation);
 
     // Calculate total cost
     costs.total = Object.values(costs).reduce((sum, cost) => sum + cost, 0);
@@ -306,6 +343,18 @@ export async function POST(req: NextRequest) {
       memeUrl,
       memePageUrl,
     };
+
+    console.log(`\n🎉 ============ PIPELINE COMPLETE [${requestId}] ============`);
+    console.log('⏱️ Total Processing Time:', processingTime + 'ms');
+    console.log('💰 Total Cost:', costs.total);
+    console.log('📊 Cost Breakdown:', costs);
+    console.log('🎯 Final Result:', {
+      reply: result.reply,
+      replyType: result.replyType,
+      hadPerplexityData: !!perplexityData,
+      dataIncludedInReply: perplexityData ? result.reply.toLowerCase().includes(perplexityData.toLowerCase().split(' ')[0]) : false
+    });
+    console.log(`🏁 ============ END PIPELINE [${requestId}] ============\n`);
 
     return NextResponse.json({ data: result });
   } catch (error) {

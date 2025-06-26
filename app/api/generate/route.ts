@@ -75,13 +75,15 @@ export async function POST(req: NextRequest) {
     // Build generation prompt
     const prompt = buildGenerationPrompt(validated, charLimit, styleInstructions, customStyleInstructions);
     
-    console.log('=== GENERATION INPUT DEBUG ===');
+    console.log('\n📋 === GENERATION PROMPT ===');
+    console.log(prompt);
+    
+    console.log('\n📊 === GENERATION INPUT ANALYSIS ===');
     console.log('Has Perplexity data:', !!validated.perplexityData);
-    console.log('Perplexity data content:', validated.perplexityData || 'None');
+    console.log('Perplexity data length:', validated.perplexityData?.length || 0);
     console.log('Response idea:', validated.responseIdea);
     console.log('Selected type:', validated.selectedType.name);
     console.log('Prompt includes research section:', prompt.includes('CRITICAL RESEARCH DATA'));
-    console.log('=== END GENERATION INPUT DEBUG ===');
 
     // Call Claude 3.5 Sonnet for final generation
     const message = await anthropic.messages.create({
@@ -94,11 +96,22 @@ export async function POST(req: NextRequest) {
 
     let reply = message.content[0].type === 'text' ? message.content[0].text : '';
     
+    console.log('\n🤖 === CLAUDE GENERATION RESPONSE ===');
+    console.log('Raw reply:', reply);
+    
     // Apply anti-AI processing
     reply = AntiAIDetector.process(reply);
     
+    console.log('\n🔧 === AFTER ANTI-AI PROCESSING ===');
+    console.log('Processed reply:', reply);
+    
     // Clean and validate the reply
     reply = cleanReply(reply, charLimit);
+    
+    console.log('\n✨ === FINAL CLEANED REPLY ===');
+    console.log('Final reply:', reply);
+    console.log('Character count:', reply.length);
+    console.log('Contains numbers/stats:', /\d+%|\d+\s*(percent|million|thousand|billion)|\d{4}/.test(reply));
 
     // Calculate cost
     const tokensUsed = message.usage.input_tokens + message.usage.output_tokens;

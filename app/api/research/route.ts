@@ -82,10 +82,11 @@ Search query:`;
 
     const searchQuery = queryCompletion.choices[0].message.content?.trim() || '';
     
-    console.log('=== PERPLEXITY RESEARCH DEBUG ===');
-    console.log('Original guidance:', validated.guidance);
-    console.log('Generated search query:', searchQuery);
-    console.log('Query prompt tokens used:', queryCompletion.usage);
+    console.log('\n📋 === QUERY GENERATION PROMPT ===');
+    console.log(queryPrompt);
+    console.log('\n🤖 === GPT-4O QUERY RESPONSE ===');
+    console.log(searchQuery);
+    console.log('\n💰 Query Generation Tokens:', queryCompletion.usage);
 
     // Call Perplexity API
     const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -129,19 +130,24 @@ IMPORTANT: Focus on providing factual, numerical data that directly relates to t
     const perplexityData = await perplexityResponse.json();
     let searchResults = perplexityData.choices[0].message.content || '';
     
+    console.log('\n📋 === PERPLEXITY SEARCH PROMPT ===');
+    console.log(`Search for: ${searchQuery}\n\nReturn ONLY concrete statistics, facts, and data with specific numbers. Focus on:\n- Recent statistics (last 1-2 years preferred) that would be beyond typical AI knowledge\n- Exact percentages, numbers, or measurable trends\n- Credible sources (government reports, studies, official data)\n- Current events or developments related to the topic\n\nFormat your response as bullet points with specific data points. Examples:\n- "X increased/decreased by Y% in 2024 according to [Source]"\n- "[Location] reported Z [metric] as of [Date]"\n- "Study shows [specific finding with numbers]"\n\nIMPORTANT: Focus on providing factual, numerical data that directly relates to the search query. Include diverse statistics if available, not just one type of data.`);
+    
+    console.log('\n🌐 === PERPLEXITY RESPONSE ===');
+    console.log(searchResults);
+    
     // Check if results contain actual statistics
     const hasNumbers = /\d+%|\d+\s*(percent|million|thousand|billion)|\d{4}/.test(searchResults);
     
     if (!hasNumbers && searchResults.length > 0) {
-      // Log warning if no numbers found
-      console.warn('Perplexity returned results without concrete statistics:', searchResults);
+      console.warn('⚠️ Perplexity returned results without concrete statistics');
       searchResults = `${searchResults} [Note: Specific statistics requested but not found in search results]`;
     }
     
-    console.log('Perplexity raw response:', searchResults);
-    console.log('Contains numbers:', hasNumbers);
-    console.log('Results length:', searchResults.length);
-    console.log('=== END PERPLEXITY DEBUG ===');
+    console.log('\n📊 === SEARCH ANALYSIS ===');
+    console.log('Contains numbers/stats:', hasNumbers);
+    console.log('Results length:', searchResults.length, 'characters');
+    console.log('Citations included:', perplexityData.citations ? perplexityData.citations.length : 0);
 
     // Calculate costs - GPT-4o pricing
     const queryPromptTokens = queryCompletion.usage?.prompt_tokens || 0;

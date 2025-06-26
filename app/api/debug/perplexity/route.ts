@@ -94,8 +94,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       error: 'Debug test failed',
       status: 'internal_error',
-      details: error.message,
-      stack: error.stack
+      details: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
     }, { status: 500 });
   }
 }
@@ -183,7 +183,7 @@ Format your response as bullet points with specific data points.`
     
     return NextResponse.json({
       error: 'Custom query test failed',
-      details: error.message
+      details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
 }

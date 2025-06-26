@@ -103,18 +103,26 @@ Also decide if a meme would enhance this reply. Memes work best for:
 - Reactions to absurd situations
 
 If a meme would help, use one of these proven patterns (replace X/Y with relevant text):
-- "one does not simply X" (for things harder than they seem)
-- "not sure if X or Y" (confusion between two things)
-- "X, X everywhere" (something overwhelming)
-- "y u no X" (frustrated questioning)
-- "brace yourself X" (warning about something coming)
-- "X all the Y" (enthusiastic/excessive action)
-- "if you could X that would be great" (passive-aggressive request)
-- "X too damn Y" (complaining about excess)
-- "am I the only one around here X" (frustration about being alone)
-- "what if I told you X" (revealing truth)
-- "X ain't nobody got time for that" (dismissing time-consuming tasks)
-- "X gonna have a bad time" (warning about consequences)
+COMMON PATTERNS:
+- "one does not simply X" / "not sure if X or Y" / "X, X everywhere"
+- "y u no X" / "X all the Y" / "X too damn Y"
+- "i don't always X but when i do Y" / "brace yourself X"
+- "if you could X that would be great" / "what if I told you X"
+
+MODERN PATTERNS:
+- "me: X; also me: Y" (contradicting yourself)
+- "nobody: absolutely nobody: X:" (unprompted behavior)
+- "wait you guys are X" (realizing you're alone)
+- "is this a X" (misidentifying obvious things)
+- "i am once again asking for X" (repeated requests)
+- "surprised pikachu: X" (fake surprise)
+
+CULTURAL REFERENCES:
+- "X i too like to live dangerously" (risky behavior)
+- "it's been 84 years since X" (taking forever)
+- "say the line bart: X" (tired excuses)
+- "change my mind: X" (controversial opinion)
+- "so you have chosen X" (bad choices)
 
 Keep under 100 chars and match the tone/situation.` : '';
 

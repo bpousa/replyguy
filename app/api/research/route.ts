@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import OpenAI from 'openai';
+import { researchCache } from '@/app/lib/services/research-cache.service';
 
 // Initialize OpenAI for query generation
 const openai = new OpenAI({
@@ -14,6 +15,59 @@ const requestSchema = z.object({
   responseType: z.string(),
   guidance: z.string().max(200).optional(),
 });
+
+function sanitizePerplexityResponse(response: string, maxTokens: number = 400): string {
+  // Rough token estimation: ~4 chars per token
+  const maxChars = maxTokens * 4;
+  
+  if (response.length <= maxChars) {
+    return response;
+  }
+  
+  console.log(`⚠️ Sanitizing large Perplexity response: ${response.length} chars -> ~${maxChars} chars`);
+  
+  // Split into sentences and prioritize ones with numbers/statistics
+  const sentences = response.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 0);
+  
+  // Score sentences: higher score = more important
+  const scoredSentences = sentences.map(sentence => {
+    let score = 0;
+    
+    // High priority: sentences with percentages or specific numbers
+    if (/\d+%/.test(sentence)) score += 10;
+    if (/\d+\s*(million|billion|thousand)/.test(sentence)) score += 8;
+    if (/\d{4}/.test(sentence)) score += 6; // Years
+    if (/according to|report|study|data shows/i.test(sentence)) score += 5;
+    if (/\d+/.test(sentence)) score += 3; // Any numbers
+    
+    // Lower priority: general statements
+    if (sentence.length < 50) score -= 2; // Very short sentences
+    if (/however|moreover|furthermore/i.test(sentence)) score -= 1; // Transition words
+    
+    return { sentence, score, length: sentence.length };
+  });
+  
+  // Sort by score (highest first) and select top sentences that fit
+  scoredSentences.sort((a, b) => b.score - a.score);
+  
+  let result = '';
+  let totalChars = 0;
+  
+  for (const item of scoredSentences) {
+    const sentenceWithPeriod = item.sentence + '. ';
+    if (totalChars + sentenceWithPeriod.length <= maxChars) {
+      result += sentenceWithPeriod;
+      totalChars += sentenceWithPeriod.length;
+    }
+  }
+  
+  // If we still have space, add a truncation notice
+  if (result.length < response.length && totalChars < maxChars - 50) {
+    result += '\n[Note: Additional data available but truncated for brevity]';
+  }
+  
+  return result.trim();
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -37,6 +91,34 @@ export async function POST(req: NextRequest) {
     // Validate request body
     const body = await req.json();
     const validated = requestSchema.parse(body);
+
+    // Check cache first to avoid redundant API calls
+    const cacheKey = {
+      originalTweet: validated.originalTweet,
+      responseIdea: validated.responseIdea,
+      responseType: validated.responseType,
+      guidance: validated.guidance
+    };
+    
+    const cachedResult = researchCache.get(cacheKey);
+    if (cachedResult) {
+      console.log('✅ CACHE HIT - Returning cached research results');
+      console.log('📊 Cached Query:', cachedResult.searchQuery);
+      console.log('📈 Cached Results Preview:', cachedResult.searchResults.substring(0, 100) + '...');
+      console.log('💰 Original Cost:', cachedResult.cost, '(saved by cache)');
+      
+      return NextResponse.json({
+        data: {
+          searchQuery: cachedResult.searchQuery,
+          searchResults: cachedResult.searchResults,
+          cost: 0, // No cost for cached results
+          cached: true,
+          originalCost: cachedResult.cost
+        },
+      });
+    }
+    
+    console.log('❌ CACHE MISS - Proceeding with API calls');
 
     // Generate search query using GPT-4o
     const queryPrompt = validated.guidance 
@@ -99,6 +181,10 @@ Search query:`;
         model: 'sonar-small-online',
         messages: [
           {
+            role: 'system',
+            content: 'You are a helpful assistant that provides accurate, factual information with specific statistics and data points. Always cite sources when possible.'
+          },
+          {
             role: 'user',
             content: `Search for: ${searchQuery}
 
@@ -124,7 +210,14 @@ IMPORTANT: Focus on providing factual, numerical data that directly relates to t
     });
 
     if (!perplexityResponse.ok) {
-      throw new Error('Perplexity API request failed');
+      const errorText = await perplexityResponse.text();
+      console.error('❌ Perplexity API Error Details:');
+      console.error('Status:', perplexityResponse.status);
+      console.error('StatusText:', perplexityResponse.statusText);
+      console.error('Response:', errorText);
+      console.error('Request model:', 'sonar-small-online');
+      
+      throw new Error(`Perplexity API request failed: ${perplexityResponse.status} ${perplexityResponse.statusText} - ${errorText}`);
     }
 
     const perplexityData = await perplexityResponse.json();
@@ -133,8 +226,16 @@ IMPORTANT: Focus on providing factual, numerical data that directly relates to t
     console.log('\n📋 === PERPLEXITY SEARCH PROMPT ===');
     console.log(`Search for: ${searchQuery}\n\nReturn ONLY concrete statistics, facts, and data with specific numbers. Focus on:\n- Recent statistics (last 1-2 years preferred) that would be beyond typical AI knowledge\n- Exact percentages, numbers, or measurable trends\n- Credible sources (government reports, studies, official data)\n- Current events or developments related to the topic\n\nFormat your response as bullet points with specific data points. Examples:\n- "X increased/decreased by Y% in 2024 according to [Source]"\n- "[Location] reported Z [metric] as of [Date]"\n- "Study shows [specific finding with numbers]"\n\nIMPORTANT: Focus on providing factual, numerical data that directly relates to the search query. Include diverse statistics if available, not just one type of data.`);
     
-    console.log('\n🌐 === PERPLEXITY RESPONSE ===');
-    console.log(searchResults);
+    console.log('\n🌐 === PERPLEXITY RESPONSE (RAW) ===');
+    console.log('Raw length:', searchResults.length, 'characters');
+    console.log('Raw content:', searchResults);
+    
+    // SANITIZE RESPONSE - Prevent 1,500+ token responses from breaking prompts
+    searchResults = sanitizePerplexityResponse(searchResults);
+    
+    console.log('\n🧹 === PERPLEXITY RESPONSE (SANITIZED) ===');
+    console.log('Sanitized length:', searchResults.length, 'characters');
+    console.log('Sanitized content:', searchResults);
     
     // Check if results contain actual statistics
     const hasNumbers = /\d+%|\d+\s*(percent|million|thousand|billion)|\d{4}/.test(searchResults);
@@ -156,11 +257,19 @@ IMPORTANT: Focus on providing factual, numerical data that directly relates to t
     const perplexityCost = 0.0002; // Estimated cost per request
     const totalCost = queryCost + perplexityCost;
 
+    // Cache the results for future requests
+    researchCache.set(cacheKey, {
+      searchQuery,
+      searchResults,
+      cost: totalCost
+    });
+
     return NextResponse.json({
       data: {
         searchQuery,
         searchResults,
         cost: totalCost,
+        cached: false
       },
     });
   } catch (error) {

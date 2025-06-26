@@ -155,10 +155,19 @@ export async function POST(req: NextRequest) {
           console.log('💰 Research Cost:', costs.perplexityQuery);
           console.log(`📏 Data Length: ${perplexityData?.length || 0} characters`);
         } else {
+          const errorData = await researchResponse.json().catch(() => ({ error: 'Unknown error' }));
           console.log('❌ RESEARCH FAILED - HTTP Status:', researchResponse.status);
+          console.log('❌ Research Error Details:', errorData);
+          
+          // Add research failure notice that will be visible to user in the final response
+          perplexityData = `[Research unavailable: ${errorData.error || 'API temporarily unavailable'}. Reply generated without current data.]`;
+          console.log('📝 Added fallback research notice for user visibility');
         }
       } catch (error) {
         console.error('❌ RESEARCH ERROR:', error);
+        // Add research failure notice for user
+        perplexityData = `[Research unavailable: Connection error. Reply generated without current data.]`;
+        console.log('📝 Added fallback research notice due to connection error');
       }
     } else {
       console.log(`\n🚫 ============ STEP 1: RESEARCH SKIPPED [${requestId}] ============`);
@@ -344,6 +353,13 @@ export async function POST(req: NextRequest) {
       memePageUrl,
     };
 
+    // DUAL METRICS TRACKING - Track both attempted and actually included
+    const researchAttempted = validated.needsResearch;
+    const researchDataReceived = !!perplexityData && !perplexityData.includes('[Research unavailable:');
+    const researchIncludedInReply = researchDataReceived && 
+      (result.reply.toLowerCase().includes('according to') ||
+       /\d+%|\d+\s*(percent|million|thousand|billion)|\d{4}/.test(result.reply));
+    
     console.log(`\n🎉 ============ PIPELINE COMPLETE [${requestId}] ============`);
     console.log('⏱️ Total Processing Time:', processingTime + 'ms');
     console.log('💰 Total Cost:', costs.total);
@@ -354,6 +370,14 @@ export async function POST(req: NextRequest) {
       hadPerplexityData: !!perplexityData,
       dataIncludedInReply: perplexityData ? result.reply.toLowerCase().includes(perplexityData.toLowerCase().split(' ')[0]) : false
     });
+    
+    // METRICS: Dual tracking for debugging prompt-loss issues
+    console.log('📈 === RESEARCH METRICS ===');
+    console.log('🔍 Research attempted:', researchAttempted);
+    console.log('📊 Research data received:', researchDataReceived);
+    console.log('✅ Research included in reply:', researchIncludedInReply);
+    console.log('⚠️ Research loss detected:', researchDataReceived && !researchIncludedInReply);
+    
     console.log(`🏁 ============ END PIPELINE [${requestId}] ============\n`);
 
     return NextResponse.json({ data: result });

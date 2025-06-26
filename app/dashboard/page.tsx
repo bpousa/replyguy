@@ -37,34 +37,35 @@ export default function HomePage() {
         setDailyGoal(userData.daily_goal || 10);
       }
       
-      // Get user with subscription info
+      // Get user with active subscription and plan details
       const { data: userWithSub } = await supabase
         .from('users')
-        .select('*')
+        .select(`
+          *,
+          subscriptions!inner(
+            status,
+            plan_id,
+            current_period_end,
+            subscription_plans!inner(*)
+          )
+        `)
         .eq('id', user.id)
+        .eq('subscriptions.is_active', true)
         .single();
         
-      if (userWithSub?.subscription_tier) {
-        // Get plan details separately
-        const { data: plan } = await supabase
-          .from('subscription_plans')
-          .select('*')
-          .eq('id', userWithSub.subscription_tier)
-          .single();
+      if (userWithSub?.subscriptions?.[0]) {
+        const subscription = userWithSub.subscriptions[0];
+        // Get current month's meme usage
+        const { data: currentUsage } = await supabase
+          .rpc('get_current_usage', { p_user_id: user.id })
+          .single() as { data: { total_replies: number; total_memes: number } | null };
           
-        if (plan) {
-          // Get current month's meme usage
-          const { data: currentUsage } = await supabase
-            .rpc('get_current_usage', { p_user_id: user.id })
-            .single() as { data: { total_replies: number; total_memes: number } | null };
-          
-          setSubscription({
-            plan_id: userWithSub.subscription_tier,
-            subscription_plans: plan,
-            status: userWithSub.subscription_status,
-            memes_used: currentUsage?.total_memes || 0
-          });
-        }
+        setSubscription({
+          plan_id: subscription.plan_id,
+          subscription_plans: subscription.subscription_plans,
+          status: subscription.status,
+          memes_used: currentUsage?.total_memes || 0
+        });
       }
       
       // Get today's usage

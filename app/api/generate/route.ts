@@ -84,6 +84,20 @@ export async function POST(req: NextRequest) {
     console.log('Response idea:', validated.responseIdea);
     console.log('Selected type:', validated.selectedType.name);
     console.log('Prompt includes research section:', prompt.includes('CRITICAL RESEARCH DATA'));
+    
+    // SENTINEL TOKEN VALIDATION - Guard against prompt-builder edits losing research
+    if (validated.perplexityData) {
+      const hasResearchBlocks = prompt.includes('<<RESEARCH_BLOCK>>');
+      const blockCount = (prompt.match(/<<RESEARCH_BLOCK>>/g) || []).length;
+      console.log('🛡️ Sentinel token check:', hasResearchBlocks ? '✅ PRESENT' : '❌ MISSING');
+      console.log('🛡️ Research block count:', blockCount, '(should be 2)');
+      
+      if (!hasResearchBlocks || blockCount !== 2) {
+        console.error('❌ CRITICAL: Research data sentinel tokens missing or malformed!');
+        console.error('This indicates prompt-builder lost research data');
+        throw new Error('Internal error: Research data protection failed');
+      }
+    }
 
     // Call Claude 3.5 Sonnet for final generation
     const message = await anthropic.messages.create({
@@ -161,7 +175,9 @@ Original tweet: "${input.originalTweet}"
 
 ${input.perplexityData ? `
 🚨 CRITICAL RESEARCH DATA - MUST INCLUDE IN YOUR REPLY:
+<<RESEARCH_BLOCK>>
 ${input.perplexityData}
+<<RESEARCH_BLOCK>>
 
 The user specifically requested this factual information. You MUST incorporate these statistics/facts into your response. Make them a natural part of your reply while expressing the user's intended message.
 ` : ''}

@@ -11,7 +11,8 @@ interface CurrentUsage {
 interface SubscriptionPlan {
   id: string;
   name: string;
-  monthly_limit: number;
+  reply_limit: number;
+  meme_limit: number;
   suggestion_limit: number;
   enable_style_matching?: boolean;
   enable_write_like_me?: boolean;
@@ -33,11 +34,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get user's data with plan details
+    // Get user's data with active subscription and plan details
     const { data: userData, error: userError } = await supabase
       .from('users')
-      .select('*, subscription_plans!subscription_tier(*)')
+      .select(`
+        *,
+        subscriptions!inner(
+          status,
+          plan_id,
+          current_period_end,
+          subscription_plans!inner(*)
+        )
+      `)
       .eq('id', user.id)
+      .eq('subscriptions.is_active', true)
       .single();
 
     if (userError || !userData) {
@@ -63,10 +73,12 @@ export async function POST(req: NextRequest) {
       .rpc('get_current_usage', { p_user_id: user.id })
       .single() as { data: CurrentUsage | null };
 
-    const plan: SubscriptionPlan = userData.subscription_plans || {
+    // Extract plan from the subscription relationship
+    const plan: SubscriptionPlan = userData?.subscriptions?.[0]?.subscription_plans || {
       id: 'free',
       name: 'Free',
-      monthly_limit: 10,
+      reply_limit: 10,
+      meme_limit: 0,
       suggestion_limit: 0
     };
 
@@ -85,23 +97,16 @@ export async function POST(req: NextRequest) {
 
     const mappedPlanId = planMapping[plan.id] || plan.id;
 
-    // Define meme limits by plan
-    const memeLimits: Record<string, number> = {
-      'free': 0,
-      'growth': 10,      // X Basic
-      'professional': 50, // X Pro
-      'enterprise': 100   // X Business
-    };
-    
-    const memeLimit = memeLimits[userData.subscription_tier] || 0;
+    // Use meme limit from the plan
+    const memeLimit = plan.meme_limit || 0;
     
     // Check if user can generate more replies
-    const canGenerate = currentUsage.total_replies < plan.monthly_limit;
+    const canGenerate = currentUsage.total_replies < plan.reply_limit;
     const canGenerateMeme = memeLimit > 0 && currentUsage.total_memes < memeLimit;
     const canUseSuggestions = plan.suggestion_limit === -1 || currentUsage.total_suggestions < plan.suggestion_limit;
 
     // Calculate remaining
-    const repliesRemaining = plan.monthly_limit - currentUsage.total_replies;
+    const repliesRemaining = plan.reply_limit - currentUsage.total_replies;
     const memesRemaining = memeLimit - currentUsage.total_memes;
     const suggestionsRemaining = plan.suggestion_limit === -1 ? 'unlimited' : plan.suggestion_limit - currentUsage.total_suggestions;
 
@@ -112,7 +117,7 @@ export async function POST(req: NextRequest) {
       limits: {
         plan_id: mappedPlanId,
         plan_name: plan.name,
-        reply_limit: plan.monthly_limit,
+        reply_limit: plan.reply_limit,
         replies_used: currentUsage.total_replies,
         meme_limit: memeLimit,
         memes_used: currentUsage.total_memes,

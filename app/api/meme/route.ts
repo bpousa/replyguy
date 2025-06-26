@@ -11,6 +11,8 @@ const requestSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  let validated: z.infer<typeof requestSchema> | undefined;
+  
   try {
     // Check if meme generation is enabled (environment flag)
     if (process.env.ENABLE_IMGFLIP_AUTOMEME === 'false') {
@@ -31,7 +33,7 @@ export async function POST(req: NextRequest) {
 
     // Validate request body
     const body = await req.json();
-    const validated = requestSchema.parse(body);
+    validated = requestSchema.parse(body);
 
     // Check user's meme limit if userId provided
     if (validated.userId && validated.userId !== 'anonymous') {
@@ -130,7 +132,9 @@ export async function POST(req: NextRequest) {
       }
       if (error.message.includes('Could not find a suitable meme template')) {
         // Log the failed text for debugging
-        console.log('Failed meme text:', validated.text);
+        if (validated) {
+          console.log('Failed meme text:', validated.text);
+        }
         return NextResponse.json(
           { 
             error: 'Could not generate meme for this text',

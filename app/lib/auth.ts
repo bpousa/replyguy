@@ -39,14 +39,24 @@ export const createServerClient = (cookieStore: ReturnType<typeof cookies>) => {
           try {
             cookieStore.set({ name, value, ...options });
           } catch (error) {
-            // Handle cookie setting in Server Components
+            // This is critical for auth - log the full error
+            console.error('Failed to set cookie:', name, error);
+            // Re-throw if it's an auth cookie as this will break authentication
+            if (name.includes('sb-') || name.includes('supabase')) {
+              throw error;
+            }
           }
         },
         remove(name: string, options: any) {
           try {
             cookieStore.delete(name);
           } catch (error) {
-            // Handle cookie removal in Server Components
+            // This is critical for auth - log the full error
+            console.error('Failed to remove cookie:', name, error);
+            // Re-throw if it's an auth cookie as this will break authentication
+            if (name.includes('sb-') || name.includes('supabase')) {
+              throw error;
+            }
           }
         },
       },

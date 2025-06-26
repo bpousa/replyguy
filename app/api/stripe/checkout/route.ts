@@ -15,18 +15,48 @@ export async function POST(req: NextRequest) {
   const supabase = createServerClient(cookieStore);
   
   try {
-    // Get authenticated session first (more reliable than getUser)
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    // Multiple attempts to get session with delays
+    let session = null;
+    let attempts = 0;
+    const maxAttempts = 3;
     
-    if (sessionError || !session) {
-      console.error('No session found:', sessionError);
+    while (!session && attempts < maxAttempts) {
+      attempts++;
+      
+      // Try to get the session
+      const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (currentSession) {
+        session = currentSession;
+        break;
+      }
+      
+      console.log(`Attempt ${attempts}: No session found, trying to refresh...`);
+      
+      // Try to refresh the session
+      const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshedSession) {
+        session = refreshedSession;
+        break;
+      }
+      
+      // If not the last attempt, wait a bit before trying again
+      if (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+    
+    if (!session) {
+      console.error('Failed to establish session after', attempts, 'attempts');
       return NextResponse.json(
-        { error: 'Please sign in to subscribe' },
+        { error: 'Please sign in to subscribe', details: 'Session could not be established' },
         { status: 401 }
       );
     }
     
     const user = session.user;
+    console.log('Session established for user:', user.email);
     
     const body = await req.json();
     const { planId, billingCycle, email } = requestSchema.parse(body);

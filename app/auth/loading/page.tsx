@@ -19,10 +19,18 @@ export default function AuthLoadingPage() {
     const checkSession = async () => {
       attempts++;
       
-      const { data: { session } } = await supabase.auth.getSession();
+      let { data: { session } } = await supabase.auth.getSession();
+      
+      // If no session and we haven't tried refreshing yet, try to refresh
+      if (!session && attempts <= 3) {
+        console.log(`Attempt ${attempts}: No session found, trying to refresh...`);
+        const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
+        session = refreshedSession;
+      }
       
       if (session) {
         // Session found
+        console.log('Session established successfully');
         if (planId && planId !== 'free') {
           // User selected a paid plan, redirect to checkout confirmation page
           router.push(`/auth/checkout-redirect?plan=${planId}`);
@@ -32,6 +40,7 @@ export default function AuthLoadingPage() {
         }
       } else if (attempts >= maxAttempts) {
         // No session after multiple attempts
+        console.error('Failed to establish session after', attempts, 'attempts');
         router.push('/auth/login?error=session_not_found');
       } else {
         // Try again after a short delay

@@ -66,9 +66,21 @@ export default function CheckoutRedirectPage() {
     setIsRedirecting(true);
 
     try {
+      // Ensure we have a fresh session before making the API call
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.log('No session before checkout, attempting refresh...');
+        const { error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          throw new Error('Authentication failed. Please sign in again.');
+        }
+      }
+      
       const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Ensure cookies are sent
         body: JSON.stringify({
           planId,
           billingCycle: 'monthly',
@@ -77,6 +89,33 @@ export default function CheckoutRedirectPage() {
 
       if (!response.ok) {
         const error = await response.json();
+        
+        // If we get a 401, try one more time with a fresh session
+        if (response.status === 401) {
+          console.log('Got 401, attempting to refresh session and retry...');
+          await supabase.auth.refreshSession();
+          
+          // Wait a moment for cookies to propagate
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Retry the request
+          const retryResponse = await fetch('/api/stripe/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              planId,
+              billingCycle: 'monthly',
+            }),
+          });
+          
+          if (retryResponse.ok) {
+            const { url } = await retryResponse.json();
+            window.location.href = url;
+            return;
+          }
+        }
+        
         throw new Error(error.error || 'Failed to create checkout session');
       }
 

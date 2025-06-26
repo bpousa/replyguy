@@ -12,15 +12,27 @@ export async function POST(req: NextRequest) {
   const supabase = createServerClient(cookieStore);
 
   try {
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Get authenticated session first
+    let { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    if (sessionError || !session) {
+      console.log('No session found, attempting to refresh...');
+      
+      // Try to refresh the session
+      const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError || !refreshedSession) {
+        console.error('Session refresh failed:', refreshError || 'No session after refresh');
+        return NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        );
+      }
+      
+      session = refreshedSession;
     }
+    
+    const user = session.user;
 
     // Get user's Stripe customer ID
     const { data: userData } = await supabase
@@ -41,12 +53,12 @@ export async function POST(req: NextRequest) {
     const returnUrl = body.returnUrl || `${process.env.NEXT_PUBLIC_APP_URL}/settings`;
 
     // Create Stripe billing portal session
-    const session = await stripe.billingPortal.sessions.create({
+    const portalSession = await stripe.billingPortal.sessions.create({
       customer: userData.stripe_customer_id,
       return_url: returnUrl,
     });
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url: portalSession.url });
   } catch (error) {
     console.error('Portal session error:', error);
     return NextResponse.json(

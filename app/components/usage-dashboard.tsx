@@ -212,7 +212,8 @@ export function UsageDashboard({ userId }: { userId: string }) {
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <Image className="w-4 h-4 text-blue-600" alt="Meme icon" />
+              {/* eslint-disable-next-line jsx-a11y/alt-text */}
+              <Image className="w-4 h-4 text-blue-600" />
               <span className="font-medium">Memes Created</span>
             </div>
             <span className="text-sm text-gray-600">

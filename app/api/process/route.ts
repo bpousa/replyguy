@@ -196,11 +196,7 @@ export async function POST(req: NextRequest) {
     console.log('🔍 Research Check:', {
       needsResearch: validated.needsResearch,
       type: typeof validated.needsResearch,
-      rawValue: body?.needsResearch,
-      userPlan: {
-        enable_perplexity: userPlan?.enable_perplexity,
-        enable_perplexity_guidance: userPlan?.enable_perplexity_guidance
-      }
+      rawValue: body?.needsResearch
     });
     
     if (validated.needsResearch) {

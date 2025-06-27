@@ -1,0 +1,46 @@
+{
+  "auth": {
+    "status": "passed",
+    "details": ""
+  },
+  "errors": {
+    "total": 1,
+    "types": {
+      "404": 0,
+      "406": 0,
+      "500": 1
+    },
+    "details": [
+      {
+        "url": "/api/process",
+        "status": 500,
+        "time": "2025-06-27T18:17:05.799Z"
+      }
+    ]
+  },
+  "usageTracking": {
+    "initial": {
+      "current": 0,
+      "limit": 10
+    },
+    "afterGeneration": {
+      "current": 0,
+      "limit": 10
+    },
+    "incremented": false,
+    "persisted": true
+  },
+  "apiHealth": {
+    "userPlan": "working",
+    "userUsage": "pending",
+    "dailyGoal": "pending",
+    "process": "failed"
+  },
+  "replyGeneration": {
+    "attempted": true,
+    "successful": [
+      "Congratulations"
+    ],
+    "error": null
+  }
+}

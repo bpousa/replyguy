@@ -188,6 +188,7 @@ export default function HomePage() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           ...input,
           userId: user.id,

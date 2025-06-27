@@ -15,17 +15,24 @@ export async function middleware(request: NextRequest) {
     
     // Look for Supabase auth cookie - be more flexible with cookie names
     const cookies = request.cookies;
-    const hasAuthCookie = cookies.getAll().some(cookie => {
-      // Supabase cookie patterns can vary, check for any auth-related cookie
-      return cookie.name.includes('sb-') && 
-        (cookie.name.includes('auth-token') || 
-         cookie.name.includes('session') ||
-         cookie.name.includes('access-token') ||
-         cookie.name.includes('refresh-token'));
+    const allCookies = cookies.getAll();
+    
+    // Log all cookies for debugging
+    console.log(`[middleware] Checking auth for ${pathname}, cookies:`, allCookies.map(c => c.name));
+    
+    const hasAuthCookie = allCookies.some(cookie => {
+      // Supabase cookie patterns: sb-<project-ref>-auth-token
+      // In this case: sb-aaplsgskmoeyvvedjzxp-auth-token
+      const isAuthCookie = cookie.name.includes('sb-') && cookie.name.includes('-auth-token');
+      if (isAuthCookie) {
+        console.log(`[middleware] Found auth cookie: ${cookie.name}`);
+      }
+      return isAuthCookie;
     });
     
     if (!hasAuthCookie) {
       console.log(`[middleware] No auth cookie for API route: ${pathname}`);
+      console.log(`[middleware] Available cookies:`, allCookies.map(c => c.name).join(', '));
       return NextResponse.json(
         { error: 'Unauthenticated', message: 'Please sign in to access this resource' },
         { status: 401 }
@@ -40,12 +47,9 @@ export async function middleware(request: NextRequest) {
     
     const cookies = request.cookies;
     const hasAuthCookie = cookies.getAll().some(cookie => {
-      // Supabase cookie patterns can vary, check for any auth-related cookie
-      return cookie.name.includes('sb-') && 
-        (cookie.name.includes('auth-token') || 
-         cookie.name.includes('session') ||
-         cookie.name.includes('access-token') ||
-         cookie.name.includes('refresh-token'));
+      // Supabase cookie patterns: sb-<project-ref>-auth-token
+      // In this case: sb-aaplsgskmoeyvvedjzxp-auth-token
+      return cookie.name.includes('sb-') && cookie.name.includes('-auth-token');
     });
     
     if (!hasAuthCookie) {

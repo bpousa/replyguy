@@ -1,33 +1,12 @@
 {
   "errors": [
     {
-      "url": "[SUPABASE]/rest/v1/subscriptions?select=status%2Cpayment_failed_at%2Ccancel_at_period_end%2Ccurrent_period_end&user_id=eq.fc11dbd9-6f71-49c7-aeaa-ea4b167ca788&status=in.%28past_due%2Ccanceled%2Cunpaid%29",
-      "status": 406,
-      "time": "2025-06-27T16:29:07.328Z"
-    },
-    {
-      "url": "[SUPABASE]/rest/v1/daily_usage?select=replies_generated&user_id=eq.fc11dbd9-6f71-49c7-aeaa-ea4b167ca788&date=eq.2025-06-27",
-      "status": 406,
-      "time": "2025-06-27T16:29:07.804Z"
-    },
-    {
-      "url": "[SUPABASE]/rest/v1/subscriptions?select=status%2Cpayment_failed_at%2Ccancel_at_period_end%2Ccurrent_period_end&user_id=eq.fc11dbd9-6f71-49c7-aeaa-ea4b167ca788&status=in.%28past_due%2Ccanceled%2Cunpaid%29",
-      "status": 406,
-      "time": "2025-06-27T16:29:11.848Z"
-    },
-    {
-      "url": "[SUPABASE]/rest/v1/daily_usage?select=replies_generated&user_id=eq.fc11dbd9-6f71-49c7-aeaa-ea4b167ca788&date=eq.2025-06-27",
-      "status": 406,
-      "time": "2025-06-27T16:29:12.134Z"
-    },
-    {
       "url": "/api/process",
       "status": 500,
-      "time": "2025-06-27T16:29:18.118Z"
+      "time": "2025-06-27T18:13:39.489Z"
     }
   ],
   "summary": {
-    "406": 4,
     "500": 1
   }
 }

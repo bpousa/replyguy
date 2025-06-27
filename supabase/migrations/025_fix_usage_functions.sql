@@ -1,11 +1,27 @@
 -- Fix usage tracking functions to ensure they work properly
 
 -- First ensure the daily_usage table has correct structure
-ALTER TABLE daily_usage 
-ALTER COLUMN date SET NOT NULL,
-ALTER COLUMN replies_generated SET DEFAULT 0,
-ALTER COLUMN memes_generated SET DEFAULT 0,
-ALTER COLUMN suggestions_used SET DEFAULT 0;
+-- Check if columns exist before altering
+DO $$ 
+BEGIN
+  -- Ensure date column is NOT NULL
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'daily_usage' AND column_name = 'date') THEN
+    ALTER TABLE daily_usage ALTER COLUMN date SET NOT NULL;
+  END IF;
+  
+  -- Set defaults for counter columns
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'daily_usage' AND column_name = 'replies_generated') THEN
+    ALTER TABLE daily_usage ALTER COLUMN replies_generated SET DEFAULT 0;
+  END IF;
+  
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'daily_usage' AND column_name = 'memes_generated') THEN
+    ALTER TABLE daily_usage ALTER COLUMN memes_generated SET DEFAULT 0;
+  END IF;
+  
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'daily_usage' AND column_name = 'suggestions_used') THEN
+    ALTER TABLE daily_usage ALTER COLUMN suggestions_used SET DEFAULT 0;
+  END IF;
+END $$;
 
 -- Recreate get_current_usage function with better error handling
 DROP FUNCTION IF EXISTS public.get_current_usage(UUID);

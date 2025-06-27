@@ -196,7 +196,7 @@ export async function POST(req: NextRequest) {
     console.log('🔍 Research Check:', {
       needsResearch: validated.needsResearch,
       type: typeof validated.needsResearch,
-      rawValue: req.body?.needsResearch,
+      rawValue: body?.needsResearch,
       userPlan: {
         enable_perplexity: userPlan?.enable_perplexity,
         enable_perplexity_guidance: userPlan?.enable_perplexity_guidance
@@ -248,7 +248,7 @@ export async function POST(req: NextRequest) {
     } else {
       console.log(`\n🚫 ============ STEP 1: RESEARCH SKIPPED [${requestId}] ============`);
       console.log('❌ Research skipped because needsResearch =', validated.needsResearch);
-      console.log('❌ Raw request body needsResearch =', req.body?.needsResearch);
+      console.log('❌ Raw request body needsResearch =', body?.needsResearch);
     }
 
     // Step 2: Classify and select reply types

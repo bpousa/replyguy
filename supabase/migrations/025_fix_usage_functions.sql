@@ -1,7 +1,35 @@
 -- Fix usage tracking functions to ensure they work properly
 
--- First ensure the daily_usage table has correct structure
--- Check if columns exist before altering
+-- First create daily_usage table if it doesn't exist
+CREATE TABLE IF NOT EXISTS public.daily_usage (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  replies_generated INTEGER DEFAULT 0 CHECK (replies_generated >= 0),
+  memes_generated INTEGER DEFAULT 0 CHECK (memes_generated >= 0),
+  suggestions_used INTEGER DEFAULT 0 CHECK (suggestions_used >= 0),
+  goal_achieved BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, date)
+);
+
+-- Enable RLS if not already enabled
+ALTER TABLE daily_usage ENABLE ROW LEVEL SECURITY;
+
+-- Create policy if it doesn't exist
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE tablename = 'daily_usage' 
+    AND policyname = 'Users can view own daily usage'
+  ) THEN
+    CREATE POLICY "Users can view own daily usage" ON daily_usage
+      FOR SELECT USING (auth.uid() = user_id);
+  END IF;
+END $$;
+
+-- Then ensure columns have correct defaults
 DO $$ 
 BEGIN
   -- Ensure date column is NOT NULL
@@ -218,5 +246,12 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION public.get_current_usage(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.track_daily_usage(UUID, TEXT, INTEGER) TO authenticated;
 
--- Create index for performance
-CREATE INDEX IF NOT EXISTS idx_daily_usage_user_date_desc ON daily_usage(user_id, date DESC);
+-- Create index for performance (only if table exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'daily_usage') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_daily_usage_user_date_desc') THEN
+      CREATE INDEX idx_daily_usage_user_date_desc ON daily_usage(user_id, date DESC);
+    END IF;
+  END IF;
+END $$;

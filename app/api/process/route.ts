@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
             .throwOnError() as { data: CurrentUsage | null };
           
           if (usage) {
-            currentUsage = usage;
+            currentUsage = usage as CurrentUsage;
             console.log('[process] Current usage fetched:', currentUsage);
           }
         } catch (usageError) {
@@ -198,7 +198,10 @@ export async function POST(req: NextRequest) {
       try {
         const researchResponse = await fetch(new URL('/api/research', req.url), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cookie': req.headers.get('cookie') || ''
+          },
           body: JSON.stringify({
             originalTweet: validated.originalTweet,
             responseIdea: validated.responseIdea,
@@ -249,7 +252,10 @@ export async function POST(req: NextRequest) {
     
     const classifyResponse = await fetch(new URL('/api/classify', req.url), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Cookie': req.headers.get('cookie') || ''
+      },
       body: JSON.stringify({
         originalTweet: validated.originalTweet,
         responseIdea: validated.responseIdea,
@@ -308,7 +314,10 @@ export async function POST(req: NextRequest) {
     
     const reasonResponse = await fetch(new URL('/api/reason', req.url), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Cookie': req.headers.get('cookie') || ''
+      },
       body: JSON.stringify({
         originalTweet: validated.originalTweet,
         responseIdea: validated.responseIdea,
@@ -357,7 +366,10 @@ export async function POST(req: NextRequest) {
       try {
         const memeResponse = await fetch(new URL('/api/meme', req.url), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cookie': req.headers.get('cookie') || ''
+          },
           body: JSON.stringify({
             text: memeText,
             userId: userId
@@ -400,7 +412,10 @@ export async function POST(req: NextRequest) {
     
     const generateResponse = await fetch(new URL('/api/generate', req.url), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Cookie': req.headers.get('cookie') || ''
+      },
       body: JSON.stringify({
         originalTweet: validated.originalTweet,
         responseIdea: validated.responseIdea,

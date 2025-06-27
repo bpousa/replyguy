@@ -20,6 +20,11 @@ export async function middleware(request: NextRequest) {
     // Log all cookies for debugging
     console.log(`[middleware] Checking auth for ${pathname}, cookies:`, allCookies.map(c => c.name));
     
+    // Check if this is an internal API call (has x-forwarded headers from within our app)
+    const isInternalCall = request.headers.get('x-forwarded-for') === '::1' || 
+                          request.headers.get('x-forwarded-for')?.includes('127.0.0.1') ||
+                          request.headers.get('x-forwarded-for')?.includes('::ffff:127.0.0.1');
+    
     const hasAuthCookie = allCookies.some(cookie => {
       // Supabase cookie patterns: sb-<project-ref>-auth-token
       // In this case: sb-aaplsgskmoeyvvedjzxp-auth-token
@@ -30,13 +35,17 @@ export async function middleware(request: NextRequest) {
       return isAuthCookie;
     });
     
-    if (!hasAuthCookie) {
+    if (!hasAuthCookie && !isInternalCall) {
       console.log(`[middleware] No auth cookie for API route: ${pathname}`);
       console.log(`[middleware] Available cookies:`, allCookies.map(c => c.name).join(', '));
       return NextResponse.json(
         { error: 'Unauthenticated', message: 'Please sign in to access this resource' },
         { status: 401 }
       );
+    }
+    
+    if (isInternalCall) {
+      console.log(`[middleware] Allowing internal API call to ${pathname}`);
     }
   }
   

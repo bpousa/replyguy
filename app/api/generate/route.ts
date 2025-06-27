@@ -33,6 +33,12 @@ export async function POST(req: NextRequest) {
   try {
     // Validate request body
     const body = await req.json();
+    console.log('🎯 Generation endpoint received:', {
+      hasPerplexityData: !!body.perplexityData,
+      perplexityDataType: typeof body.perplexityData,
+      perplexityDataLength: body.perplexityData?.length || 0,
+      perplexityDataPreview: body.perplexityData?.substring(0, 100)
+    });
     const validated = requestSchema.parse(body);
     
     // Get character limit based on reply length
@@ -76,6 +82,8 @@ export async function POST(req: NextRequest) {
     const prompt = buildGenerationPrompt(validated, charLimit, styleInstructions, customStyleInstructions);
     
     console.log('\n📋 === GENERATION PROMPT ===');
+    console.log('Has perplexity data in validated:', !!validated.perplexityData);
+    console.log('Perplexity data preview:', validated.perplexityData?.substring(0, 200));
     console.log(prompt);
     
     console.log('\n📊 === GENERATION INPUT ANALYSIS ===');

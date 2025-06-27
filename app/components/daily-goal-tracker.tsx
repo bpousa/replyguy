@@ -152,12 +152,34 @@ export function DailyGoalTracker({
       <AnimatePresence>
         {showCelebration && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.5 }}
-            className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center"
+            onClick={() => setShowCelebration(false)}
           >
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 text-center">
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-black/50" />
+            
+            {/* Modal Content */}
+            <motion.div
+              initial={{ scale: 0.5 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.5 }}
+              className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 text-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close button */}
+              <button
+                onClick={() => setShowCelebration(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                aria-label="Close celebration"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              
               <motion.div
                 animate={{
                   rotate: [0, 10, -10, 10, 0],
@@ -173,7 +195,7 @@ export function DailyGoalTracker({
               <p className="text-gray-600 dark:text-gray-400">
                 You&apos;ve hit {goal} replies today. Keep crushing it!
               </p>
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

@@ -193,6 +193,16 @@ export async function POST(req: NextRequest) {
     });
 
     // Step 1: Optional Perplexity research
+    console.log('🔍 Research Check:', {
+      needsResearch: validated.needsResearch,
+      type: typeof validated.needsResearch,
+      rawValue: req.body?.needsResearch,
+      userPlan: {
+        enable_perplexity: userPlan?.enable_perplexity,
+        enable_perplexity_guidance: userPlan?.enable_perplexity_guidance
+      }
+    });
+    
     if (validated.needsResearch) {
       console.log(`\n🔍 ============ STEP 1: RESEARCH [${requestId}] ============`);
       try {
@@ -237,6 +247,8 @@ export async function POST(req: NextRequest) {
       }
     } else {
       console.log(`\n🚫 ============ STEP 1: RESEARCH SKIPPED [${requestId}] ============`);
+      console.log('❌ Research skipped because needsResearch =', validated.needsResearch);
+      console.log('❌ Raw request body needsResearch =', req.body?.needsResearch);
     }
 
     // Step 2: Classify and select reply types

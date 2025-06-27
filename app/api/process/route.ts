@@ -260,8 +260,19 @@ export async function POST(req: NextRequest) {
     });
 
     if (!classifyResponse.ok) {
+      const errorData = await classifyResponse.json().catch(() => ({ error: 'Unknown error' }));
       console.log('❌ CLASSIFICATION FAILED - HTTP Status:', classifyResponse.status);
-      throw new Error('Classification failed');
+      console.log('❌ Classification Error:', errorData);
+      
+      // Return a more specific error message
+      return NextResponse.json(
+        { 
+          error: `Classification failed: ${errorData.error || 'Unknown error'}`,
+          details: errorData,
+          costs,
+        },
+        { status: 500 }
+      );
     }
 
     const classifyData = await classifyResponse.json();
@@ -309,8 +320,18 @@ export async function POST(req: NextRequest) {
     });
 
     if (!reasonResponse.ok) {
+      const errorData = await reasonResponse.json().catch(() => ({ error: 'Unknown error' }));
       console.log('❌ REASONING FAILED - HTTP Status:', reasonResponse.status);
-      throw new Error('Reasoning failed');
+      console.log('❌ Reasoning Error:', errorData);
+      
+      return NextResponse.json(
+        { 
+          error: `Reasoning failed: ${errorData.error || 'Unknown error'}`,
+          details: errorData,
+          costs,
+        },
+        { status: 500 }
+      );
     }
 
     const reasonData = await reasonResponse.json();
@@ -394,9 +415,17 @@ export async function POST(req: NextRequest) {
     });
 
     if (!generateResponse.ok) {
-      const errorData = await generateResponse.json();
+      const errorData = await generateResponse.json().catch(() => ({ error: 'Unknown error' }));
       console.error('❌ GENERATION FAILED:', errorData);
-      throw new Error('Generation failed');
+      
+      return NextResponse.json(
+        { 
+          error: `Generation failed: ${errorData.error || 'Unknown error'}`,
+          details: errorData,
+          costs,
+        },
+        { status: 500 }
+      );
     }
 
     const generateData = await generateResponse.json();
@@ -461,23 +490,34 @@ export async function POST(req: NextRequest) {
     if (userId !== 'anonymous') {
       try {
         // Track the reply generation - use throwOnError to ensure we know if it fails
-        await supabase
+        const { data: trackingData, error: trackingError } = await supabase
           .rpc('track_daily_usage', {
             p_user_id: userId,
             p_usage_type: 'reply',
             p_count: 1
-          })
-          .throwOnError();
+          });
 
-        console.log('[process] ✅ Usage tracked successfully for user:', userId);
+        if (trackingError) {
+          console.error('[process] ❌ Usage tracking RPC error:', {
+            error: trackingError,
+            code: trackingError.code,
+            message: trackingError.message,
+            details: trackingError.details,
+            hint: trackingError.hint,
+            userId,
+          });
+        } else {
+          console.log('[process] ✅ Usage tracked successfully for user:', userId);
+        }
         
         // Meme tracking is already handled in the /api/meme endpoint
       } catch (trackingError) {
         // Log the full error for debugging but don't fail the request
-        console.error('[process] Failed to track usage:', {
+        console.error('[process] ❌ Failed to track usage (exception):', {
           error: trackingError,
           userId,
-          message: trackingError instanceof Error ? trackingError.message : 'Unknown error'
+          message: trackingError instanceof Error ? trackingError.message : 'Unknown error',
+          stack: trackingError instanceof Error ? trackingError.stack : undefined
         });
       }
     }

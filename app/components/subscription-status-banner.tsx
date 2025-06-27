@@ -30,12 +30,22 @@ export function SubscriptionStatusBanner() {
       return;
     }
 
-    const { data: sub } = await supabase
+    const { data: sub, error } = await supabase
       .from('subscriptions')
       .select('status, payment_failed_at, cancel_at_period_end, current_period_end')
       .eq('user_id', user.id)
       .in('status', ['past_due', 'canceled', 'unpaid'])
-      .single();
+      .maybeSingle();
+    
+    if (error) {
+      console.error('[subscription-banner] Failed to fetch subscription status:', {
+        error,
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
+    }
 
     setSubscription(sub);
     setLoading(false);

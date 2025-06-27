@@ -63,15 +63,25 @@ export default function HomePage() {
         // Get current month's meme usage
         let memesUsed = 0;
         try {
-          const { data: currentUsage } = await supabase
+          const { data: currentUsage, error: currentUsageError } = await supabase
             .rpc('get_current_usage', { p_user_id: user.id })
-            .single()
-            .throwOnError() as { data: { total_replies: number; total_memes: number } | null };
+            .maybeSingle() as { data: { total_replies: number; total_memes: number } | null; error: any };
           
-          memesUsed = currentUsage?.total_memes || 0;
-          console.log('[dashboard] Current usage fetched:', currentUsage);
+          if (currentUsageError) {
+            console.error('[dashboard] Failed to fetch current usage:', {
+              error: currentUsageError,
+              code: currentUsageError.code,
+              message: currentUsageError.message,
+              details: currentUsageError.details,
+              hint: currentUsageError.hint,
+              userId: user.id
+            });
+          } else {
+            memesUsed = currentUsage?.total_memes || 0;
+            console.log('[dashboard] Current usage fetched:', currentUsage);
+          }
         } catch (usageError) {
-          console.error('[dashboard] Failed to fetch current usage:', {
+          console.error('[dashboard] Failed to fetch current usage (exception):', {
             error: usageError,
             userId: user.id,
             message: usageError instanceof Error ? usageError.message : 'Unknown error'
@@ -88,15 +98,27 @@ export default function HomePage() {
       
       // Get today's usage
       const today = new Date().toISOString().split('T')[0];
-      const { data: usage } = await supabase
+      const { data: usage, error: usageError } = await supabase
         .from('daily_usage')
-        .select('replies_generated')
+        .select('*')
         .eq('user_id', user.id)
         .eq('date', today)
-        .single();
+        .maybeSingle();
         
-      if (usage) {
+      if (usageError) {
+        console.error('[dashboard] Failed to fetch daily usage:', {
+          error: usageError,
+          code: usageError.code,
+          message: usageError.message,
+          details: usageError.details,
+          hint: usageError.hint
+        });
+        setDailyCount(0);
+      } else if (usage) {
         setDailyCount(usage.replies_generated || 0);
+      } else {
+        // No usage record for today yet
+        setDailyCount(0);
       }
     };
     

@@ -207,7 +207,7 @@ async function testAPIFixes() {
       });
       
       if (generateButton) {
-        await generateButton.click();
+        await generateButton.asElement().click();
         console.log('   ⏳ Generating...');
         
         // Wait for generation

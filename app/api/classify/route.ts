@@ -4,10 +4,16 @@ import OpenAI from 'openai';
 import { ReplyType } from '@/app/lib/types';
 import replyTypesData from '@/data/all-reply-types.json';
 
+// Check if OpenAI API key is configured
+const apiKey = process.env.OPENAI_API_KEY;
+if (!apiKey || apiKey.trim() === '') {
+  console.error('[classify] OpenAI API key is not configured');
+}
+
 // Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const openai = apiKey ? new OpenAI({
+  apiKey: apiKey,
+}) : null;
 
 // Request validation schema
 const requestSchema = z.object({
@@ -18,11 +24,68 @@ const requestSchema = z.object({
   perplexityData: z.string().optional(),
 });
 
+// Fallback reply types for when classification fails
+const FALLBACK_TYPES: ReplyType[] = [
+  {
+    id: 'helpful-tip',
+    name: 'The Helpful Tip',
+    category: 'Value & Information',
+    pattern: 'Share useful advice or insights',
+    styleRules: 'Be helpful and constructive. Focus on providing value.',
+    examples: ['Here\'s something that might help...', 'One thing to consider is...'],
+    tags: ['helpful', 'informative'],
+    complexity: 1,
+  },
+  {
+    id: 'supportive-response',
+    name: 'The Supportive Response',
+    category: 'Supportive Community',
+    pattern: 'Show understanding and support',
+    styleRules: 'Be empathetic and encouraging. Show you understand their perspective.',
+    examples: ['I completely understand...', 'That makes a lot of sense...'],
+    tags: ['supportive', 'empathetic'],
+    complexity: 1,
+  },
+  {
+    id: 'thoughtful-reply',
+    name: 'The Thoughtful Reply',
+    category: 'Analytical & Thoughtful',
+    pattern: 'Provide a considered, thoughtful response',
+    styleRules: 'Be analytical but accessible. Show you\'ve thought about the topic.',
+    examples: ['That\'s an interesting point...', 'I\'ve been thinking about this too...'],
+    tags: ['analytical', 'thoughtful'],
+    complexity: 1,
+  }
+];
+
 export async function POST(req: NextRequest) {
   try {
     // Validate request body
     const body = await req.json();
     const validated = requestSchema.parse(body);
+    
+    // Check if OpenAI client is available
+    if (!openai) {
+      console.warn('[classify] OpenAI client not initialized, using fallback classification');
+      const relevantTypes = filterReplyTypes(
+        validated.responseType,
+        validated.tone
+      );
+      
+      // Return first 3 relevant types or fallbacks
+      const selectedTypes = relevantTypes.length > 0 
+        ? relevantTypes.slice(0, 3)
+        : FALLBACK_TYPES;
+      
+      return NextResponse.json({
+        data: {
+          selectedTypes,
+          tokensUsed: 0,
+          cost: 0,
+          fallback: true,
+        },
+      });
+    }
 
     // Filter reply types based on response type and tone
     const relevantTypes = filterReplyTypes(
@@ -34,25 +97,53 @@ export async function POST(req: NextRequest) {
     const prompt = buildClassificationPrompt(validated, relevantTypes);
 
     // Call GPT-3.5-turbo for classification (cost-efficient)
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert at matching tweet contexts to appropriate reply patterns. Return only the numbers of your top 3 choices, separated by commas.',
+    let completion;
+    try {
+      completion = await openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert at matching tweet contexts to appropriate reply patterns. Return only the numbers of your top 3 choices, separated by commas.',
+          },
+          { role: 'user', content: prompt },
+        ],
+        temperature: 0.3,
+        max_tokens: 50,
+      });
+    } catch (apiError) {
+      console.error('[classify] OpenAI API error:', apiError);
+      
+      // Return fallback types on API error
+      const selectedTypes = relevantTypes.length > 0 
+        ? relevantTypes.slice(0, 3)
+        : FALLBACK_TYPES;
+      
+      return NextResponse.json({
+        data: {
+          selectedTypes,
+          tokensUsed: 0,
+          cost: 0,
+          fallback: true,
+          error: 'Classification API temporarily unavailable',
         },
-        { role: 'user', content: prompt },
-      ],
-      temperature: 0.3,
-      max_tokens: 50,
-    });
+      });
+    }
 
     const response = completion.choices[0].message.content || '';
     const selectedIndices = parseClassificationResponse(response);
-    const selectedTypes = selectedIndices
+    let selectedTypes = selectedIndices
       .map(i => relevantTypes[i - 1])
       .filter(Boolean)
       .slice(0, 3);
+    
+    // If no types were selected, use fallbacks
+    if (selectedTypes.length === 0) {
+      console.warn('[classify] No types selected from classification, using fallbacks');
+      selectedTypes = relevantTypes.length > 0 
+        ? relevantTypes.slice(0, 3)
+        : FALLBACK_TYPES;
+    }
 
     // Calculate cost - GPT-3.5-turbo pricing
     const promptTokens = completion.usage?.prompt_tokens || 0;

@@ -41,8 +41,8 @@ export async function GET(req: NextRequest) {
       .from('daily_usage')
       .select('*')
       .eq('user_id', user.id)
-      .eq('usage_date', new Date().toISOString().split('T')[0])
-      .single();
+      .eq('date', new Date().toISOString().split('T')[0])
+      .maybeSingle(); // Use maybeSingle to handle no records gracefully
 
     // Get user's daily goal
     const { data: userSettings, error: settingsError } = await supabase
@@ -60,10 +60,10 @@ export async function GET(req: NextRequest) {
         memes: usage?.total_memes || 0,
       },
       dailyUsage: {
-        replies: dailyUsage?.reply_count || 0,
-        suggestions: dailyUsage?.suggestion_count || 0,
-        memes: dailyUsage?.meme_count || 0,
-        date: dailyUsage?.usage_date || new Date().toISOString().split('T')[0],
+        replies: dailyUsage?.replies_generated || 0,
+        suggestions: dailyUsage?.suggestions_used || 0,
+        memes: dailyUsage?.memes_generated || 0,
+        date: dailyUsage?.date || new Date().toISOString().split('T')[0],
       },
       dailyGoal,
     });

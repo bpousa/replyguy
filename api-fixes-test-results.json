@@ -1,0 +1,101 @@
+{
+  "apis": {
+    "classification": {
+      "status": "pending",
+      "errors": 0
+    },
+    "userPlan": {
+      "status": "working",
+      "errors": 0
+    },
+    "userUsage": {
+      "status": "pending",
+      "errors": 0
+    },
+    "dailyGoal": {
+      "status": "pending",
+      "errors": 0
+    }
+  },
+  "replyGeneration": {
+    "attempts": 3,
+    "successful": 3,
+    "failed": 0
+  },
+  "usageTracking": {
+    "dailyGoal": {
+      "after": 0,
+      "incremented": false
+    },
+    "monthlyUsage": {
+      "before": null,
+      "after": null,
+      "incremented": false
+    }
+  },
+  "persistence": {
+    "dailyGoalPersists": true,
+    "monthlyUsagePersists": false
+  },
+  "errors": {
+    "total": 10,
+    "by_type": {
+      "404": 4,
+      "406": 3,
+      "500": 3,
+      "other": 0
+    },
+    "details": [
+      {
+        "url": "https://aaplsgskmoeyvvedjzxp.supabase.co/rest/v1/subscriptions?select=status%2Cpayment_failed_at%2Ccancel_at_period_end%2Ccurrent_period_end&user_id=eq.fc11dbd9-6f71-49c7-aeaa-ea4b167ca788&status=in.%28past_due%2Ccanceled%2Cunpaid%29",
+        "status": 406,
+        "timestamp": "2025-06-27T15:03:37.629Z"
+      },
+      {
+        "url": "https://aaplsgskmoeyvvedjzxp.supabase.co/rest/v1/daily_usage?select=replies_generated&user_id=eq.fc11dbd9-6f71-49c7-aeaa-ea4b167ca788&date=eq.2025-06-27",
+        "status": 404,
+        "timestamp": "2025-06-27T15:03:38.161Z"
+      },
+      {
+        "url": "https://aaplsgskmoeyvvedjzxp.supabase.co/rest/v1/subscriptions?select=status%2Cpayment_failed_at%2Ccancel_at_period_end%2Ccurrent_period_end&user_id=eq.fc11dbd9-6f71-49c7-aeaa-ea4b167ca788&status=in.%28past_due%2Ccanceled%2Cunpaid%29",
+        "status": 406,
+        "timestamp": "2025-06-27T15:03:42.404Z"
+      },
+      {
+        "url": "https://aaplsgskmoeyvvedjzxp.supabase.co/rest/v1/daily_usage?select=replies_generated&user_id=eq.fc11dbd9-6f71-49c7-aeaa-ea4b167ca788&date=eq.2025-06-27",
+        "status": 404,
+        "timestamp": "2025-06-27T15:03:43.001Z"
+      },
+      {
+        "url": "/api/process",
+        "status": 500,
+        "timestamp": "2025-06-27T15:03:48.627Z"
+      },
+      {
+        "url": "/api/process",
+        "status": 500,
+        "timestamp": "2025-06-27T15:03:59.879Z"
+      },
+      {
+        "url": "/api/process",
+        "status": 500,
+        "timestamp": "2025-06-27T15:04:11.597Z"
+      },
+      {
+        "url": "https://aaplsgskmoeyvvedjzxp.supabase.co/rest/v1/subscriptions?select=status%2Cpayment_failed_at%2Ccancel_at_period_end%2Ccurrent_period_end&user_id=eq.fc11dbd9-6f71-49c7-aeaa-ea4b167ca788&status=in.%28past_due%2Ccanceled%2Cunpaid%29",
+        "status": 406,
+        "timestamp": "2025-06-27T15:04:22.687Z"
+      },
+      {
+        "url": "https://aaplsgskmoeyvvedjzxp.supabase.co/rest/v1/daily_usage?select=replies_generated&user_id=eq.fc11dbd9-6f71-49c7-aeaa-ea4b167ca788&date=eq.2025-06-27",
+        "status": 404,
+        "timestamp": "2025-06-27T15:04:23.026Z"
+      },
+      {
+        "url": "https://aaplsgskmoeyvvedjzxp.supabase.co/rest/v1/rpc/get_user_limits",
+        "status": 404,
+        "timestamp": "2025-06-27T15:04:26.348Z"
+      }
+    ]
+  }
+}

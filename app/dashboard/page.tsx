@@ -191,50 +191,8 @@ export default function HomePage() {
       setGeneratedReply(result.data);
       toast.success('Reply generated successfully!');
       
-      // Track usage
-      await supabase.from('user_usage').insert({
-        user_id: user.id,
-        reply_type: result.data.replyType,
-        tokens_used: result.data.tokensUsed || 0,
-        cost: result.data.cost || 0,
-        has_meme: result.data.memeUrl ? true : false,
-      });
-      
-      // Update daily count using the database function
-      try {
-        await supabase.rpc('track_daily_usage', {
-          p_user_id: user.id,
-          p_usage_type: 'reply',
-          p_count: 1
-        }).throwOnError();
-        
-        console.log('[dashboard] ✅ Reply usage tracked successfully');
-      } catch (trackError) {
-        console.error('[dashboard] Failed to track reply usage:', {
-          error: trackError,
-          userId: user.id,
-          message: trackError instanceof Error ? trackError.message : 'Unknown error'
-        });
-      }
-      
-      // Also track meme if generated
-      if (result.data.memeUrl) {
-        try {
-          await supabase.rpc('track_daily_usage', {
-            p_user_id: user.id,
-            p_usage_type: 'meme',
-            p_count: 1
-          }).throwOnError();
-          
-          console.log('[dashboard] ✅ Meme usage tracked successfully');
-        } catch (trackError) {
-          console.error('[dashboard] Failed to track meme usage:', {
-            error: trackError,
-            userId: user.id,
-            message: trackError instanceof Error ? trackError.message : 'Unknown error'
-          });
-        }
-      }
+      // Usage tracking is now handled by the backend API
+      // The /api/process endpoint calls track_daily_usage internally
       
       setDailyCount(prev => prev + 1);
     } catch (error) {

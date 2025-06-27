@@ -59,35 +59,63 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validated = requestSchema.parse(body);
     
-    // Get authenticated user or use provided userId
-    let userId = validated.userId || 'anonymous';
+    // Get authenticated user from server-side session
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    
+    // Use authenticated user ID, fallback to provided userId, then anonymous
+    let userId = authUser?.id || validated.userId || 'anonymous';
+    
+    if (!authUser && validated.userId) {
+      console.warn('[process] No authenticated user, using provided userId:', validated.userId);
+    }
     
     // Check user limits
     if (userId !== 'anonymous') {
-      // Get user data with active subscription and plan
-      const { data: userData } = await supabase
-        .from('users')
-        .select(`
-          id,
-          email,
-          subscriptions!inner(
-            status,
-            plan_id,
-            subscription_plans!inner(
-              id,
-              monthly_limit,
-              suggestion_limit,
-              meme_limit,
-              enable_memes
-            )
-          )
-        `)
-        .eq('id', userId)
-        .eq('subscriptions.status', 'active')
-        .single() as { data: UserData | null };
+      // Get user's active subscription first
+      const { data: subscriptions, error: subError } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      let activeSubscription = null;
+      let plan = null;
+      
+      if (subscriptions && subscriptions.length > 0) {
+        activeSubscription = subscriptions[0];
         
-      const activeSubscription = userData?.subscriptions?.[0];
-      if (activeSubscription?.subscription_plans) {
+        // Get the plan details separately
+        const { data: planData, error: planError } = await supabase
+          .from('subscription_plans')
+          .select('*')
+          .eq('id', activeSubscription.plan_id)
+          .single();
+          
+        if (planData) {
+          plan = planData;
+        }
+      }
+      
+      // If no active subscription, get free plan
+      if (!plan) {
+        const { data: freePlan } = await supabase
+          .from('subscription_plans')
+          .select('*')
+          .eq('id', 'free')
+          .single();
+          
+        plan = freePlan || {
+          id: 'free',
+          monthly_limit: 5,
+          suggestion_limit: 0,
+          meme_limit: 0,
+          enable_memes: false
+        };
+      }
+      
+      if (plan) {
         // Get current usage
         let currentUsage: CurrentUsage = { total_replies: 0, total_memes: 0 };
         try {
@@ -108,7 +136,6 @@ export async function POST(req: NextRequest) {
           });
           // Continue with default zero usage
         }
-        const plan = activeSubscription.subscription_plans;
         
         // Check reply limit
         if (currentUsage.total_replies >= plan.monthly_limit) {

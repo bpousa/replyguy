@@ -23,7 +23,7 @@ const requestSchema = z.object({
     examples: z.array(z.string()),
   }),
   perplexityData: z.string().optional(),
-  replyLength: z.enum(['short', 'medium', 'long']).optional(),
+  replyLength: z.enum(['short', 'medium', 'long', 'extra-long']).optional(),
   enableStyleMatching: z.boolean().optional(),
   useCustomStyle: z.boolean().optional(),
   userId: z.string().optional(),

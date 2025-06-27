@@ -19,13 +19,13 @@ export function truncateTweet(tweet: string, maxLength: number = 100): string {
   return tweet.substring(0, maxLength - 3) + '...';
 }
 
-export function validateTweet(tweet: string): { valid: boolean; error?: string } {
+export function validateTweet(tweet: string, maxLength: number = 500): { valid: boolean; error?: string } {
   if (!tweet || tweet.trim().length === 0) {
     return { valid: false, error: 'Tweet cannot be empty' };
   }
   
-  if (tweet.length > 500) {
-    return { valid: false, error: 'Tweet is too long (max 500 characters for context)' };
+  if (tweet.length > maxLength) {
+    return { valid: false, error: `Tweet is too long (max ${maxLength} characters for context)` };
   }
   
   return { valid: true };

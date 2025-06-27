@@ -45,6 +45,7 @@ export const REPLY_LENGTHS = [
   { value: 'short', label: 'Short', description: 'Up to 280 characters', maxChars: 280 },
   { value: 'medium', label: 'Medium', description: 'Up to 560 characters', maxChars: 560 },
   { value: 'long', label: 'Long', description: 'Up to 1000 characters', maxChars: 1000 },
+  { value: 'extra-long', label: 'Extra Long', description: 'Up to 2000 characters', maxChars: 2000 },
 ] as const;
 
 export const API_ENDPOINTS = {

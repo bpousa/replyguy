@@ -34,7 +34,7 @@ export type Tone =
   | 'friendly'
   | 'formal';
 
-export type ReplyLength = 'short' | 'medium' | 'long';
+export type ReplyLength = 'short' | 'medium' | 'long' | 'extra-long';
 
 export interface UserInput {
   originalTweet: string;

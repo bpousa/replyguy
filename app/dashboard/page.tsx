@@ -282,7 +282,11 @@ export default function HomePage() {
           {/* Output display */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
             <h2 className="text-xl font-semibold mb-4">Generated Reply</h2>
-            <ReplyOutput reply={generatedReply} isLoading={isGenerating} />
+            <ReplyOutput 
+              reply={generatedReply} 
+              isLoading={isGenerating}
+              maxReplyLength={subscription?.subscription_plans?.max_reply_length || 280}
+            />
           </div>
         </div>
 

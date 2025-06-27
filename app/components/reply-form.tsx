@@ -119,7 +119,7 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
     e.preventDefault();
     
     // Validate inputs
-    const tweetValidation = validateTweet(originalTweet);
+    const tweetValidation = validateTweet(originalTweet, userPlan.max_tweet_length);
     if (!tweetValidation.valid) {
       setErrors({ tweet: tweetValidation.error });
       return;
@@ -452,7 +452,7 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
         upgradeLimitType === 'tweet' ? [
           { name: 'X Basic', limit: '500 chars', price: '$19', features: ['300 replies/month', '10 memes/month', '50 AI suggestions'] },
           { name: 'X Pro', limit: '1000 chars', price: '$49', features: ['500 replies/month', '50 memes/month', 'Write Like Me™'] },
-          { name: 'X Business', limit: '1500 chars', price: '$99', features: ['1000 replies/month', '100 memes/month', 'All features'] }
+          { name: 'X Business', limit: '2000 chars', price: '$99', features: ['1000 replies/month', '100 memes/month', 'All features'] }
         ] :
         upgradeLimitType === 'response' ? [
           { name: 'X Basic', limit: '300 chars', price: '$19', features: ['300 replies/month', '10 memes/month', '50 AI suggestions'] },

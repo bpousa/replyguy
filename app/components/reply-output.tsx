@@ -14,9 +14,10 @@ import { LoadingReplyGuy } from './loading-reply-guy';
 interface ReplyOutputProps {
   reply: GeneratedReply | null;
   isLoading: boolean;
+  maxReplyLength?: number;
 }
 
-export default function ReplyOutput({ reply, isLoading }: ReplyOutputProps) {
+export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: ReplyOutputProps) {
   const [copied, setCopied] = useState(false);
   const searchParams = useSearchParams();
   const debugMode = searchParams.get('debug') === 'true';
@@ -146,8 +147,8 @@ export default function ReplyOutput({ reply, isLoading }: ReplyOutputProps) {
         {/* Character Count */}
         <div className="text-center text-sm text-gray-500">
           {reply.reply.length} characters
-          {reply.reply.length > 280 && (
-            <span className="text-red-500 ml-2">(Too long for X/Twitter)</span>
+          {reply.reply.length > maxReplyLength && (
+            <span className="text-red-500 ml-2">(Too long for your plan limit of {maxReplyLength} characters)</span>
           )}
         </div>
       </motion.div>

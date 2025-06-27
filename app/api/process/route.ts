@@ -35,7 +35,7 @@ const requestSchema = z.object({
   responseType: z.enum(['agree', 'disagree', 'neutral', 'other']),
   tone: z.string(),
   needsResearch: z.boolean(),
-  replyLength: z.enum(['short', 'medium', 'long']).optional(),
+  replyLength: z.enum(['short', 'medium', 'long', 'extra-long']).optional(),
   perplexityGuidance: z.string().max(200).optional(),
   enableStyleMatching: z.boolean().optional(),
   includeMeme: z.boolean().optional(),

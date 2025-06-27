@@ -155,7 +155,7 @@ export function DailyGoalTracker({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center"
+            className="fixed inset-0 z-[9999] flex items-center justify-center"
             onClick={() => setShowCelebration(false)}
           >
             {/* Backdrop */}
@@ -166,7 +166,7 @@ export function DailyGoalTracker({
               initial={{ scale: 0.5 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.5 }}
-              className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 text-center"
+              className="relative z-10 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 text-center"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Close button */}

@@ -153,7 +153,7 @@ export function useAuth() {
 }
 
 // Utility hook to require authentication
-export function useRequireAuth(redirectTo = '/auth/sign-in') {
+export function useRequireAuth(redirectTo = '/auth/login') {
   const { status } = useAuth();
   const [isReady, setIsReady] = useState(false);
 

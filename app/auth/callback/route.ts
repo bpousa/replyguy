@@ -69,7 +69,17 @@ export async function GET(request: NextRequest) {
     
     if (!verifySession) {
       console.error('[auth-callback] Session verification failed - session not persisted');
-      // Don't fail here, continue with redirect as cookies might propagate
+      // In production, add a small delay to ensure cookies propagate
+      if (process.env.NODE_ENV === 'production') {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        // Try once more
+        const { data: { session: retrySession } } = await supabase.auth.getSession();
+        if (retrySession) {
+          console.log('[auth-callback] Session verified on retry');
+        } else {
+          console.error('[auth-callback] Session still not available after retry');
+        }
+      }
     } else {
       console.log('[auth-callback] Session verified successfully');
     }

@@ -13,11 +13,16 @@ export async function middleware(request: NextRequest) {
       !pathname.startsWith('/api/stripe/webhook') &&
       !pathname.startsWith('/api/health')) {
     
-    // Look for Supabase auth cookie
+    // Look for Supabase auth cookie - be more flexible with cookie names
     const cookies = request.cookies;
-    const hasAuthCookie = cookies.getAll().some(cookie => 
-      cookie.name.includes('sb-') && cookie.name.includes('-auth-token')
-    );
+    const hasAuthCookie = cookies.getAll().some(cookie => {
+      // Supabase cookie patterns can vary, check for any auth-related cookie
+      return cookie.name.includes('sb-') && 
+        (cookie.name.includes('auth-token') || 
+         cookie.name.includes('session') ||
+         cookie.name.includes('access-token') ||
+         cookie.name.includes('refresh-token'));
+    });
     
     if (!hasAuthCookie) {
       console.log(`[middleware] No auth cookie for API route: ${pathname}`);
@@ -34,13 +39,18 @@ export async function middleware(request: NextRequest) {
       pathname.startsWith('/settings')) {
     
     const cookies = request.cookies;
-    const hasAuthCookie = cookies.getAll().some(cookie => 
-      cookie.name.includes('sb-') && cookie.name.includes('-auth-token')
-    );
+    const hasAuthCookie = cookies.getAll().some(cookie => {
+      // Supabase cookie patterns can vary, check for any auth-related cookie
+      return cookie.name.includes('sb-') && 
+        (cookie.name.includes('auth-token') || 
+         cookie.name.includes('session') ||
+         cookie.name.includes('access-token') ||
+         cookie.name.includes('refresh-token'));
+    });
     
     if (!hasAuthCookie) {
       console.log(`[middleware] No auth cookie for protected page: ${pathname}`);
-      const signInUrl = new URL('/auth/sign-in', request.url);
+      const signInUrl = new URL('/auth/login', request.url);
       signInUrl.searchParams.set('next', pathname);
       return NextResponse.redirect(signInUrl);
     }

@@ -46,18 +46,21 @@ export const createServerClient = (cookieStore: ReturnType<typeof cookies>) => {
         set(name: string, value: string, options: any) {
           try {
             // Ensure proper cookie options for auth cookies
+            const isAuthCookie = name.includes('sb-') || name.includes('supabase');
+            const isProduction = process.env.NODE_ENV === 'production';
+            
             const cookieOptions = {
               name,
               value,
               ...options,
               // Override with secure defaults for auth cookies
-              ...(name.includes('sb-') || name.includes('supabase') ? {
+              ...(isAuthCookie ? {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
+                secure: isProduction,
                 sameSite: 'lax' as const,
                 path: '/',
-                // Add max age for better persistence (7 days)
-                maxAge: 60 * 60 * 24 * 7
+                // Preserve Supabase's original maxAge if provided
+                ...(options.maxAge ? { maxAge: options.maxAge } : {})
               } : {})
             };
             

@@ -33,9 +33,9 @@ export async function POST(req: NextRequest) {
     // Build classification prompt
     const prompt = buildClassificationPrompt(validated, relevantTypes);
 
-    // Call GPT-4o for classification
+    // Call GPT-3.5-turbo for classification (cost-efficient)
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-3.5-turbo',
       messages: [
         {
           role: 'system',
@@ -54,11 +54,11 @@ export async function POST(req: NextRequest) {
       .filter(Boolean)
       .slice(0, 3);
 
-    // Calculate cost - GPT-4o pricing
+    // Calculate cost - GPT-3.5-turbo pricing
     const promptTokens = completion.usage?.prompt_tokens || 0;
     const completionTokens = completion.usage?.completion_tokens || 0;
     const tokensUsed = promptTokens + completionTokens;
-    const cost = (promptTokens * 0.0000025) + (completionTokens * 0.00001); // $2.50/$10 per 1M tokens
+    const cost = (promptTokens * 0.0000005) + (completionTokens * 0.0000015); // $0.50/$1.50 per 1M tokens
 
     return NextResponse.json({
       data: {

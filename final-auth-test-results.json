@@ -1,0 +1,85 @@
+{
+  "accounts": {
+    "Free": {
+      "tier": "Free",
+      "email": "test-free@replyguy.com",
+      "login": "success",
+      "cookies": 1,
+      "session": true,
+      "dashboard": true,
+      "apiAccess": {
+        "/api/user/usage": {
+          "status": 404,
+          "ok": false
+        },
+        "/api/stripe/products": {
+          "status": 404,
+          "ok": false
+        }
+      },
+      "errors": []
+    },
+    "X Basic": {
+      "tier": "X Basic",
+      "email": "test-basic@replyguy.com",
+      "login": "success",
+      "cookies": 1,
+      "session": true,
+      "dashboard": true,
+      "apiAccess": {
+        "/api/user/usage": {
+          "status": 404,
+          "ok": false
+        },
+        "/api/stripe/products": {
+          "status": 404,
+          "ok": false
+        }
+      },
+      "errors": []
+    },
+    "X Pro": {
+      "tier": "X Pro",
+      "email": "test-pro@replyguy.com",
+      "login": "success",
+      "cookies": 1,
+      "session": true,
+      "dashboard": true,
+      "apiAccess": {
+        "/api/user/usage": {
+          "status": 404,
+          "ok": false
+        },
+        "/api/stripe/products": {
+          "status": 404,
+          "ok": false
+        }
+      },
+      "errors": []
+    },
+    "X Business": {
+      "tier": "X Business",
+      "email": "test-business@replyguy.com",
+      "login": "success",
+      "cookies": 1,
+      "session": true,
+      "dashboard": true,
+      "apiAccess": {
+        "/api/user/usage": {
+          "status": 404,
+          "ok": false
+        },
+        "/api/stripe/products": {
+          "status": 404,
+          "ok": false
+        }
+      },
+      "errors": []
+    }
+  },
+  "summary": {
+    "totalTested": 4,
+    "successful": 4,
+    "failed": 0
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "dailyGoal": {
+    "defaultValue": 10,
+    "afterReply": 0,
+    "afterRefresh": 0,
+    "persisted": true
+  },
+  "monthlyUsage": {
+    "initial": 7,
+    "afterReply": null,
+    "afterRefresh": 7,
+    "persisted": true
+  },
+  "replyGeneration": {
+    "success": true,
+    "errors": []
+  },
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 500 ()",
+    "Failed to load resource: the server responded with a status of 406 ()",
+    "Failed to load resource: the server responded with a status of 404 ()",
+    "Failed to load resource: the server responded with a status of 500 ()",
+    "Failed to load resource: the server responded with a status of 406 ()",
+    "Failed to load resource: the server responded with a status of 404 ()",
+    "Failed to load resource: the server responded with a status of 500 ()",
+    "Failed to generate reply: JSHandle@error",
+    "Failed to load resource: the server responded with a status of 500 ()",
+    "Failed to load resource: the server responded with a status of 500 ()",
+    "Failed to load resource: the server responded with a status of 406 ()",
+    "Failed to load resource: the server responded with a status of 404 ()",
+    "Failed to load resource: the server responded with a status of 500 ()"
+  ],
+  "warnings": []
+}

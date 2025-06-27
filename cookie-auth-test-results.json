@@ -1,0 +1,62 @@
+{
+  "testResults": {
+    "cookieAuth": {
+      "status": "passed",
+      "cookies": [
+        {
+          "name": "sb-aaplsgskmoeyvvedjzxp-auth-token",
+          "domain": "replyguy.appendment.com"
+        }
+      ]
+    },
+    "login": {
+      "status": "passed",
+      "details": {
+        "user": "test-pro@replyguy.com",
+        "sessionExists": true
+      }
+    },
+    "sessionPersistence": {
+      "status": "passed",
+      "persisted": true
+    },
+    "apiAccess": {
+      "status": "failed",
+      "results": {
+        "/api/stripe/products": {
+          "url": "/api/stripe/products",
+          "error": "Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON"
+        },
+        "/api/user/usage": {
+          "url": "/api/user/usage",
+          "error": "Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON"
+        },
+        "/api/user/plan": {
+          "url": "/api/user/plan",
+          "status": 500,
+          "ok": false,
+          "hasData": true
+        }
+      }
+    },
+    "migration": {
+      "status": "passed",
+      "migrated": false
+    },
+    "protectedRoutes": {
+      "status": "pending",
+      "accessible": {
+        "dashboard": true
+      }
+    },
+    "overallHealth": {
+      "status": "failed",
+      "issues": [
+        "Some APIs still failing"
+      ]
+    }
+  },
+  "errors401Count": 0,
+  "apiErrors": [],
+  "timestamp": "2025-06-27T13:55:44.801Z"
+}

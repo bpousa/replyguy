@@ -17,44 +17,63 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Get user's subscription and plan details
-    const { data: userData, error: fetchError } = await supabase
-      .from('users')
-      .select(`
-        id,
-        email,
-        subscriptions!inner(
-          id,
-          status,
-          current_period_end,
-          current_period_start,
-          trial_end,
-          plan_id,
-          subscription_plans!inner(
-            id,
-            name,
-            monthly_limit,
-            suggestion_limit,
-            meme_limit,
-            max_reply_length,
-            enable_memes,
-            enable_style_matching,
-            enable_write_like_me,
-            enable_perplexity_guidance,
-            enable_long_replies,
-            enable_sentiment_boost,
-            enable_humor_boost,
-            enable_formality_control,
-            stripe_price_id_monthly,
-            stripe_price_id_yearly
-          )
-        )
-      `)
-      .eq('id', user.id)
+    // Get user's subscription first
+    const { data: subscriptions, error: subError } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1);
+    
+    // If no active subscription, return free plan
+    if (subError || !subscriptions || subscriptions.length === 0) {
+      console.log('[user-plan] No active subscription found, using free plan');
+      
+      // Get the free plan
+      const { data: freePlan, error: planError } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .eq('id', 'free')
+        .single();
+      
+      if (planError) {
+        console.error('[user-plan] Error fetching free plan:', planError);
+        return NextResponse.json(
+          { error: 'Failed to fetch plan data' },
+          { status: 500 }
+        );
+      }
+      
+      // Get usage anyway
+      let usage = null;
+      try {
+        const { data } = await supabase
+          .rpc('get_current_usage', { p_user_id: user.id })
+          .single();
+        usage = data;
+      } catch (e) {
+        console.error('[user-plan] Usage fetch error:', e);
+      }
+      
+      return NextResponse.json({
+        plan: freePlan,
+        subscription: null,
+        usage: usage || { total_replies: 0, total_suggestions: 0, total_memes: 0 },
+      });
+    }
+    
+    const subscription = subscriptions[0];
+    
+    // Get the plan details
+    const { data: plan, error: planError } = await supabase
+      .from('subscription_plans')
+      .select('*')
+      .eq('id', subscription.plan_id)
       .single();
 
-    if (fetchError) {
-      console.error('Error fetching user plan:', fetchError);
+    if (planError) {
+      console.error('[user-plan] Error fetching plan details:', planError);
       return NextResponse.json(
         { error: 'Failed to fetch plan data' },
         { status: 500 }
@@ -80,25 +99,6 @@ export async function GET(req: NextRequest) {
       // Continue with null usage - don't fail the whole request
     }
 
-    // Handle case where user has no subscription (free plan)
-    if (!userData?.subscriptions || userData.subscriptions.length === 0) {
-      // Get the free plan
-      const { data: freePlan } = await supabase
-        .from('subscription_plans')
-        .select('*')
-        .eq('id', 'free')
-        .single();
-
-      return NextResponse.json({
-        plan: freePlan,
-        subscription: null,
-        usage: usage || { total_replies: 0, total_suggestions: 0, total_memes: 0 },
-      });
-    }
-
-    const subscription = userData.subscriptions[0];
-    const plan = subscription.subscription_plans;
-
     return NextResponse.json({
       plan,
       subscription: {
@@ -107,6 +107,7 @@ export async function GET(req: NextRequest) {
         current_period_end: subscription.current_period_end,
         current_period_start: subscription.current_period_start,
         trial_end: subscription.trial_end,
+        plan_id: subscription.plan_id,
       },
       usage: usage || { total_replies: 0, total_suggestions: 0, total_memes: 0 },
     });

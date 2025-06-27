@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { createBrowserClient } from '@/app/lib/auth';
+import { migrateAuthFromLocalStorage, debugAuthCookies } from '@/app/lib/auth-migration';
 import { User } from '@supabase/supabase-js';
 
 interface AuthContextValue {
@@ -99,6 +100,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // Migrate from localStorage to cookies if needed
+    migrateAuthFromLocalStorage();
+    
+    // Debug cookies in development
+    if (process.env.NODE_ENV === 'development') {
+      debugAuthCookies();
+    }
+    
     // Initial session check
     checkSession();
 
@@ -106,6 +115,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('[auth-context] Auth state changed:', event, session?.user?.email);
+        
+        // Debug cookies on auth state change
+        if (process.env.NODE_ENV === 'development') {
+          debugAuthCookies();
+        }
         
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           setUser(session?.user || null);

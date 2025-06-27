@@ -1,24 +1,72 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { createServerClient as createSSRClient } from '@supabase/ssr';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { createServerClient as createSSRClient, createBrowserClient as createSSRBrowserClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 // Singleton instance
 let browserClient: SupabaseClient | null = null;
 
-// Client-side Supabase client (singleton)
+// Client-side Supabase client with proper cookie handling
 export const createBrowserClient = () => {
   if (!browserClient) {
-    browserClient = createClient(
+    browserClient = createSSRBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
+        cookies: {
+          get(name: string) {
+            if (typeof window === 'undefined') return '';
+            
+            const cookies = document.cookie.split('; ');
+            const cookie = cookies.find(c => c.startsWith(`${name}=`));
+            return cookie ? decodeURIComponent(cookie.split('=')[1]) : '';
+          },
+          set(name: string, value: string, options: any) {
+            if (typeof window === 'undefined') return;
+            
+            let cookieString = `${name}=${encodeURIComponent(value)}`;
+            
+            if (options.maxAge) {
+              cookieString += `; Max-Age=${options.maxAge}`;
+            }
+            if (options.expires) {
+              cookieString += `; Expires=${options.expires.toUTCString()}`;
+            }
+            if (options.path) {
+              cookieString += `; Path=${options.path}`;
+            }
+            if (options.domain) {
+              cookieString += `; Domain=${options.domain}`;
+            }
+            if (options.secure) {
+              cookieString += '; Secure';
+            }
+            if (options.sameSite) {
+              cookieString += `; SameSite=${options.sameSite}`;
+            }
+            
+            document.cookie = cookieString;
+            console.log('[auth] Browser cookie set:', name);
+          },
+          remove(name: string, options: any) {
+            if (typeof window === 'undefined') return;
+            
+            // Remove cookie by setting it with expired date
+            let cookieString = `${name}=; Max-Age=0`;
+            if (options.path) {
+              cookieString += `; Path=${options.path}`;
+            }
+            if (options.domain) {
+              cookieString += `; Domain=${options.domain}`;
+            }
+            
+            document.cookie = cookieString;
+            console.log('[auth] Browser cookie removed:', name);
+          }
+        },
         auth: {
           persistSession: true,
-          storageKey: 'replyguy-auth',
-          storage: typeof window !== 'undefined' ? window.localStorage : undefined,
           autoRefreshToken: true,
           detectSessionInUrl: true,
-          // Additional options for better session handling
           flowType: 'pkce',
           debug: process.env.NODE_ENV === 'development'
         },

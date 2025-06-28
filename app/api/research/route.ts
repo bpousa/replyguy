@@ -250,6 +250,14 @@ IMPORTANT: Focus on providing factual, numerical data that directly relates to t
     console.log('Contains numbers/stats:', hasNumbers);
     console.log('Results length:', searchResults.length, 'characters');
     console.log('Citations included:', perplexityData.citations ? perplexityData.citations.length : 0);
+    
+    // Debug citations to see what Perplexity is returning
+    if (perplexityData.citations) {
+      console.log('\n🔗 === CITATIONS DEBUG ===');
+      perplexityData.citations.forEach((citation: any, index: number) => {
+        console.log(`Citation ${index + 1}:`, citation);
+      });
+    }
 
     // Calculate costs - GPT-4o pricing
     const queryPromptTokens = queryCompletion.usage?.prompt_tokens || 0;

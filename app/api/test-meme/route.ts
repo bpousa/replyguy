@@ -7,11 +7,17 @@ export async function GET(req: NextRequest) {
   const startTime = Date.now();
   
   // Check environment
+  const username = process.env.IMGFLIP_USERNAME;
+  const password = process.env.IMGFLIP_PASSWORD;
+  
   const diagnostics = {
     environment: process.env.NODE_ENV,
-    imgflipUsername: process.env.IMGFLIP_USERNAME ? 'SET' : 'NOT SET',
-    imgflipPassword: process.env.IMGFLIP_PASSWORD ? 'SET' : 'NOT SET',
-    imgflipUsernameLength: process.env.IMGFLIP_USERNAME?.length || 0,
+    imgflipUsername: username ? 'SET' : 'NOT SET',
+    imgflipPassword: password ? 'SET' : 'NOT SET',
+    imgflipUsernameLength: username?.length || 0,
+    imgflipUsernameValue: username ? `"${username}"` : 'undefined',
+    imgflipPasswordLength: password?.length || 0,
+    credentialsMatch: username === 'mikeappendment' && password === 'Fun4Life!',
     enableAutomeme: process.env.ENABLE_IMGFLIP_AUTOMEME,
     isConfigured: imgflipService.isConfigured(),
     timestamp: new Date().toISOString(),

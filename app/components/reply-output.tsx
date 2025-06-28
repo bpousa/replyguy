@@ -109,11 +109,14 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
         )}
 
         {/* Citations if included */}
-        {console.log('[ReplyOutput] Citations:', {
-          hasCitations: !!reply.citations,
-          citationCount: reply.citations?.length || 0,
-          citations: reply.citations
-        })}
+        {(() => {
+          console.log('[ReplyOutput] Citations:', {
+            hasCitations: !!reply.citations,
+            citationCount: reply.citations?.length || 0,
+            citations: reply.citations
+          });
+          return null;
+        })()}
         {reply.citations && reply.citations.length > 0 && (
           <Card className="p-4 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
             <div className="space-y-3">

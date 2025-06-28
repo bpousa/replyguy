@@ -119,27 +119,54 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
                 </h3>
               </div>
               <div className="space-y-2">
-                {reply.citations.map((citation, index) => (
-                  <a
-                    key={index}
-                    href={citation.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block p-3 rounded-lg bg-amber-100/50 dark:bg-amber-800/20 hover:bg-amber-100 dark:hover:bg-amber-800/30 transition-colors"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-amber-900 dark:text-amber-100 truncate">
-                          {citation.title || new URL(citation.url).hostname}
-                        </p>
-                        <p className="text-xs text-amber-700 dark:text-amber-300 truncate mt-1">
-                          {citation.url}
-                        </p>
+                {reply.citations
+                  .filter(citation => citation && citation.url) // Filter out invalid citations
+                  .map((citation, index) => {
+                  // Safely extract hostname with fallback
+                  let displayTitle = citation.title;
+                  if (!displayTitle && citation.url) {
+                    try {
+                      const urlObj = new URL(citation.url);
+                      displayTitle = urlObj.hostname;
+                    } catch (e) {
+                      // If URL is invalid, use a fallback
+                      displayTitle = 'Source ' + (index + 1);
+                      console.warn('Invalid citation URL:', citation.url);
+                    }
+                  }
+                  
+                  // Validate URL for href attribute
+                  let isValidUrl = false;
+                  try {
+                    new URL(citation.url);
+                    isValidUrl = true;
+                  } catch {
+                    isValidUrl = false;
+                  }
+                  
+                  return (
+                    <a
+                      key={index}
+                      href={isValidUrl ? citation.url : '#'}
+                      onClick={isValidUrl ? undefined : (e) => e.preventDefault()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block p-3 rounded-lg bg-amber-100/50 dark:bg-amber-800/20 hover:bg-amber-100 dark:hover:bg-amber-800/30 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-amber-900 dark:text-amber-100 truncate">
+                            {displayTitle || 'Source'}
+                          </p>
+                          <p className="text-xs text-amber-700 dark:text-amber-300 truncate mt-1">
+                            {citation.url}
+                          </p>
+                        </div>
+                        <ExternalLink className="w-3 h-3 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-1" />
                       </div>
-                      <ExternalLink className="w-3 h-3 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-1" />
-                    </div>
-                  </a>
-                ))}
+                    </a>
+                  );
+                })}
               </div>
               <p className="text-xs text-amber-600 dark:text-amber-400 italic">
                 Research powered by Perplexity AI

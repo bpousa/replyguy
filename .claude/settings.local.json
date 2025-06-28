@@ -98,7 +98,9 @@
       "mcp__puppeteer__puppeteer_evaluate",
       "mcp__puppeteer__puppeteer_click",
       "mcp__puppeteer__puppeteer_fill",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(md5sum:*)",
+      "Bash(xxd:*)"
     ],
     "deny": []
   }

@@ -6,7 +6,7 @@ import { GeneratedReply } from '@/app/lib/types';
 import { formatCost, formatDuration, copyToClipboard } from '@/app/lib/utils';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
-import { Copy, Check, Sparkles, DollarSign, Clock, Info } from 'lucide-react';
+import { Copy, Check, Sparkles, DollarSign, Clock, Info, Link, ExternalLink } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LoadingReplyGuy } from './loading-reply-guy';
@@ -104,6 +104,46 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
                 alt="Generated meme"
                 className="rounded-lg w-full max-w-md mx-auto"
               />
+            </div>
+          </Card>
+        )}
+
+        {/* Citations if included */}
+        {reply.citations && reply.citations.length > 0 && (
+          <Card className="p-4 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Link className="w-4 h-4 text-amber-700 dark:text-amber-300" />
+                <h3 className="font-medium text-sm text-amber-900 dark:text-amber-100">
+                  Sources
+                </h3>
+              </div>
+              <div className="space-y-2">
+                {reply.citations.map((citation, index) => (
+                  <a
+                    key={index}
+                    href={citation.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block p-3 rounded-lg bg-amber-100/50 dark:bg-amber-800/20 hover:bg-amber-100 dark:hover:bg-amber-800/30 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-amber-900 dark:text-amber-100 truncate">
+                          {citation.title || new URL(citation.url).hostname}
+                        </p>
+                        <p className="text-xs text-amber-700 dark:text-amber-300 truncate mt-1">
+                          {citation.url}
+                        </p>
+                      </div>
+                      <ExternalLink className="w-3 h-3 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-1" />
+                    </div>
+                  </a>
+                ))}
+              </div>
+              <p className="text-xs text-amber-600 dark:text-amber-400 italic">
+                Research powered by Perplexity AI
+              </p>
             </div>
           </Card>
         )}

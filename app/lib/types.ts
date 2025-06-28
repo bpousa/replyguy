@@ -88,6 +88,10 @@ export interface GeneratedReply {
   memeUrl?: string;
   memePageUrl?: string;
   costs?: CostBreakdown;
+  citations?: Array<{
+    url: string;
+    title?: string;
+  }>;
 }
 
 export interface APIResponse<T = any> {

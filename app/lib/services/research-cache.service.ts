@@ -4,6 +4,7 @@ interface CacheEntry {
   searchResults: string;
   searchQuery: string;
   cost: number;
+  citations?: Array<{ url: string; title?: string }>;
   timestamp: number;
   expiresAt: number;
 }
@@ -72,6 +73,7 @@ class ResearchCacheService {
       searchResults: string;
       searchQuery: string;
       cost: number;
+      citations?: Array<{ url: string; title?: string }>;
     }
   ): void {
     const key = this.generateCacheKey(params);

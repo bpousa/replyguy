@@ -111,6 +111,7 @@ export async function POST(req: NextRequest) {
         data: {
           searchQuery: cachedResult.searchQuery,
           searchResults: cachedResult.searchResults,
+          citations: cachedResult.citations || [],
           cost: 0, // No cost for cached results
           cached: true,
           originalCost: cachedResult.cost
@@ -261,6 +262,7 @@ IMPORTANT: Focus on providing factual, numerical data that directly relates to t
     researchCache.set(cacheKey, {
       searchQuery,
       searchResults,
+      citations: perplexityData.citations || [],
       cost: totalCost
     });
 
@@ -268,6 +270,7 @@ IMPORTANT: Focus on providing factual, numerical data that directly relates to t
       data: {
         searchQuery,
         searchResults,
+        citations: perplexityData.citations || [],
         cost: totalCost,
         cached: false
       },

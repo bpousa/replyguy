@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { UserInput, GeneratedReply, CostBreakdown } from '@/app/lib/types';
+import { UserInput, GeneratedReply, CostBreakdown, Tone } from '@/app/lib/types';
 import { imgflipService } from '@/app/lib/services/imgflip.service';
 import { generateMemeText } from '@/app/lib/meme-generator';
 import { createServerClient } from '@/app/lib/auth';
@@ -442,7 +442,7 @@ export async function POST(req: NextRequest) {
       });
       
       // Use provided meme text or auto-generate based on reply
-      finalMemeText = validated.memeText || generateMemeText(generateData.data.reply, validated.tone);
+      finalMemeText = validated.memeText || generateMemeText(generateData.data.reply, validated.tone as Tone);
       
       console.log('🎨 Attempting meme generation with text:', finalMemeText);
       

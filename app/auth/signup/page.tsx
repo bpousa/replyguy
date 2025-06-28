@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { createBrowserClient } from '@/app/lib/auth';
 import { toast } from 'react-hot-toast';
 import { Button } from '@/app/components/ui/button';
-import { Sparkles, Loader2, CheckCircle } from 'lucide-react';
+import { Loader2, CheckCircle } from 'lucide-react';
+import { Logo } from '@/app/components/logo';
 
 const supabase = createBrowserClient();
 
@@ -102,10 +103,9 @@ export default function SignupPage() {
     <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <Sparkles className="w-8 h-8 text-purple-600" />
-            <span className="text-2xl font-bold gradient-text">ReplyGuy</span>
-          </Link>
+          <div className="mb-6">
+            <Logo href="/" imageClassName="w-10 h-10" textClassName="text-2xl gradient-text" />
+          </div>
           {!showSuccess ? (
             <>
               <h2 className="mt-6 text-3xl font-bold text-gray-900">

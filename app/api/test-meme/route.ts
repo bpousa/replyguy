@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     imgflipUsernameLength: username?.length || 0,
     imgflipUsernameValue: username ? `"${username}"` : 'undefined',
     imgflipPasswordLength: password?.length || 0,
-    credentialsMatch: username === 'mikeappendment' && password === 'Fun4Life!',
+    credentialsMatch: username === 'mikeappendment' && password === 'Fun4Life',
     enableAutomeme: process.env.ENABLE_IMGFLIP_AUTOMEME,
     isConfigured: imgflipService.isConfigured(),
     timestamp: new Date().toISOString(),

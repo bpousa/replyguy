@@ -328,6 +328,12 @@ export async function POST(req: NextRequest) {
       enableMemes: validated.includeMeme && imgflipService.isConfigured()
     });
     
+    // Additional debug logging for meme issues
+    if (validated.includeMeme && !imgflipService.isConfigured()) {
+      console.log('⚠️ MEME ISSUE: User requested meme but Imgflip not configured');
+      console.log('⚠️ Check that IMGFLIP_USERNAME and IMGFLIP_PASSWORD env vars are set');
+    }
+    
     const reasonResponse = await fetch(new URL('/api/reason', req.url), {
       method: 'POST',
       headers: { 

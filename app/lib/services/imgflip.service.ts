@@ -35,8 +35,15 @@ interface GetMemesResponse {
 
 export class ImgflipService {
   private readonly baseUrl = 'https://api.imgflip.com';
-  private readonly username = process.env.IMGFLIP_USERNAME!;
-  private readonly password = process.env.IMGFLIP_PASSWORD!;
+  
+  // Lazy load environment variables to ensure they're available at runtime
+  private getUsername(): string | undefined {
+    return process.env.IMGFLIP_USERNAME;
+  }
+  
+  private getPassword(): string | undefined {
+    return process.env.IMGFLIP_PASSWORD;
+  }
 
   /**
    * Generate a meme using Imgflip's automeme feature
@@ -53,8 +60,8 @@ export class ImgflipService {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
-          username: this.username,
-          password: this.password,
+          username: this.getUsername() || '',
+          password: this.getPassword() || '',
           text: text,
           no_watermark: removeWatermark ? '1' : '0',
         }),
@@ -121,8 +128,8 @@ export class ImgflipService {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
-          username: this.username,
-          password: this.password,
+          username: this.getUsername() || '',
+          password: this.getPassword() || '',
           template_id: templateId,
           text0: topText,
           text1: bottomText,
@@ -151,7 +158,18 @@ export class ImgflipService {
    * Check if meme generation is available (API credentials configured)
    */
   isConfigured(): boolean {
-    return !!(this.username && this.password);
+    const username = this.getUsername();
+    const password = this.getPassword();
+    const configured = !!(username && password);
+    
+    // Debug logging to help diagnose issues
+    if (!configured) {
+      console.log('[ImgflipService] Not configured - missing credentials');
+      console.log('[ImgflipService] Username available:', !!username);
+      console.log('[ImgflipService] Password available:', !!password);
+    }
+    
+    return configured;
   }
 }
 

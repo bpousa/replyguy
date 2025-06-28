@@ -24,7 +24,9 @@ export async function POST(req: NextRequest) {
 
     // Check if Imgflip is configured
     if (!imgflipService.isConfigured()) {
-      console.error('Imgflip service not configured - missing credentials');
+      console.error('[meme API] Imgflip service not configured - missing credentials');
+      console.error('[meme API] IMGFLIP_USERNAME exists:', !!process.env.IMGFLIP_USERNAME);
+      console.error('[meme API] IMGFLIP_PASSWORD exists:', !!process.env.IMGFLIP_PASSWORD);
       return NextResponse.json(
         { error: 'Meme service not configured' },
         { status: 503 }

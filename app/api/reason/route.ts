@@ -40,6 +40,9 @@ export async function POST(req: NextRequest) {
 
     // Build reasoning prompt
     const prompt = buildReasoningPrompt(validated);
+    
+    console.log('[reason] Meme instructions included:', validated.enableMemes);
+    console.log('[reason] Full prompt includes meme section:', prompt.includes('Also decide if a meme'));
 
     // Call Claude 3.5 Sonnet for reasoning
     const message = await anthropic.messages.create({
@@ -51,7 +54,11 @@ export async function POST(req: NextRequest) {
     });
 
     const response = message.content[0].type === 'text' ? message.content[0].text : '';
+    console.log('[reason] Claude response:', response);
+    
     const parsedResponse = parseReasoningResponse(response, validated.selectedTypes);
+    console.log('[reason] Parsed response:', parsedResponse);
+    
     const selectedType = validated.selectedTypes.find(t => t.id === parsedResponse.typeId);
 
     if (!selectedType) {
@@ -107,27 +114,25 @@ Also decide if a meme would enhance this reply. Memes work best for:
 - Making a point through humor
 - Reactions to absurd situations
 
-If a meme would help, use one of these proven patterns (replace X/Y with relevant text):
-COMMON PATTERNS:
-- "one does not simply X" / "not sure if X or Y" / "X, X everywhere"
-- "y u no X" / "X all the Y" / "X too damn Y"
-- "i don't always X but when i do Y" / "brace yourself X"
-- "if you could X that would be great" / "what if I told you X"
+If a meme would help, use one of these EXACT patterns (replace X/Y with relevant text):
+TESTED PATTERNS (these work with Imgflip):
+- "one does not simply X"
+- "not sure if X or Y"  
+- "X everywhere"
+- "y u no X"
+- "X all the things"
+- "X is too damn high"
+- "i don't always X but when i do Y"
+- "brace yourselves X is coming"
+- "if you could X that would be great"
+- "what if i told you X"
 
-MODERN PATTERNS:
-- "me: X; also me: Y" (contradicting yourself)
-- "nobody: absolutely nobody: X:" (unprompted behavior)
-- "wait you guys are X" (realizing you're alone)
-- "is this a X" (misidentifying obvious things)
-- "i am once again asking for X" (repeated requests)
-- "surprised pikachu: X" (fake surprise)
-
-CULTURAL REFERENCES:
-- "X i too like to live dangerously" (risky behavior)
-- "it's been 84 years since X" (taking forever)
-- "say the line bart: X" (tired excuses)
-- "change my mind: X" (controversial opinion)
-- "so you have chosen X" (bad choices)
+SIMPLE PATTERNS (more likely to work):
+- "shut up and take my X"
+- "why not both"
+- "ain't nobody got time for that"
+- "this is fine"
+- "but that's none of my business"
 
 Keep under 100 chars and match the tone/situation.` : '';
 

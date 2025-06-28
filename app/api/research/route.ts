@@ -178,7 +178,7 @@ Search query:`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'sonar-small-online',
+        model: 'sonar',
         messages: [
           {
             role: 'system',
@@ -215,7 +215,7 @@ IMPORTANT: Focus on providing factual, numerical data that directly relates to t
       console.error('Status:', perplexityResponse.status);
       console.error('StatusText:', perplexityResponse.statusText);
       console.error('Response:', errorText);
-      console.error('Request model:', 'sonar-small-online');
+      console.error('Request model:', 'sonar');
       
       throw new Error(`Perplexity API request failed: ${perplexityResponse.status} ${perplexityResponse.statusText} - ${errorText}`);
     }

@@ -51,7 +51,7 @@ Search query:
 ## 2. Perplexity Search Request
 
 **File**: `app/api/research/route.ts`
-**Model**: Perplexity sonar-small-online
+**Model**: Perplexity sonar
 **Purpose**: Search for current statistics and factual data
 
 ```
@@ -234,7 +234,7 @@ Write the reply (just the text, no quotes):
 | Endpoint | Model | Temperature | Max Tokens | Purpose |
 |----------|-------|-------------|------------|---------|
 | Research Query | GPT-4o | 0.3 | 50 | Generate search queries |
-| Perplexity Search | sonar-small-online | 0.2 | 200 | Find current statistics |
+| Perplexity Search | sonar | 0.2 | 200 | Find current statistics |
 | Classification | GPT-4o | 0.3 | 50 | Select reply patterns |
 | Reasoning | Claude 3.5 Sonnet | 0.2 | 300 | Choose best pattern |
 | Generation | Claude 3.5 Sonnet | 0.8 | Dynamic* | Create final reply |

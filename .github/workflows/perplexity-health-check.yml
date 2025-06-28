@@ -54,7 +54,7 @@ jobs:
             -H "Authorization: Bearer $PERPLEXITY_API_KEY" \
             -H "Content-Type: application/json" \
             -d '{
-              "model": "sonar-small-online",
+              "model": "sonar",
               "messages": [
                 {
                   "role": "system",

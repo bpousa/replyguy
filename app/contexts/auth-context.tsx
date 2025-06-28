@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { createBrowserClient } from '@/app/lib/auth';
 import { migrateAuthFromLocalStorage, debugAuthCookies } from '@/app/lib/auth-migration';
+import { clearStaleAuthData } from '@/app/lib/auth-utils';
 import { User } from '@supabase/supabase-js';
 
 interface AuthContextValue {
@@ -112,6 +113,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // Clear any stale auth data on mount
+    clearStaleAuthData();
+    
     // Migrate from localStorage to cookies if needed
     migrateAuthFromLocalStorage();
     

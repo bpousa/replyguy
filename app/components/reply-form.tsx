@@ -7,6 +7,7 @@ import { validateTweet, sanitizeInput, debounce } from '@/app/lib/utils';
 import { Button } from './ui/button';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
+import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Switch } from './ui/switch';
 import { AlertCircle, Sparkles, RefreshCw, Lightbulb } from 'lucide-react';
@@ -30,6 +31,7 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
   const [perplexityGuidance, setPerplexityGuidance] = useState('');
   const [enableStyleMatching, setEnableStyleMatching] = useState(true);
   const [includeMeme, setIncludeMeme] = useState(false);
+  const [memeText, setMemeText] = useState('');
   const [errors, setErrors] = useState<{ tweet?: string; idea?: string }>({});
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeLimitType, setUpgradeLimitType] = useState<'tweet' | 'response' | 'replies' | 'memes' | 'suggestions'>('tweet');
@@ -150,6 +152,7 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
       perplexityGuidance: needsResearch && userPlan.enable_perplexity_guidance ? perplexityGuidance : undefined,
       enableStyleMatching: userPlan.enable_style_matching ? enableStyleMatching : false,
       includeMeme: userPlan.enable_memes ? includeMeme : false,
+      memeText: userPlan.enable_memes && includeMeme ? memeText.trim() : undefined,
       useCustomStyle: userPlan.enable_write_like_me && hasActiveStyle ? useCustomStyle : false
     };
     
@@ -410,24 +413,49 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
 
       {/* Meme Toggle - Only show if plan supports it */}
       {userPlan.enable_memes && (
-        <div className="flex items-center justify-between p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-          <div className="space-y-1">
-            <Label htmlFor="include-meme" className="text-base font-medium">
-              Include Meme
-            </Label>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              {userPlan.memes_used}/{userPlan.meme_limit} memes used this month
-            </p>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+            <div className="space-y-1">
+              <Label htmlFor="include-meme" className="text-base font-medium">
+                Include Meme
+              </Label>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {userPlan.memes_used}/{userPlan.meme_limit} memes used this month
+              </p>
+            </div>
+            <Switch
+              id="include-meme"
+              checked={includeMeme}
+              onCheckedChange={(checked) => {
+                console.log('[ReplyForm] Meme toggle clicked:', checked);
+                setIncludeMeme(checked);
+                if (!checked) {
+                  setMemeText(''); // Clear meme text when toggled off
+                }
+              }}
+              disabled={userPlan.memes_used >= userPlan.meme_limit}
+            />
           </div>
-          <Switch
-            id="include-meme"
-            checked={includeMeme}
-            onCheckedChange={(checked) => {
-              console.log('[ReplyForm] Meme toggle clicked:', checked);
-              setIncludeMeme(checked);
-            }}
-            disabled={userPlan.memes_used >= userPlan.meme_limit}
-          />
+          
+          {/* Meme Text Input - Show when meme is toggled on */}
+          {includeMeme && (
+            <div className="ml-4 space-y-2">
+              <Label htmlFor="meme-text" className="text-sm">
+                Meme text (optional)
+              </Label>
+              <Input
+                id="meme-text"
+                placeholder="e.g., 'this is fine' or 'bugs everywhere'"
+                value={memeText}
+                onChange={(e) => setMemeText(e.target.value)}
+                maxLength={100}
+                className="text-sm"
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                💡 Leave blank to auto-generate based on your reply. Max 100 characters.
+              </p>
+            </div>
+          )}
         </div>
       )}
 

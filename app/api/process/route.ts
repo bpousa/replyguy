@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { UserInput, GeneratedReply, CostBreakdown } from '@/app/lib/types';
 import { imgflipService } from '@/app/lib/services/imgflip.service';
+import { generateMemeText } from '@/app/lib/meme-generator';
 import { createServerClient } from '@/app/lib/auth';
 import { cookies } from 'next/headers';
 
@@ -39,6 +40,7 @@ const requestSchema = z.object({
   perplexityGuidance: z.string().max(200).optional(),
   enableStyleMatching: z.boolean().optional(),
   includeMeme: z.boolean().optional(),
+  memeText: z.string().max(100).optional(),
   useCustomStyle: z.boolean().optional(),
   userId: z.string().optional()
 });
@@ -346,7 +348,7 @@ export async function POST(req: NextRequest) {
         tone: validated.tone,
         selectedTypes,
         perplexityData,
-        enableMemes: validated.includeMeme && imgflipService.isConfigured(),
+        enableMemes: false, // Don't let reasoning API decide about memes anymore
       }),
     });
 
@@ -367,81 +369,20 @@ export async function POST(req: NextRequest) {
 
     const reasonData = await reasonResponse.json();
     const selectedType = reasonData.data.selectedType;
-    const shouldIncludeMeme = reasonData.data.includeMeme;
-    const memeText = reasonData.data.memeText;
     costs.reasoning = reasonData.data.cost;
     
     console.log('✅ REASONING SUCCESS:');
     console.log('🎯 Final Selected Type:', selectedType.name);
-    console.log('🎭 Include Meme:', shouldIncludeMeme);
     console.log('💰 Reasoning Cost:', costs.reasoning);
-    if (memeText) console.log('🖼️ Meme Text:', memeText);
 
-    // Step 4: Generate meme if needed (before main generation)
-    console.log(`\n🖼️ ============ STEP 4: MEME GENERATION [${requestId}] ============`);
-    let memeUrl: string | undefined;
-    let memePageUrl: string | undefined;
-    
-    console.log('🎭 Meme Decision Details:', {
-      shouldIncludeMeme: shouldIncludeMeme,
-      memeText: memeText,
-      userRequestedMeme: validated.includeMeme,
-      allConditionsMet: shouldIncludeMeme && memeText && validated.includeMeme
-    });
-    
-    // Debug why memes might not be generated
-    if (validated.includeMeme && !shouldIncludeMeme) {
-      console.log('⚠️ MEME SKIPPED: User wanted meme but reasoning said no');
-    }
-    if (validated.includeMeme && shouldIncludeMeme && !memeText) {
-      console.log('⚠️ MEME SKIPPED: Reasoning said yes but no meme text provided');
-    }
-    
-    if (shouldIncludeMeme && memeText && validated.includeMeme) {
-      console.log('🎨 Attempting meme generation:', { shouldIncludeMeme, memeText, includeMeme: validated.includeMeme });
-      
-      try {
-        const memeResponse = await fetch(new URL('/api/meme', req.url), {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Cookie': req.headers.get('cookie') || ''
-          },
-          body: JSON.stringify({
-            text: memeText,
-            userId: userId
-          }),
-        });
-
-        if (memeResponse.ok) {
-          const memeData = await memeResponse.json();
-          memeUrl = memeData.url;
-          memePageUrl = memeData.pageUrl;
-          console.log('✅ Meme generated successfully:', { memeUrl, memePageUrl });
-        } else {
-          const error = await memeResponse.json();
-          console.warn('⚠️ Meme generation failed:', error);
-          console.warn('Failed meme text was:', memeText);
-          // Don't fail the entire request if meme generation fails
-          // This is a nice-to-have feature, not critical
-        }
-      } catch (error) {
-        console.error('❌ Meme generation error:', error);
-        // Don't fail the entire request if meme generation fails
-      }
-    } else {
-      console.log('🚫 Meme generation skipped:', { shouldIncludeMeme, memeText, includeMeme: validated.includeMeme });
-    }
-
-    // Step 5: Generate final reply
-    console.log(`\n✍️ ============ STEP 5: FINAL GENERATION [${requestId}] ============`);
+    // Step 4: Generate final reply first (we need it for auto-generating meme text)
+    console.log(`\n✍️ ============ STEP 4: FINAL GENERATION [${requestId}] ============`);
     console.log('📤 Generation Input:', {
       originalTweet: validated.originalTweet,
       responseIdea: validated.responseIdea,
       tone: validated.tone,
       selectedType: selectedType.name,
       hasPerplexityData: !!perplexityData,
-      perplexityDataPreview: perplexityData ? perplexityData.substring(0, 150) + '...' : 'None',
       replyLength: validated.replyLength || 'short',
       enableStyleMatching: validated.enableStyleMatching ?? true,
       useCustomStyle: validated.useCustomStyle
@@ -485,9 +426,64 @@ export async function POST(req: NextRequest) {
     
     console.log('✅ GENERATION SUCCESS:');
     console.log('📝 Final Reply:', generateData.data.reply);
-    console.log('📊 Contains Numbers/Stats:', /\d+%|\d+\s*(percent|million|thousand|billion)|\d{4}/.test(generateData.data.reply));
-    console.log('🔍 Contains "according to":', generateData.data.reply.toLowerCase().includes('according to'));
     console.log('💰 Generation Cost:', costs.generation);
+
+    // Step 5: Generate meme if requested (after reply generation)
+    console.log(`\n🖼️ ============ STEP 5: MEME GENERATION [${requestId}] ============`);
+    let memeUrl: string | undefined;
+    let memePageUrl: string | undefined;
+    let finalMemeText: string | undefined;
+    
+    if (validated.includeMeme && imgflipService.isConfigured()) {
+      console.log('🎭 Meme Generation Details:', {
+        userRequestedMeme: true,
+        userProvidedText: validated.memeText || 'none',
+        willAutoGenerate: !validated.memeText
+      });
+      
+      // Use provided meme text or auto-generate based on reply
+      finalMemeText = validated.memeText || generateMemeText(generateData.data.reply, validated.tone);
+      
+      console.log('🎨 Attempting meme generation with text:', finalMemeText);
+      
+      try {
+        const memeResponse = await fetch(new URL('/api/meme', req.url), {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cookie': req.headers.get('cookie') || ''
+          },
+          body: JSON.stringify({
+            text: finalMemeText,
+            userId: userId
+          }),
+        });
+
+        if (memeResponse.ok) {
+          const memeData = await memeResponse.json();
+          memeUrl = memeData.url;
+          memePageUrl = memeData.pageUrl;
+          console.log('✅ Meme generated successfully:', { memeUrl, memePageUrl });
+        } else {
+          const error = await memeResponse.json();
+          console.warn('⚠️ Meme generation failed:', error);
+          console.warn('Failed meme text was:', finalMemeText);
+          // Don't fail the entire request if meme generation fails
+          // This is a nice-to-have feature, not critical
+        }
+      } catch (error) {
+        console.error('❌ Meme generation error:', error);
+        // Don't fail the entire request if meme generation fails
+      }
+    } else {
+      console.log('🚫 Meme generation skipped:', { 
+        userRequestedMeme: validated.includeMeme,
+        imgflipConfigured: imgflipService.isConfigured(),
+        reason: !validated.includeMeme ? 'User did not request meme' : 'Imgflip not configured'
+      });
+    }
+
+    // Note: Step 5 was moved up earlier for meme generation logic
 
     // Calculate total cost
     costs.total = Object.values(costs).reduce((sum, cost) => sum + cost, 0);
@@ -503,14 +499,10 @@ export async function POST(req: NextRequest) {
     // Determine meme skip reason for debugging
     let memeSkipReason: string | undefined;
     if (validated.includeMeme && !memeUrl) {
-      if (!shouldIncludeMeme) {
-        memeSkipReason = 'AI decided meme not appropriate for this reply';
-      } else if (!memeText) {
-        memeSkipReason = 'AI decided yes but provided no meme text';
-      } else if (!imgflipService.isConfigured()) {
+      if (!imgflipService.isConfigured()) {
         memeSkipReason = 'Imgflip service not configured';
       } else {
-        memeSkipReason = 'Meme generation failed';
+        memeSkipReason = 'Meme generation API call failed';
       }
     }
 
@@ -525,9 +517,9 @@ export async function POST(req: NextRequest) {
       memePageUrl,
       citations: perplexityCitations,
       debugInfo: {
-        memeRequested: validated.includeMeme,
-        memeDecided: shouldIncludeMeme,
-        memeText: memeText || undefined,
+        memeRequested: validated.includeMeme || false,
+        memeDecided: validated.includeMeme || false, // Now user-controlled
+        memeText: finalMemeText || undefined,
         memeSkipReason
       }
     };
@@ -566,8 +558,8 @@ export async function POST(req: NextRequest) {
     // MEME METRICS
     console.log('🎭 === MEME METRICS ===');
     console.log('👤 User requested meme:', validated.includeMeme);
-    console.log('🤖 Reasoning decided meme:', shouldIncludeMeme);
-    console.log('📝 Meme text provided:', memeText || 'none');
+    console.log('📝 User provided text:', validated.memeText || 'none');
+    console.log('🎨 Final meme text used:', finalMemeText || 'none');
     console.log('✅ Meme generated:', !!result.memeUrl);
     console.log('⚠️ Meme request unfulfilled:', validated.includeMeme && !result.memeUrl);
     

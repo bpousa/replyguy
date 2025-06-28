@@ -54,6 +54,14 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
     enable_write_like_me: false
   };
   
+  // Debug logging for meme feature
+  useEffect(() => {
+    console.log('[ReplyForm] Subscription data:', subscription);
+    console.log('[ReplyForm] User plan:', userPlan);
+    console.log('[ReplyForm] Meme feature enabled:', userPlan.enable_memes);
+    console.log('[ReplyForm] Meme usage:', userPlan.memes_used, '/', userPlan.meme_limit);
+  }, [subscription, userPlan]);
+  
   // Filter reply lengths based on plan
   const availableReplyLengths = REPLY_LENGTHS.filter(length => {
     if (!userPlan.enable_long_replies && length.value !== 'short') {
@@ -144,6 +152,12 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
       includeMeme: userPlan.enable_memes ? includeMeme : false,
       useCustomStyle: userPlan.enable_write_like_me && hasActiveStyle ? useCustomStyle : false
     };
+    
+    console.log('[ReplyForm] Submitting with input:', {
+      ...input,
+      memeEnabled: userPlan.enable_memes,
+      includeMeme: input.includeMeme
+    });
     
     try {
       await onSubmit(input);
@@ -408,7 +422,10 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
           <Switch
             id="include-meme"
             checked={includeMeme}
-            onCheckedChange={setIncludeMeme}
+            onCheckedChange={(checked) => {
+              console.log('[ReplyForm] Meme toggle clicked:', checked);
+              setIncludeMeme(checked);
+            }}
             disabled={userPlan.memes_used >= userPlan.meme_limit}
           />
         </div>

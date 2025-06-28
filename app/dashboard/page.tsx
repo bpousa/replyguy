@@ -88,12 +88,14 @@ export default function HomePage() {
           });
         }
         
-        setSubscription({
+        const subscriptionData = {
           plan_id: subscription.plan_id,
           subscription_plans: subscription.subscription_plans,
           status: subscription.status,
           memes_used: memesUsed
-        });
+        };
+        console.log('[dashboard] Setting subscription data:', subscriptionData);
+        setSubscription(subscriptionData);
       }
       
       // Get today's usage

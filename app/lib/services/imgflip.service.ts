@@ -38,11 +38,13 @@ export class ImgflipService {
   
   // Lazy load environment variables to ensure they're available at runtime
   private getUsername(): string | undefined {
-    return process.env.IMGFLIP_USERNAME;
+    // Trim any whitespace that might have been added in env vars
+    return process.env.IMGFLIP_USERNAME?.trim();
   }
   
   private getPassword(): string | undefined {
-    return process.env.IMGFLIP_PASSWORD;
+    // Trim any whitespace that might have been added in env vars
+    return process.env.IMGFLIP_PASSWORD?.trim();
   }
 
   /**
@@ -60,20 +62,37 @@ export class ImgflipService {
     console.log('[ImgflipService] 🚫 Remove watermark:', removeWatermark);
     
     try {
+      const username = this.getUsername();
+      const password = this.getPassword();
+      
+      // Debug credential issues
+      console.log('[ImgflipService] 🔐 Credential check:');
+      console.log('  Username:', username ? `"${username}" (${username.length} chars)` : 'NOT SET');
+      console.log('  Password:', password ? `SET (${password.length} chars)` : 'NOT SET');
+      
+      if (username === 'mikeappendment' && password === 'Fun4Life!') {
+        console.log('[ImgflipService] ✅ Credentials match expected values');
+      } else {
+        console.log('[ImgflipService] ⚠️ Credentials may be incorrect');
+        if (username !== 'mikeappendment') {
+          console.log('  Username issue - expected: mikeappendment (14 chars)');
+          console.log('  Username actual:', username ? `${username} (${username.length} chars)` : 'undefined');
+        }
+        if (password !== 'Fun4Life!') {
+          console.log('  Password issue - expected: Fun4Life! (9 chars)');
+          console.log('  Password actual length:', password?.length || 0);
+        }
+      }
+      
       const requestBody = new URLSearchParams({
-        username: this.getUsername() || '',
-        password: this.getPassword() || '',
+        username: username || '',
+        password: password || '',
         text: text,
         no_watermark: removeWatermark ? '1' : '0',
       });
       
       console.log('[ImgflipService] 📤 Request URL:', `${this.baseUrl}/automeme`);
-      console.log('[ImgflipService] 📤 Request body params:', {
-        username: this.getUsername() ? '***' : '(empty)',
-        password: this.getPassword() ? '***' : '(empty)',
-        text: text,
-        no_watermark: removeWatermark ? '1' : '0'
-      });
+      console.log('[ImgflipService] 📤 URLSearchParams string:', requestBody.toString());
       
       const response = await fetch(`${this.baseUrl}/automeme`, {
         method: 'POST',

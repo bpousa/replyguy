@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     console.log('🔍 Debug: Testing Perplexity API connectivity');
     
     const testRequest = {
-      model: 'sonar-small-online',
+      model: 'sonar',
       messages: [
         {
           role: 'system',
@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
     
     // Test with custom query (similar to actual research endpoint)
     const searchRequest = {
-      model: 'sonar-small-online',
+      model: 'sonar',
       messages: [
         {
           role: 'user',

@@ -79,7 +79,7 @@ async function verifyPerplexityFeature() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'sonar-small-online',
+          model: 'sonar',
           messages: [{ role: 'user', content: 'Test: What is 1+1?' }],
           max_tokens: 50,
         }),

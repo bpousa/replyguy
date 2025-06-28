@@ -7,6 +7,7 @@ interface LogoProps {
   imageClassName?: string;
   showText?: boolean;
   textClassName?: string;
+  textColor?: 'default' | 'purple';
 }
 
 export function Logo({ 
@@ -14,8 +15,13 @@ export function Logo({
   className = '', 
   imageClassName = '',
   showText = true,
-  textClassName = ''
+  textClassName = '',
+  textColor = 'default'
 }: LogoProps) {
+  const textColorClasses = textColor === 'purple' 
+    ? 'text-purple-600 dark:text-purple-400' 
+    : 'text-gray-900 dark:text-white';
+    
   const logoContent = (
     <div className={`flex items-center gap-2 ${className}`}>
       <div className="relative">
@@ -29,7 +35,7 @@ export function Logo({
         />
       </div>
       {showText && (
-        <span className={`text-xl font-bold text-gray-900 dark:text-white ${textClassName}`}>
+        <span className={`text-xl font-bold ${textColorClasses} ${textClassName}`}>
           ReplyGuy
         </span>
       )}

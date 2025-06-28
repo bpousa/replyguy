@@ -21,16 +21,23 @@ export function DailyGoalTracker({
   const [showCelebration, setShowCelebration] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [tempGoal, setTempGoal] = useState(goal);
+  const [hasTriggeredCelebration, setHasTriggeredCelebration] = useState(false);
   const percentage = Math.min((currentCount / goal) * 100, 100);
   const isCompleted = currentCount >= goal;
 
   useEffect(() => {
-    if (isCompleted && !showCelebration) {
+    // Only trigger celebration once when goal is first completed
+    if (isCompleted && !hasTriggeredCelebration) {
       setShowCelebration(true);
+      setHasTriggeredCelebration(true);
       triggerCelebration();
-      setTimeout(() => setShowCelebration(false), 5000);
     }
-  }, [isCompleted, showCelebration]);
+    
+    // Reset when count goes below goal
+    if (!isCompleted && hasTriggeredCelebration) {
+      setHasTriggeredCelebration(false);
+    }
+  }, [isCompleted, hasTriggeredCelebration]);
 
   const triggerCelebration = () => {
     // Trigger confetti
@@ -156,10 +163,12 @@ export function DailyGoalTracker({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[9999] flex items-center justify-center"
-            onClick={() => setShowCelebration(false)}
           >
             {/* Backdrop */}
-            <div className="absolute inset-0 bg-black/50" />
+            <div 
+              className="absolute inset-0 bg-black/50" 
+              onClick={() => setShowCelebration(false)}
+            />
             
             {/* Modal Content */}
             <motion.div

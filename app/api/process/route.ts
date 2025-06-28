@@ -389,6 +389,14 @@ export async function POST(req: NextRequest) {
       allConditionsMet: shouldIncludeMeme && memeText && validated.includeMeme
     });
     
+    // Debug why memes might not be generated
+    if (validated.includeMeme && !shouldIncludeMeme) {
+      console.log('⚠️ MEME SKIPPED: User wanted meme but reasoning said no');
+    }
+    if (validated.includeMeme && shouldIncludeMeme && !memeText) {
+      console.log('⚠️ MEME SKIPPED: Reasoning said yes but no meme text provided');
+    }
+    
     if (shouldIncludeMeme && memeText && validated.includeMeme) {
       console.log('🎨 Attempting meme generation:', { shouldIncludeMeme, memeText, includeMeme: validated.includeMeme });
       
@@ -492,6 +500,20 @@ export async function POST(req: NextRequest) {
 
     const processingTime = Date.now() - startTime;
 
+    // Determine meme skip reason for debugging
+    let memeSkipReason: string | undefined;
+    if (validated.includeMeme && !memeUrl) {
+      if (!shouldIncludeMeme) {
+        memeSkipReason = 'AI decided meme not appropriate for this reply';
+      } else if (!memeText) {
+        memeSkipReason = 'AI decided yes but provided no meme text';
+      } else if (!imgflipService.isConfigured()) {
+        memeSkipReason = 'Imgflip service not configured';
+      } else {
+        memeSkipReason = 'Meme generation failed';
+      }
+    }
+
     const result: GeneratedReply = {
       reply: generateData.data.reply,
       replyType: selectedType.name,
@@ -502,6 +524,12 @@ export async function POST(req: NextRequest) {
       memeUrl,
       memePageUrl,
       citations: perplexityCitations,
+      debugInfo: {
+        memeRequested: validated.includeMeme,
+        memeDecided: shouldIncludeMeme,
+        memeText: memeText || undefined,
+        memeSkipReason
+      }
     };
     
     console.log('🎯 Final Result Citations:', {
@@ -534,6 +562,14 @@ export async function POST(req: NextRequest) {
     console.log('📊 Research data received:', researchDataReceived);
     console.log('✅ Research included in reply:', researchIncludedInReply);
     console.log('⚠️ Research loss detected:', researchDataReceived && !researchIncludedInReply);
+    
+    // MEME METRICS
+    console.log('🎭 === MEME METRICS ===');
+    console.log('👤 User requested meme:', validated.includeMeme);
+    console.log('🤖 Reasoning decided meme:', shouldIncludeMeme);
+    console.log('📝 Meme text provided:', memeText || 'none');
+    console.log('✅ Meme generated:', !!result.memeUrl);
+    console.log('⚠️ Meme request unfulfilled:', validated.includeMeme && !result.memeUrl);
     
     console.log(`🏁 ============ END PIPELINE [${requestId}] ============\n`);
 

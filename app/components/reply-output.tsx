@@ -82,6 +82,32 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
           </Button>
         </Card>
 
+        {/* Meme debug logging */}
+        {(() => {
+          console.log('[ReplyOutput] Meme Debug:', {
+            memeUrl: reply.memeUrl,
+            debugInfo: reply.debugInfo
+          });
+          return null;
+        })()}
+        
+        {/* Show meme skip reason if in debug mode and meme was requested but not generated */}
+        {debugMode && reply.debugInfo?.memeRequested && !reply.memeUrl && (
+          <Card className="p-4 bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800">
+            <div className="flex items-center gap-2">
+              <Info className="w-4 h-4 text-orange-700 dark:text-orange-300" />
+              <div>
+                <p className="text-sm font-medium text-orange-900 dark:text-orange-100">
+                  Meme not generated
+                </p>
+                <p className="text-xs text-orange-700 dark:text-orange-300">
+                  {reply.debugInfo.memeSkipReason || 'Unknown reason'}
+                </p>
+              </div>
+            </div>
+          </Card>
+        )}
+        
         {/* Meme if included */}
         {reply.memeUrl && (
           <Card className="p-4 bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800">

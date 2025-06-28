@@ -92,6 +92,12 @@ export interface GeneratedReply {
     url: string;
     title?: string;
   }>;
+  debugInfo?: {
+    memeRequested: boolean;
+    memeDecided: boolean;
+    memeText?: string;
+    memeSkipReason?: string;
+  };
 }
 
 export interface APIResponse<T = any> {

@@ -59,6 +59,15 @@ export async function POST(req: NextRequest) {
     const parsedResponse = parseReasoningResponse(response, validated.selectedTypes);
     console.log('[reason] Parsed response:', parsedResponse);
     
+    // Additional meme debugging
+    if (validated.enableMemes) {
+      console.log('[reason] 🎭 MEME DEBUG:');
+      console.log('[reason] - User requested memes:', validated.enableMemes);
+      console.log('[reason] - Claude decided to include meme:', parsedResponse.includeMeme);
+      console.log('[reason] - Meme text:', parsedResponse.memeText || 'none');
+      console.log('[reason] - Full Claude response:', response);
+    }
+    
     const selectedType = validated.selectedTypes.find(t => t.id === parsedResponse.typeId);
 
     if (!selectedType) {
@@ -108,13 +117,16 @@ ${i + 1}. ${t.name}
 
   const memeInstructions = input.enableMemes ? `
 
-Also decide if a meme would enhance this reply. Memes work best for:
-- Humorous or sarcastic tones
-- Relatable situations
-- Making a point through humor
-- Reactions to absurd situations
+IMPORTANT: The user has specifically requested a meme be included if appropriate.
+Memes are HIGHLY RECOMMENDED for:
+- Sarcastic or humorous tones (almost always include)
+- Relatable tech/work situations
+- Friday deployments, debugging, meetings
+- Any reaction to frustrating or absurd situations
 
-If a meme would help, use one of these EXACT patterns (replace X/Y with relevant text):
+You should lean towards INCLUDING a meme unless the tone is very serious.
+
+When including a meme, use one of these EXACT patterns (replace X/Y with relevant text):
 TESTED PATTERNS (these work with Imgflip):
 - "one does not simply X"
 - "not sure if X or Y"  
@@ -155,7 +167,7 @@ Consider:
 Provide your response in this exact format:
 Choice: [number] - [one sentence explanation]${input.enableMemes ? '\nMeme: [yes/no] - [meme text if yes, or "none" if no]' : ''}
 
-Be decisive and specific.`;
+Be decisive and specific.${input.enableMemes && (input.tone === 'sarcastic' || input.tone === 'humorous' || input.tone === 'witty' || input.tone === 'funny') ? '\n\nNOTE: The tone is ' + input.tone + ' so you should almost certainly include a meme!' : ''}`;
 }
 
 function parseReasoningResponse(response: string, types: ReplyType[]): {

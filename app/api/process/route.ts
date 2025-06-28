@@ -227,6 +227,9 @@ export async function POST(req: NextRequest) {
           console.log('📊 Search Query Generated:', researchData.data.searchQuery);
           console.log('📈 Perplexity Results:', perplexityData);
           console.log('🔗 Citations Received:', perplexityCitations?.length || 0);
+          if (perplexityCitations && perplexityCitations.length > 0) {
+            console.log('🔗 Citation Details:', JSON.stringify(perplexityCitations, null, 2));
+          }
           console.log('💰 Research Cost:', costs.perplexityQuery);
           console.log(`📏 Data Length: ${perplexityData?.length || 0} characters`);
         } else {
@@ -494,6 +497,12 @@ export async function POST(req: NextRequest) {
       memePageUrl,
       citations: perplexityCitations,
     };
+    
+    console.log('🎯 Final Result Citations:', {
+      hasCitations: !!result.citations,
+      citationCount: result.citations?.length || 0,
+      citations: result.citations
+    });
 
     // DUAL METRICS TRACKING - Track both attempted and actually included
     const researchAttempted = validated.needsResearch;

@@ -105,6 +105,7 @@ export async function POST(req: NextRequest) {
       console.log('✅ CACHE HIT - Returning cached research results');
       console.log('📊 Cached Query:', cachedResult.searchQuery);
       console.log('📈 Cached Results Preview:', cachedResult.searchResults.substring(0, 100) + '...');
+      console.log('🔗 Cached Citations:', cachedResult.citations?.length || 0);
       console.log('💰 Original Cost:', cachedResult.cost, '(saved by cache)');
       
       return NextResponse.json({
@@ -224,6 +225,9 @@ IMPORTANT: Focus on providing factual, numerical data that directly relates to t
     const perplexityData = await perplexityResponse.json();
     let searchResults = perplexityData.choices[0].message.content || '';
     
+    console.log('\n🔍 === FULL PERPLEXITY RESPONSE ===');
+    console.log('Full response structure:', JSON.stringify(perplexityData, null, 2));
+    
     console.log('\n📋 === PERPLEXITY SEARCH PROMPT ===');
     console.log(`Search for: ${searchQuery}\n\nReturn ONLY concrete statistics, facts, and data with specific numbers. Focus on:\n- Recent statistics (last 1-2 years preferred) that would be beyond typical AI knowledge\n- Exact percentages, numbers, or measurable trends\n- Credible sources (government reports, studies, official data)\n- Current events or developments related to the topic\n\nFormat your response as bullet points with specific data points. Examples:\n- "X increased/decreased by Y% in 2024 according to [Source]"\n- "[Location] reported Z [metric] as of [Date]"\n- "Study shows [specific finding with numbers]"\n\nIMPORTANT: Focus on providing factual, numerical data that directly relates to the search query. Include diverse statistics if available, not just one type of data.`);
     
@@ -266,11 +270,50 @@ IMPORTANT: Focus on providing factual, numerical data that directly relates to t
     const perplexityCost = 0.0002; // Estimated cost per request
     const totalCost = queryCost + perplexityCost;
 
+    // Extract citations from the correct field
+    // Perplexity returns citations in different formats depending on the model
+    let citations: Array<{ url: string; title?: string }> = [];
+    
+    // Check multiple possible locations for citations
+    if (perplexityData.citations) {
+      // Perplexity returns citations as an array of URL strings
+      // We need to convert them to our expected format
+      if (Array.isArray(perplexityData.citations)) {
+        citations = perplexityData.citations.map((citation: any) => {
+          // If it's already an object with url property, use it
+          if (typeof citation === 'object' && citation.url) {
+            return citation;
+          }
+          // If it's a string (URL), create an object
+          if (typeof citation === 'string') {
+            // Try to find title from search_results if available
+            let title = undefined;
+            if (perplexityData.search_results && Array.isArray(perplexityData.search_results)) {
+              const matchingResult = perplexityData.search_results.find((result: any) => result.url === citation);
+              if (matchingResult && matchingResult.title) {
+                title = matchingResult.title;
+              }
+            }
+            return { url: citation, title };
+          }
+          return null;
+        }).filter(Boolean); // Remove any null entries
+      }
+    } else if (perplexityData.choices?.[0]?.citations) {
+      citations = perplexityData.choices[0].citations;
+    } else if (perplexityData.choices?.[0]?.message?.citations) {
+      citations = perplexityData.choices[0].message.citations;
+    }
+    
+    console.log('\n📚 === EXTRACTED CITATIONS ===');
+    console.log('Citations found:', citations.length);
+    console.log('Citation details:', citations);
+
     // Cache the results for future requests
     researchCache.set(cacheKey, {
       searchQuery,
       searchResults,
-      citations: perplexityData.citations || [],
+      citations: citations,
       cost: totalCost
     });
 
@@ -278,7 +321,7 @@ IMPORTANT: Focus on providing factual, numerical data that directly relates to t
       data: {
         searchQuery,
         searchResults,
-        citations: perplexityData.citations || [],
+        citations: citations,
         cost: totalCost,
         cached: false
       },

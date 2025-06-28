@@ -6,11 +6,17 @@ import { Tone } from './types';
  * This is used when the user doesn't provide custom meme text
  */
 export function generateMemeText(reply: string, tone: Tone): string {
+  console.log('[meme-generator] 🎭 generateMemeText called');
+  console.log('[meme-generator] 📝 Reply:', reply);
+  console.log('[meme-generator] 🎨 Tone:', tone);
+  
   const replyLower = reply.toLowerCase();
   
   // Friday deployment detection
   if (replyLower.includes('friday') && (replyLower.includes('deploy') || replyLower.includes('release') || replyLower.includes('push'))) {
-    return 'i too like to live dangerously';
+    const result = 'i too like to live dangerously';
+    console.log('[meme-generator] ✅ Matched Friday deployment pattern, returning:', result);
+    return result;
   }
   
   // Bug/debugging related
@@ -21,22 +27,30 @@ export function generateMemeText(reply: string, tone: Tone): string {
       'not sure if feature or bug',
       'one does not simply fix all bugs'
     ];
-    return bugMemes[Math.floor(Math.random() * bugMemes.length)];
+    const result = bugMemes[Math.floor(Math.random() * bugMemes.length)];
+    console.log('[meme-generator] ✅ Matched bug/debug pattern, returning:', result);
+    return result;
   }
   
   // Meeting related
   if (replyLower.includes('meeting') || replyLower.includes('zoom') || replyLower.includes('teams')) {
-    return 'this meeting should have been an email';
+    const result = 'this meeting should have been an email';
+    console.log('[meme-generator] ✅ Matched meeting pattern, returning:', result);
+    return result;
   }
   
   // Testing/production
   if (replyLower.includes('test') && replyLower.includes('production')) {
-    return 'i don\'t always test but when i do it\'s in production';
+    const result = 'i don\'t always test but when i do it\'s in production';
+    console.log('[meme-generator] ✅ Matched test/production pattern, returning:', result);
+    return result;
   }
   
   // Documentation
   if (replyLower.includes('documentation') || replyLower.includes('docs')) {
-    return 'ain\'t nobody got time for that';
+    const result = 'ain\'t nobody got time for that';
+    console.log('[meme-generator] ✅ Matched documentation pattern, returning:', result);
+    return result;
   }
   
   // Tone-based selections
@@ -48,7 +62,9 @@ export function generateMemeText(reply: string, tone: Tone): string {
         'what could go wrong',
         'sure that will work'
       ];
-      return sarcasticMemes[Math.floor(Math.random() * sarcasticMemes.length)];
+      const sarcasticResult = sarcasticMemes[Math.floor(Math.random() * sarcasticMemes.length)];
+      console.log('[meme-generator] ✅ Using sarcastic tone meme:', sarcasticResult);
+      return sarcasticResult;
       
     case 'humorous':
     case 'witty':
@@ -58,22 +74,33 @@ export function generateMemeText(reply: string, tone: Tone): string {
         'x all the things',
         'but that\'s none of my business'
       ];
-      return funnyMemes[Math.floor(Math.random() * funnyMemes.length)];
+      const funnyResult = funnyMemes[Math.floor(Math.random() * funnyMemes.length)];
+      console.log('[meme-generator] ✅ Using humorous/witty tone meme:', funnyResult);
+      return funnyResult;
       
     case 'friendly':
-      return 'shut up and take my money';
+      const friendlyResult = 'shut up and take my money';
+      console.log('[meme-generator] ✅ Using friendly tone meme:', friendlyResult);
+      return friendlyResult;
       
     case 'formal':
-      return 'one does not simply proceed without proper authorization';
+      const formalResult = 'one does not simply proceed without proper authorization';
+      console.log('[meme-generator] ✅ Using formal tone meme:', formalResult);
+      return formalResult;
       
     default:
       // Fallback: pick a random safe pattern
+      const keyPhrase = extractKeyPhrase(reply);
+      console.log('[meme-generator] 📝 Extracted key phrase:', keyPhrase);
+      
       const safeMemes = [
-        'one does not simply ' + extractKeyPhrase(reply),
-        'not sure if ' + extractKeyPhrase(reply) + ' or just me',
-        extractKeyPhrase(reply) + ' everywhere'
+        'one does not simply ' + keyPhrase,
+        'not sure if ' + keyPhrase + ' or just me',
+        keyPhrase + ' everywhere'
       ];
-      return safeMemes[Math.floor(Math.random() * safeMemes.length)];
+      const defaultResult = safeMemes[Math.floor(Math.random() * safeMemes.length)];
+      console.log('[meme-generator] ✅ Using default pattern meme:', defaultResult);
+      return defaultResult;
   }
 }
 

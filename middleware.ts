@@ -20,12 +20,18 @@ export async function middleware(request: NextRequest) {
     // Log all cookies for debugging
     console.log(`[middleware] Checking auth for ${pathname}, cookies:`, allCookies.map(c => c.name));
     
-    // Check if this is an internal API call (has x-forwarded headers from within our app)
+    // Check if this is an internal API call
+    // 1. Has x-forwarded headers from within our app
+    // 2. Has cookie header passed from another API route (process -> meme)
+    // 3. Specific internal routes that should bypass auth when called internally
     const isInternalCall = request.headers.get('x-forwarded-for') === '::1' || 
                           request.headers.get('x-forwarded-for')?.includes('127.0.0.1') ||
-                          request.headers.get('x-forwarded-for')?.includes('::ffff:127.0.0.1');
+                          request.headers.get('x-forwarded-for')?.includes('::ffff:127.0.0.1') ||
+                          // Allow meme API when called with cookies from process API
+                          (pathname === '/api/meme' && request.headers.get('cookie'));
     
-    const hasAuthCookie = allCookies.some(cookie => {
+    // Check cookies from the request object first
+    let hasAuthCookie = allCookies.some(cookie => {
       // Supabase cookie patterns: sb-<project-ref>-auth-token
       // In this case: sb-aaplsgskmoeyvvedjzxp-auth-token
       const isAuthCookie = cookie.name.includes('sb-') && cookie.name.includes('-auth-token');
@@ -35,9 +41,21 @@ export async function middleware(request: NextRequest) {
       return isAuthCookie;
     });
     
+    // If no auth cookie found in parsed cookies, check the cookie header string
+    // This handles internal API calls where cookies are forwarded as a header
+    if (!hasAuthCookie && request.headers.get('cookie')) {
+      const cookieHeader = request.headers.get('cookie') || '';
+      hasAuthCookie = cookieHeader.includes('sb-') && cookieHeader.includes('-auth-token');
+      if (hasAuthCookie) {
+        console.log(`[middleware] Found auth cookie in header string for ${pathname}`);
+      }
+    }
+    
     if (!hasAuthCookie && !isInternalCall) {
       console.log(`[middleware] No auth cookie for API route: ${pathname}`);
       console.log(`[middleware] Available cookies:`, allCookies.map(c => c.name).join(', '));
+      console.log(`[middleware] Cookie header present:`, !!request.headers.get('cookie'));
+      console.log(`[middleware] Is internal call check:`, isInternalCall);
       return NextResponse.json(
         { error: 'Unauthenticated', message: 'Please sign in to access this resource' },
         { status: 401 }

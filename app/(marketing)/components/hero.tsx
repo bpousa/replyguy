@@ -1,15 +1,27 @@
 import Link from 'next/link';
 import { Button } from '@/app/components/ui/button';
-import { Sparkles, ArrowRight, CheckCircle } from 'lucide-react';
+import { ArrowRight, CheckCircle } from 'lucide-react';
+import Image from 'next/image';
 
 export function Hero() {
   return (
     <section className="relative py-20 md:py-32">
       <div className="container mx-auto px-4">
         <div className="max-w-5xl mx-auto text-center">
+          {/* Logo */}
+          <div className="mb-8">
+            <Image
+              src="/reply_guy_logo.png"
+              alt="ReplyGuy Logo"
+              width={80}
+              height={80}
+              className="mx-auto object-contain"
+              priority
+            />
+          </div>
+          
           {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-full text-sm font-medium mb-6">
-            <Sparkles className="w-4 h-4" />
             AI-Powered Reply Generation
           </div>
           

@@ -137,7 +137,7 @@ export default function DashboardLayout({
       <div className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col">
         <div className="flex flex-col flex-grow bg-white border-r">
           <div className="flex items-center h-16 px-4 border-b">
-            <Logo href="/dashboard" />
+            <Logo href="/dashboard" textColor="purple" />
           </div>
           
           <nav className="flex-1 px-4 py-4 space-y-1">
@@ -174,7 +174,7 @@ export default function DashboardLayout({
       
       {/* Mobile header */}
       <div className="md:hidden sticky top-0 z-50 flex items-center justify-between h-16 px-4 bg-white border-b">
-        <Logo href="/dashboard" />
+        <Logo href="/dashboard" textColor="purple" />
         
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

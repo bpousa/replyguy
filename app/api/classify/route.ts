@@ -17,7 +17,7 @@ const openai = apiKey ? new OpenAI({
 
 // Request validation schema
 const requestSchema = z.object({
-  originalTweet: z.string().min(1).max(500),
+  originalTweet: z.string().min(1).max(2000),
   responseIdea: z.string().min(1).max(2000),
   responseType: z.enum(['agree', 'disagree', 'neutral', 'other']),
   tone: z.string(),

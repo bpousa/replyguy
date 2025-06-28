@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { createBrowserClient } from '@/app/lib/auth';
 import { toast } from 'react-hot-toast';
 import { Button } from '@/app/components/ui/button';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { Logo } from '@/app/components/logo';
 
 const supabase = createBrowserClient();
 

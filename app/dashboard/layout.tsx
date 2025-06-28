@@ -11,10 +11,10 @@ import {
   CreditCard, 
   LogOut,
   Menu,
-  X,
-  Sparkles
+  X
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { Logo } from '@/app/components/logo';
 
 export default function DashboardLayout({
   children,
@@ -136,10 +136,7 @@ export default function DashboardLayout({
       <div className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col">
         <div className="flex flex-col flex-grow bg-white border-r">
           <div className="flex items-center h-16 px-4 border-b">
-            <Link href="/dashboard" className="flex items-center space-x-2">
-              <Sparkles className="w-6 h-6 text-purple-600" />
-              <span className="text-xl font-bold">ReplyGuy</span>
-            </Link>
+            <Logo href="/dashboard" />
           </div>
           
           <nav className="flex-1 px-4 py-4 space-y-1">
@@ -176,10 +173,7 @@ export default function DashboardLayout({
       
       {/* Mobile header */}
       <div className="md:hidden sticky top-0 z-50 flex items-center justify-between h-16 px-4 bg-white border-b">
-        <Link href="/dashboard" className="flex items-center space-x-2">
-          <Sparkles className="w-6 h-6 text-purple-600" />
-          <span className="text-xl font-bold">ReplyGuy</span>
-        </Link>
+        <Logo href="/dashboard" />
         
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

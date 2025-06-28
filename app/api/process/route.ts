@@ -175,6 +175,7 @@ export async function POST(req: NextRequest) {
     // TODO: Implement actual cost tracking
     
     let perplexityData: string | undefined;
+    let perplexityCitations: Array<{ url: string; title?: string }> | undefined;
 
     // Create unique request ID for tracking
     const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -219,11 +220,13 @@ export async function POST(req: NextRequest) {
         if (researchResponse.ok) {
           const researchData = await researchResponse.json();
           perplexityData = researchData.data.searchResults;
+          perplexityCitations = researchData.data.citations;
           costs.perplexityQuery = researchData.data.cost;
           
           console.log('✅ RESEARCH SUCCESS:');
           console.log('📊 Search Query Generated:', researchData.data.searchQuery);
           console.log('📈 Perplexity Results:', perplexityData);
+          console.log('🔗 Citations Received:', perplexityCitations?.length || 0);
           console.log('💰 Research Cost:', costs.perplexityQuery);
           console.log(`📏 Data Length: ${perplexityData?.length || 0} characters`);
         } else {
@@ -480,6 +483,7 @@ export async function POST(req: NextRequest) {
       costs,
       memeUrl,
       memePageUrl,
+      citations: perplexityCitations,
     };
 
     // DUAL METRICS TRACKING - Track both attempted and actually included

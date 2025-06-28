@@ -53,37 +53,80 @@ export class ImgflipService {
     url: string;
     pageUrl: string;
   }> {
+    const startTime = Date.now();
+    console.log('[ImgflipService] 🎨 generateAutomeme called');
+    console.log('[ImgflipService] 📝 Text:', text);
+    console.log('[ImgflipService] 📏 Text length:', text.length);
+    console.log('[ImgflipService] 🚫 Remove watermark:', removeWatermark);
+    
     try {
+      const requestBody = new URLSearchParams({
+        username: this.getUsername() || '',
+        password: this.getPassword() || '',
+        text: text,
+        no_watermark: removeWatermark ? '1' : '0',
+      });
+      
+      console.log('[ImgflipService] 📤 Request URL:', `${this.baseUrl}/automeme`);
+      console.log('[ImgflipService] 📤 Request body params:', {
+        username: this.getUsername() ? '***' : '(empty)',
+        password: this.getPassword() ? '***' : '(empty)',
+        text: text,
+        no_watermark: removeWatermark ? '1' : '0'
+      });
+      
       const response = await fetch(`${this.baseUrl}/automeme`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: new URLSearchParams({
-          username: this.getUsername() || '',
-          password: this.getPassword() || '',
-          text: text,
-          no_watermark: removeWatermark ? '1' : '0',
-        }),
+        body: requestBody,
       });
 
-      const data: AutomemeResponse = await response.json();
+      console.log('[ImgflipService] 📡 Response status:', response.status);
+      console.log('[ImgflipService] 📡 Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      const responseText = await response.text();
+      let data: AutomemeResponse;
+      
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('[ImgflipService] ❌ Failed to parse response as JSON:', responseText);
+        throw new Error(`Invalid response from Imgflip API: ${responseText}`);
+      }
+      
+      console.log('[ImgflipService] 📥 Response data:', JSON.stringify(data, null, 2));
 
       if (!data.success) {
-        console.error('Imgflip automeme error:', data.error_message);
+        console.error('[ImgflipService] ❌ Imgflip API returned error:', data.error_message);
+        console.error('[ImgflipService] Full error response:', JSON.stringify(data, null, 2));
+        
         // If no meme was predicted, provide a more helpful error
         if (data.error_message?.includes('No meme was predicted')) {
+          console.error('[ImgflipService] ❌ No meme template matched the text');
           throw new Error('Could not find a suitable meme template for this text. Try a more meme-worthy phrase!');
         }
         throw new Error(data.error_message || 'Failed to generate meme');
       }
+
+      const responseTime = Date.now() - startTime;
+      console.log(`[ImgflipService] ✅ Meme generated successfully in ${responseTime}ms`);
+      console.log('[ImgflipService] 🖼️ Meme URL:', data.data!.url);
+      console.log('[ImgflipService] 🔗 Page URL:', data.data!.page_url);
 
       return {
         url: data.data!.url,
         pageUrl: data.data!.page_url,
       };
     } catch (error) {
-      console.error('Imgflip service error:', error);
+      const errorTime = Date.now() - startTime;
+      console.error(`[ImgflipService] ❌ Error after ${errorTime}ms:`, {
+        errorType: error instanceof Error ? error.constructor.name : 'Unknown',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        text: text
+      });
       throw error;
     }
   }

@@ -100,7 +100,8 @@
       "mcp__puppeteer__puppeteer_fill",
       "Bash(pkill:*)",
       "Bash(md5sum:*)",
-      "Bash(xxd:*)"
+      "Bash(xxd:*)",
+      "Bash(timeout 30 vercel logs:*)"
     ],
     "deny": []
   }

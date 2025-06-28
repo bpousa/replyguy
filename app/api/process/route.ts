@@ -446,6 +446,14 @@ export async function POST(req: NextRequest) {
       
       console.log('🎨 Attempting meme generation with text:', finalMemeText);
       
+      // Log exact parameters being sent to meme API
+      const memeRequestBody = {
+        text: finalMemeText,
+        userId: userId
+      };
+      console.log('📤 Meme API Request Parameters:', JSON.stringify(memeRequestBody, null, 2));
+      console.log('📍 Meme API URL:', new URL('/api/meme', req.url).toString());
+      
       try {
         const memeResponse = await fetch(new URL('/api/meme', req.url), {
           method: 'POST',
@@ -453,26 +461,73 @@ export async function POST(req: NextRequest) {
             'Content-Type': 'application/json',
             'Cookie': req.headers.get('cookie') || ''
           },
-          body: JSON.stringify({
-            text: finalMemeText,
-            userId: userId
-          }),
+          body: JSON.stringify(memeRequestBody),
         });
 
+        console.log('📡 Meme API Response Status:', memeResponse.status);
+        console.log('📡 Meme API Response Headers:', Object.fromEntries(memeResponse.headers.entries()));
+        
         if (memeResponse.ok) {
           const memeData = await memeResponse.json();
           memeUrl = memeData.url;
           memePageUrl = memeData.pageUrl;
           console.log('✅ Meme generated successfully:', { memeUrl, memePageUrl });
         } else {
-          const error = await memeResponse.json();
-          console.warn('⚠️ Meme generation failed:', error);
-          console.warn('Failed meme text was:', finalMemeText);
+          // Capture the full error response
+          const responseText = await memeResponse.text();
+          let errorData;
+          try {
+            errorData = JSON.parse(responseText);
+          } catch (parseError) {
+            errorData = { rawResponse: responseText };
+            console.error('⚠️ Failed to parse meme error response as JSON:', responseText);
+          }
+          
+          console.error('❌ MEME GENERATION FAILED - Detailed Error Info:');
+          console.error('  - HTTP Status:', memeResponse.status);
+          console.error('  - Status Text:', memeResponse.statusText);
+          console.error('  - Response Body:', JSON.stringify(errorData, null, 2));
+          console.error('  - Request Text:', finalMemeText);
+          console.error('  - Request User ID:', userId);
+          console.error('  - Full Request Body:', JSON.stringify(memeRequestBody, null, 2));
+          
+          // Log specific error types for better debugging
+          if (memeResponse.status === 503) {
+            console.error('  ⚠️ Service Unavailable - Possible causes:');
+            console.error('    - Imgflip credentials not configured');
+            console.error('    - ENABLE_IMGFLIP_AUTOMEME is false');
+            console.error('    - Imgflip API is down');
+          } else if (memeResponse.status === 402) {
+            console.error('  ⚠️ Payment Required - Imgflip premium API access needed');
+          } else if (memeResponse.status === 422) {
+            console.error('  ⚠️ Unprocessable Entity - Text not suitable for meme generation');
+          } else if (memeResponse.status === 429) {
+            console.error('  ⚠️ Rate Limited - User exceeded meme limit');
+          } else if (memeResponse.status === 403) {
+            console.error('  ⚠️ Forbidden - User plan does not include memes');
+          }
+          
           // Don't fail the entire request if meme generation fails
           // This is a nice-to-have feature, not critical
         }
       } catch (error) {
-        console.error('❌ Meme generation error:', error);
+        console.error('❌ MEME GENERATION NETWORK ERROR:', {
+          errorType: error instanceof Error ? error.constructor.name : 'Unknown',
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          memeText: finalMemeText,
+          userId: userId,
+          url: new URL('/api/meme', req.url).toString()
+        });
+        
+        // Check for specific network error types
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+          console.error('  ⚠️ Network fetch error - possible causes:');
+          console.error('    - API endpoint unreachable');
+          console.error('    - DNS resolution failed');
+          console.error('    - Connection timeout');
+        }
+        
         // Don't fail the entire request if meme generation fails
       }
     } else {

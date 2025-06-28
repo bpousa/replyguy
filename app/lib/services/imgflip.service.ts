@@ -70,7 +70,7 @@ export class ImgflipService {
       console.log('  Username:', username ? `"${username}" (${username.length} chars)` : 'NOT SET');
       console.log('  Password:', password ? `SET (${password.length} chars)` : 'NOT SET');
       
-      if (username === 'mikeappendment' && password === 'Fun4Life!') {
+      if (username === 'mikeappendment' && password === 'Fun4Life') {
         console.log('[ImgflipService] ✅ Credentials match expected values');
       } else {
         console.log('[ImgflipService] ⚠️ Credentials may be incorrect');
@@ -78,8 +78,8 @@ export class ImgflipService {
           console.log('  Username issue - expected: mikeappendment (14 chars)');
           console.log('  Username actual:', username ? `${username} (${username.length} chars)` : 'undefined');
         }
-        if (password !== 'Fun4Life!') {
-          console.log('  Password issue - expected: Fun4Life! (9 chars)');
+        if (password !== 'Fun4Life') {
+          console.log('  Password issue - expected: Fun4Life (8 chars)');
           console.log('  Password actual length:', password?.length || 0);
         }
       }

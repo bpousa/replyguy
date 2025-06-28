@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { UserInput, ResponseType, Tone, ReplyLength } from '@/app/lib/types';
 import { RESPONSE_TYPES, TONES, PLACEHOLDER_TWEETS, PLACEHOLDER_IDEAS, REPLY_LENGTHS } from '@/app/lib/constants';
 import { validateTweet, sanitizeInput, debounce } from '@/app/lib/utils';
@@ -42,21 +42,23 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
   const [hasActiveStyle, setHasActiveStyle] = useState(false);
   
   // Get user plan from subscription
-  const userPlan = subscription?.subscription_plans ? {
-    ...subscription.subscription_plans,
-    memes_used: subscription.memes_used || 0
-  } : {
-    max_tweet_length: 280,
-    max_response_idea_length: 500,
-    max_reply_length: 280,
-    enable_long_replies: false,
-    enable_style_matching: false,
-    enable_perplexity_guidance: false,
-    enable_memes: false,
-    meme_limit: 0,
-    memes_used: 0,
-    enable_write_like_me: false
-  };
+  const userPlan = useMemo(() => {
+    return subscription?.subscription_plans ? {
+      ...subscription.subscription_plans,
+      memes_used: subscription.memes_used || 0
+    } : {
+      max_tweet_length: 280,
+      max_response_idea_length: 500,
+      max_reply_length: 280,
+      enable_long_replies: false,
+      enable_style_matching: false,
+      enable_perplexity_guidance: false,
+      enable_memes: false,
+      meme_limit: 0,
+      memes_used: 0,
+      enable_write_like_me: false
+    };
+  }, [subscription]);
   
   // Debug logging for meme feature
   useEffect(() => {
@@ -483,7 +485,7 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
                 {!memeText ? (
                   <p>💡 <span className="font-medium">Leave blank</span> = AI creates meme text from your reply</p>
                 ) : memeTextMode === 'exact' ? (
-                  <p>✏️ Your exact text will be used: "{memeText}"</p>
+                  <p>✏️ Your exact text will be used: &ldquo;{memeText}&rdquo;</p>
                 ) : (
                   <p>✨ AI will enhance your idea to make it funnier</p>
                 )}

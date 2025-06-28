@@ -52,7 +52,6 @@ export function generateMemeText(reply: string, tone: Tone): string {
       
     case 'humorous':
     case 'witty':
-    case 'funny':
       const funnyMemes = [
         'why not both',
         'shut up and take my money',
@@ -61,13 +60,11 @@ export function generateMemeText(reply: string, tone: Tone): string {
       ];
       return funnyMemes[Math.floor(Math.random() * funnyMemes.length)];
       
-    case 'excited':
-    case 'enthusiastic':
+    case 'friendly':
       return 'shut up and take my money';
       
-    case 'frustrated':
-    case 'angry':
-      return 'y u no work';
+    case 'formal':
+      return 'one does not simply proceed without proper authorization';
       
     default:
       // Fallback: pick a random safe pattern

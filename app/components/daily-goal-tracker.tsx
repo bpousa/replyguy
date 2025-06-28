@@ -21,23 +21,32 @@ export function DailyGoalTracker({
   const [showCelebration, setShowCelebration] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [tempGoal, setTempGoal] = useState(goal);
-  const [hasTriggeredCelebration, setHasTriggeredCelebration] = useState(false);
   const percentage = Math.min((currentCount / goal) * 100, 100);
   const isCompleted = currentCount >= goal;
+  
+  // Check if celebration was already shown today
+  const getCelebrationKey = () => {
+    const today = new Date().toDateString();
+    return `celebration_shown_${today}`;
+  };
 
   useEffect(() => {
-    // Only trigger celebration once when goal is first completed
-    if (isCompleted && !hasTriggeredCelebration) {
-      setShowCelebration(true);
-      setHasTriggeredCelebration(true);
-      triggerCelebration();
-    }
+    // Only trigger celebration once per day when goal is completed
+    const celebrationKey = getCelebrationKey();
+    const celebrationShownToday = localStorage.getItem(celebrationKey) === 'true';
     
-    // Reset when count goes below goal
-    if (!isCompleted && hasTriggeredCelebration) {
-      setHasTriggeredCelebration(false);
+    if (isCompleted && !celebrationShownToday) {
+      setShowCelebration(true);
+      triggerCelebration();
+      localStorage.setItem(celebrationKey, 'true');
+      
+      // Clean up old celebration keys
+      const today = new Date().toDateString();
+      Object.keys(localStorage)
+        .filter(key => key.startsWith('celebration_shown_') && !key.includes(today))
+        .forEach(key => localStorage.removeItem(key));
     }
-  }, [isCompleted, hasTriggeredCelebration]);
+  }, [isCompleted]);
 
   const triggerCelebration = () => {
     // Trigger confetti

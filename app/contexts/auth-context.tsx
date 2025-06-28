@@ -21,6 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<AuthContextValue['status']>('loading');
   const [error, setError] = useState<Error | null>(null);
   const [isSessionExpired, setIsSessionExpired] = useState(false);
+  const [lastRefreshAttempt, setLastRefreshAttempt] = useState<number>(0);
   const supabase = createBrowserClient();
 
   const checkSession = async () => {
@@ -36,15 +37,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       if (session) {
-        // Check if session is expired
+        // Check if session is expired - add 5 minute grace period
         const expiresAt = new Date(session.expires_at || 0).getTime();
         const now = new Date().getTime();
-        const isExpired = expiresAt < now;
+        const fiveMinutes = 5 * 60 * 1000;
+        const isExpired = expiresAt < (now + fiveMinutes);
         
         setIsSessionExpired(isExpired);
         
         if (isExpired) {
-          console.log('[auth-context] Session expired, attempting refresh...');
+          console.log('[auth-context] Session expired or expiring soon, attempting refresh...');
           await refreshSession();
         } else {
           console.log('[auth-context] Valid session found for:', session.user.email);
@@ -67,7 +69,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshSession = async () => {
     try {
+      // Rate limit protection - wait at least 10 seconds between refresh attempts
+      const now = Date.now();
+      const timeSinceLastRefresh = now - lastRefreshAttempt;
+      if (timeSinceLastRefresh < 10000) {
+        console.log('[auth-context] Skipping refresh - too soon since last attempt', timeSinceLastRefresh);
+        return;
+      }
+      
       console.log('[auth-context] Refreshing session...');
+      setLastRefreshAttempt(now);
+      
       const { data: { session }, error } = await supabase.auth.refreshSession();
       
       if (error) {
@@ -143,7 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, [supabase, checkSession]);
+  }, [supabase]); // Remove checkSession from dependencies to prevent loops
 
   const value: AuthContextValue = {
     user,

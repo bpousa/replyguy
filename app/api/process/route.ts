@@ -320,6 +320,8 @@ export async function POST(req: NextRequest) {
       selectedTypesCount: selectedTypes.length,
       selectedTypeNames: selectedTypes.map((t: any) => t.name),
       hasPerplexityData: !!perplexityData,
+      userRequestedMeme: validated.includeMeme,
+      imgflipConfigured: imgflipService.isConfigured(),
       enableMemes: validated.includeMeme && imgflipService.isConfigured()
     });
     
@@ -370,6 +372,13 @@ export async function POST(req: NextRequest) {
     console.log(`\n🖼️ ============ STEP 4: MEME GENERATION [${requestId}] ============`);
     let memeUrl: string | undefined;
     let memePageUrl: string | undefined;
+    
+    console.log('🎭 Meme Decision Details:', {
+      shouldIncludeMeme: shouldIncludeMeme,
+      memeText: memeText,
+      userRequestedMeme: validated.includeMeme,
+      allConditionsMet: shouldIncludeMeme && memeText && validated.includeMeme
+    });
     
     if (shouldIncludeMeme && memeText && validated.includeMeme) {
       console.log('🎨 Attempting meme generation:', { shouldIncludeMeme, memeText, includeMeme: validated.includeMeme });

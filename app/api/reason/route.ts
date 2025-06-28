@@ -31,6 +31,11 @@ export async function POST(req: NextRequest) {
   try {
     // Validate request body
     const body = await req.json();
+    console.log('[reason] Request body:', {
+      ...body,
+      selectedTypes: body.selectedTypes?.length || 0,
+      enableMemes: body.enableMemes
+    });
     const validated = requestSchema.parse(body);
 
     // Build reasoning prompt

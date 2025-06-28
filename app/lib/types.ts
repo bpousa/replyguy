@@ -47,6 +47,7 @@ export interface UserInput {
   enableStyleMatching?: boolean;
   includeMeme?: boolean;
   memeText?: string;
+  memeTextMode?: 'exact' | 'enhance';
   useCustomStyle?: boolean;
 }
 

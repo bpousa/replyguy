@@ -10,6 +10,7 @@ import { Textarea } from './ui/textarea';
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Switch } from './ui/switch';
+import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { AlertCircle, Sparkles, RefreshCw, Lightbulb } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { DetailedUpgradeModal } from './upgrade-modal';
@@ -32,6 +33,7 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
   const [enableStyleMatching, setEnableStyleMatching] = useState(true);
   const [includeMeme, setIncludeMeme] = useState(false);
   const [memeText, setMemeText] = useState('');
+  const [memeTextMode, setMemeTextMode] = useState<'exact' | 'enhance'>('exact');
   const [errors, setErrors] = useState<{ tweet?: string; idea?: string }>({});
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeLimitType, setUpgradeLimitType] = useState<'tweet' | 'response' | 'replies' | 'memes' | 'suggestions'>('tweet');
@@ -153,6 +155,7 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
       enableStyleMatching: userPlan.enable_style_matching ? enableStyleMatching : false,
       includeMeme: userPlan.enable_memes ? includeMeme : false,
       memeText: userPlan.enable_memes && includeMeme ? memeText.trim() : undefined,
+      memeTextMode: userPlan.enable_memes && includeMeme && memeText ? memeTextMode : undefined,
       useCustomStyle: userPlan.enable_write_like_me && hasActiveStyle ? useCustomStyle : false
     };
     
@@ -439,21 +442,52 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
           
           {/* Meme Text Input - Show when meme is toggled on */}
           {includeMeme && (
-            <div className="ml-4 space-y-2">
-              <Label htmlFor="meme-text" className="text-sm">
-                Meme text (optional)
-              </Label>
-              <Input
-                id="meme-text"
-                placeholder="e.g., 'this is fine' or 'bugs everywhere'"
-                value={memeText}
-                onChange={(e) => setMemeText(e.target.value)}
-                maxLength={100}
-                className="text-sm"
-              />
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                💡 Leave blank to auto-generate based on your reply. Max 100 characters.
-              </p>
+            <div className="ml-4 space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="meme-text" className="text-sm font-medium">
+                  Meme text (optional)
+                </Label>
+                <Input
+                  id="meme-text"
+                  placeholder="e.g., 'this is fine' or 'bugs everywhere'"
+                  value={memeText}
+                  onChange={(e) => setMemeText(e.target.value)}
+                  maxLength={100}
+                  className="text-sm"
+                />
+              </div>
+              
+              {/* Show radio buttons only when user has typed text */}
+              {memeText && (
+                <RadioGroup 
+                  value={memeTextMode} 
+                  onValueChange={(value) => setMemeTextMode(value as 'exact' | 'enhance')}
+                  className="space-y-2"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="exact" id="exact" />
+                    <Label htmlFor="exact" className="text-sm font-normal cursor-pointer">
+                      Use my exact text
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="enhance" id="enhance" />
+                    <Label htmlFor="enhance" className="text-sm font-normal cursor-pointer">
+                      Make it more creative with AI ✨
+                    </Label>
+                  </div>
+                </RadioGroup>
+              )}
+              
+              <div className="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                {!memeText ? (
+                  <p>💡 <span className="font-medium">Leave blank</span> = AI creates meme text from your reply</p>
+                ) : memeTextMode === 'exact' ? (
+                  <p>✏️ Your exact text will be used: "{memeText}"</p>
+                ) : (
+                  <p>✨ AI will enhance your idea to make it funnier</p>
+                )}
+              </div>
             </div>
           )}
         </div>

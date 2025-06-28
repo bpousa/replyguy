@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { UserInput, GeneratedReply, CostBreakdown, Tone } from '@/app/lib/types';
 import { imgflipService } from '@/app/lib/services/imgflip.service';
-import { generateMemeText } from '@/app/lib/meme-generator';
+// Removed old meme generator import - will use GPT-4o via API
 import { createServerClient } from '@/app/lib/auth';
 import { cookies } from 'next/headers';
 
@@ -41,6 +41,7 @@ const requestSchema = z.object({
   enableStyleMatching: z.boolean().optional(),
   includeMeme: z.boolean().optional(),
   memeText: z.string().max(100).optional(),
+  memeTextMode: z.enum(['exact', 'enhance']).optional(),
   useCustomStyle: z.boolean().optional(),
   userId: z.string().optional()
 });
@@ -441,8 +442,41 @@ export async function POST(req: NextRequest) {
         willAutoGenerate: !validated.memeText
       });
       
-      // Use provided meme text or auto-generate based on reply
-      finalMemeText = validated.memeText || generateMemeText(generateData.data.reply, validated.tone as Tone);
+      // Generate meme text using GPT-4o
+      try {
+        console.log('🤖 Calling meme-text API to generate text...');
+        const memeTextResponse = await fetch(new URL('/api/meme-text', req.url), {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cookie': req.headers.get('cookie') || ''
+          },
+          body: JSON.stringify({
+            userText: validated.memeText,
+            reply: generateData.data.reply,
+            tone: validated.tone,
+            enhance: validated.memeTextMode === 'enhance',
+            userId: userId
+          }),
+        });
+        
+        if (memeTextResponse.ok) {
+          const memeTextData = await memeTextResponse.json();
+          finalMemeText = memeTextData.text;
+          console.log('✅ Meme text generated:', {
+            text: finalMemeText,
+            enhanced: memeTextData.enhanced,
+            method: memeTextData.method
+          });
+        } else {
+          // Fallback if meme text generation fails
+          finalMemeText = validated.memeText || 'this is fine';
+          console.warn('⚠️ Meme text generation failed, using fallback:', finalMemeText);
+        }
+      } catch (error) {
+        console.error('❌ Error generating meme text:', error);
+        finalMemeText = validated.memeText || 'this is fine';
+      }
       
       console.log('🎨 Attempting meme generation with text:', finalMemeText);
       

@@ -316,48 +316,6 @@ export default function HomePage() {
           />
         </div>
 
-        {/* Footer */}
-        <footer className="mt-16 text-center text-sm text-gray-500">
-          <p>
-            Built with ❤️ using{' '}
-            <a
-              href="https://nextjs.org"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline"
-            >
-              Next.js
-            </a>
-            ,{' '}
-            <a
-              href="https://www.anthropic.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline"
-            >
-              Claude
-            </a>
-            , and{' '}
-            <a
-              href="https://openai.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline"
-            >
-              OpenAI
-            </a>
-          </p>
-          <p className="mt-2">
-            <a
-              href="https://github.com/bpousa/replyguy"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline"
-            >
-              View on GitHub
-            </a>
-          </p>
-        </footer>
       </div>
       
       {/* Upgrade Modal */}

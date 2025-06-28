@@ -11,6 +11,11 @@ export const metadata: Metadata = {
   description: 'Create authentic, human-like replies to tweets using advanced AI models',
   keywords: 'AI, Twitter, X, replies, social media, GPT, Claude, tweet generator',
   authors: [{ name: 'ReplyGuy Team' }],
+  icons: {
+    icon: '/favicon.png',
+    shortcut: '/favicon.png',
+    apple: '/favicon.png',
+  },
   openGraph: {
     title: 'ReplyGuy - AI-Powered Tweet Reply Generator',
     description: 'Create authentic, human-like replies to tweets using advanced AI models',

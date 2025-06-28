@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { Logo } from '@/app/components/logo';
+import { Footer } from '@/app/components/footer';
 
 export default function DashboardLayout({
   children,
@@ -220,12 +221,13 @@ export default function DashboardLayout({
       )}
       
       {/* Main content */}
-      <div className="md:pl-64">
-        <main className="py-6">
+      <div className="md:pl-64 flex flex-col min-h-screen">
+        <main className="flex-grow py-6">
           <div className="mx-auto px-4 sm:px-6 md:px-8">
             {children}
           </div>
         </main>
+        <Footer />
       </div>
     </div>
   );

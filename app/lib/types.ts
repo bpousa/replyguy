@@ -46,6 +46,7 @@ export interface UserInput {
   perplexityGuidance?: string;
   enableStyleMatching?: boolean;
   includeMeme?: boolean;
+  memeText?: string;
   useCustomStyle?: boolean;
 }
 

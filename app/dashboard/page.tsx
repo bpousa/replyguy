@@ -4,13 +4,13 @@ import { useState, useEffect } from 'react';
 import ReplyForm from '@/app/components/reply-form';
 import ReplyOutput from '@/app/components/reply-output';
 import { UserInput, GeneratedReply } from '@/app/lib/types';
-import { Sparkles } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { DailyGoalTracker } from '@/app/components/daily-goal-tracker';
 import { createBrowserClient } from '@/app/lib/auth';
 import UpgradeModal from '@/app/components/upgrade-modal';
 import { SubscriptionStatusBanner } from '@/app/components/subscription-status-banner';
 import { PlanBadge } from '@/app/components/plan-badge';
+import Image from 'next/image';
 
 
 export default function HomePage() {
@@ -246,7 +246,14 @@ export default function HomePage() {
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <Sparkles className="w-8 h-8 text-purple-600" />
+            <Image
+              src="/reply_guy_logo.png"
+              alt="ReplyGuy Logo"
+              width={48}
+              height={48}
+              className="object-contain"
+              priority
+            />
             <h1 className="text-4xl font-bold gradient-text">
               ReplyGuy
             </h1>

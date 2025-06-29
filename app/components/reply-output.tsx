@@ -6,7 +6,7 @@ import { GeneratedReply } from '@/app/lib/types';
 import { formatCost, formatDuration, copyToClipboard } from '@/app/lib/utils';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
-import { Copy, Check, Sparkles, DollarSign, Clock, Info, Link, ExternalLink } from 'lucide-react';
+import { Copy, Check, Sparkles, DollarSign, Clock, Info, Link, ExternalLink, AlertCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LoadingReplyGuy } from './loading-reply-guy';
@@ -144,7 +144,7 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
                   Meme generation unavailable
                 </p>
                 <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                  The meme couldn't be generated with the current text. Try a different response or add custom meme text for better results.
+                  The meme couldn&apos;t be generated with the current text. Try a different response or add custom meme text for better results.
                 </p>
                 {debugMode && (
                   <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 font-mono">

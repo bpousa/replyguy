@@ -159,7 +159,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, [supabase]); // Remove checkSession from dependencies to prevent loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase]); // checkSession is only used on mount, no need to include in deps
 
   const value: AuthContextValue = {
     user,

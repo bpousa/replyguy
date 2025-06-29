@@ -21,16 +21,56 @@ export default function CheckoutRedirectPage() {
   };
 
   useEffect(() => {
-    // If not authenticated after a few seconds, redirect to login
-    if (status === 'unauthenticated') {
-      const timer = setTimeout(() => {
-        console.log('[checkout-redirect] No auth after timeout, redirecting to login');
-        router.push('/auth/login?error=session_required');
-      }, 3000);
+    let timeoutId: NodeJS.Timeout;
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    const checkAuthWithRetry = async () => {
+      // If authenticated, no need to continue
+      if (status === 'authenticated') {
+        return;
+      }
       
-      return () => clearTimeout(timer);
-    }
-  }, [status, router]);
+      // If still loading, wait
+      if (status === 'loading') {
+        return;
+      }
+      
+      // If unauthenticated, try to refresh session
+      if (status === 'unauthenticated' && retryCount < maxRetries) {
+        retryCount++;
+        console.log(`[checkout-redirect] Attempt ${retryCount}: Trying to refresh session...`);
+        
+        try {
+          await refreshSession();
+          // Wait a bit for the session to propagate
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Check status again
+          if (status === 'authenticated') {
+            console.log('[checkout-redirect] Session established after refresh');
+            return;
+          }
+        } catch (error) {
+          console.error('[checkout-redirect] Session refresh failed:', error);
+        }
+        
+        // Schedule next retry
+        timeoutId = setTimeout(checkAuthWithRetry, 2000);
+      } else if (status === 'unauthenticated' && retryCount >= maxRetries) {
+        // Final timeout - redirect to login
+        console.log('[checkout-redirect] No auth after all retries, redirecting to login');
+        router.push('/auth/login?error=session_required&from=checkout');
+      }
+    };
+    
+    // Start checking after initial delay to allow session establishment
+    timeoutId = setTimeout(checkAuthWithRetry, 2000);
+    
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [status, router, refreshSession]);
 
   const proceedToCheckout = async () => {
     if (!planId || !user) return;

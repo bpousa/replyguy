@@ -24,8 +24,19 @@ export default function LoginPage() {
   useEffect(() => {
     // Check for error in URL params
     const params = new URLSearchParams(window.location.search);
-    if (params.get('error') === 'confirmation_failed') {
+    const errorParam = params.get('error');
+    const fromParam = params.get('from');
+    
+    if (errorParam === 'confirmation_failed') {
       toast.error('Email confirmation failed. Please try again.');
+    } else if (errorParam === 'session_required') {
+      if (fromParam === 'checkout') {
+        toast.error('Please sign in to complete your purchase.');
+      } else {
+        toast.error('Please sign in to continue.');
+      }
+    } else if (errorParam === 'session_not_found') {
+      toast.error('Session expired. Please sign in again.');
     }
   }, []);
 
@@ -72,19 +83,45 @@ export default function LoginPage() {
           throw error;
         }
 
-        // Verify session was created
-        const { data: { session } } = await supabase.auth.getSession();
+        // Verify session was created with retry logic
+        let sessionVerified = false;
+        let retryCount = 0;
+        const maxRetries = 3;
         
-        if (!session) {
-          throw new Error('Failed to establish session. Please try again.');
+        while (!sessionVerified && retryCount < maxRetries) {
+          const { data: { session } } = await supabase.auth.getSession();
+          
+          if (session) {
+            sessionVerified = true;
+            toast.success('Welcome back!');
+            
+            // Add a small delay to ensure session is propagated
+            setTimeout(() => {
+              router.push('/dashboard');
+            }, 100);
+          } else {
+            retryCount++;
+            if (retryCount < maxRetries) {
+              console.log(`[login] Session not found, retrying (${retryCount}/${maxRetries})...`);
+              // Wait a bit before retrying
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              
+              // Try to refresh session
+              const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
+              if (refreshedSession) {
+                sessionVerified = true;
+                toast.success('Welcome back!');
+                setTimeout(() => {
+                  router.push('/dashboard');
+                }, 100);
+              }
+            }
+          }
         }
-
-        toast.success('Welcome back!');
         
-        // Add a small delay to ensure session is propagated
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, 100);
+        if (!sessionVerified) {
+          throw new Error('Unable to establish session. Please try logging in again.');
+        }
       }
     } catch (error: any) {
       console.error('Login error:', error);

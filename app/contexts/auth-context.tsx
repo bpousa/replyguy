@@ -25,9 +25,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [lastRefreshAttempt, setLastRefreshAttempt] = useState<number>(0);
   const supabase = createBrowserClient();
 
-  const checkSession = async () => {
+  const checkSession = async (retryCount = 0) => {
     try {
-      console.log('[auth-context] Checking session...');
+      console.log('[auth-context] Checking session... (attempt', retryCount + 1, ')');
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
@@ -57,9 +57,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } else {
         console.log('[auth-context] No session found');
-        setUser(null);
-        setStatus('unauthenticated');
-        setError(null);
+        
+        // If this is the initial check and we're in a browser, try a few more times
+        // This helps with the delay after email verification
+        if (retryCount < 2 && typeof window !== 'undefined') {
+          console.log('[auth-context] Retrying session check in 1 second...');
+          setTimeout(() => checkSession(retryCount + 1), 1000);
+        } else {
+          setUser(null);
+          setStatus('unauthenticated');
+          setError(null);
+        }
       }
     } catch (err) {
       console.error('[auth-context] Unexpected error checking session:', err);

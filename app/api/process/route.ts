@@ -434,6 +434,7 @@ export async function POST(req: NextRequest) {
     let memeUrl: string | undefined;
     let memePageUrl: string | undefined;
     let finalMemeText: string | undefined;
+    let memeSkipReason: string | undefined;
     
     if (validated.includeMeme && imgflipService.isConfigured()) {
       console.log('🎭 Meme Generation Details:', {
@@ -593,8 +594,7 @@ export async function POST(req: NextRequest) {
     const processingTime = Date.now() - startTime;
 
     // Determine meme skip reason for debugging
-    let memeSkipReason: string | undefined;
-    if (validated.includeMeme && !memeUrl) {
+    if (validated.includeMeme && !memeUrl && !memeSkipReason) {
       if (!imgflipService.isConfigured()) {
         memeSkipReason = 'Imgflip service not configured';
       } else {

@@ -136,14 +136,20 @@ export default function SettingsPage() {
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to open billing portal');
+        // Check if user needs to make a purchase first
+        if (response.status === 422 && data.requiresCheckout) {
+          toast.error('Please upgrade to a paid plan first');
+          router.push('/pricing');
+          return;
+        }
+        throw new Error(data.error || 'Failed to open billing portal');
       }
 
-      const { url } = await response.json();
-      if (url) {
-        window.location.href = url;
+      if (data.url) {
+        window.location.href = data.url;
       }
     } catch (error: any) {
       console.error('Error opening billing portal:', error);

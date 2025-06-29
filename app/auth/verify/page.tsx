@@ -23,15 +23,42 @@ export default function VerifyPage() {
     let isMounted = true;
     const supabase = supabaseRef.current;
     
-    const verifyAndEstablishSession = async () => {
-      // First, let Supabase handle any auth data in the URL
-      console.log('[verify] Checking for auth data in URL...');
-      const { data: { session: urlSession }, error: urlError } = await supabase.auth.getSession();
+    // Listen for auth state changes
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[verify] Auth state changed:', event, session?.user?.email);
       
-      if (urlSession) {
-        console.log('[verify] Session found from URL processing!', urlSession.user.email);
+      if (event === 'SIGNED_IN' && session && isMounted) {
         setStatus('success');
         setMessage('Email verified successfully!');
+        sessionStorage.setItem('auth_flow_active', 'true');
+        
+        setTimeout(() => {
+          if (!isMounted) return;
+          const redirectUrl = plan && plan !== 'free' 
+            ? `/auth/checkout-redirect?plan=${plan}`
+            : next || '/dashboard';
+          
+          console.log('[verify] Redirecting after auth state change to:', redirectUrl);
+          router.push(redirectUrl);
+        }, 500);
+      }
+    });
+    
+    const verifyAndEstablishSession = async () => {
+      // Wait a moment for Supabase to process any auth data
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Check if we have a session
+      console.log('[verify] Checking for session...');
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (session) {
+        console.log('[verify] Session found!', session.user.email);
+        setStatus('success');
+        setMessage('Email verified successfully!');
+        
+        // Mark auth flow as active
+        sessionStorage.setItem('auth_flow_active', 'true');
         
         setTimeout(() => {
           if (!isMounted) return;
@@ -190,32 +217,6 @@ export default function VerifyPage() {
           }, 1000);
         }
       }, 500);
-      
-      // Also listen for auth state changes
-      const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-        console.log('[verify] Auth state changed:', event, session?.user?.email);
-        
-        if (event === 'SIGNED_IN' && session && isMounted) {
-          if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
-          setStatus('success');
-          setMessage('Email verified successfully!');
-          
-          setTimeout(() => {
-            if (!isMounted) return;
-            const redirectUrl = plan && plan !== 'free' 
-              ? `/auth/checkout-redirect?plan=${plan}`
-              : next || '/dashboard';
-            
-            console.log('[verify] Redirecting to:', redirectUrl);
-            router.push(redirectUrl);
-          }, 1000);
-        }
-      });
-      
-      // Cleanup
-      return () => {
-        authListener.subscription.unsubscribe();
-      };
     };
     
     verifyAndEstablishSession();
@@ -223,6 +224,7 @@ export default function VerifyPage() {
     return () => {
       isMounted = false;
       if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
+      authListener.subscription.unsubscribe();
       // Clean up auth flow flag on unmount
       sessionStorage.removeItem('auth_flow_active');
     };

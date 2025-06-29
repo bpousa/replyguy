@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { z } from 'zod';
 import { ResponseType, Tone } from '@/app/lib/types';
+import { createServerClient } from '@/app/lib/auth';
+import { cookies } from 'next/headers';
 
 // Initialize OpenAI
 const openai = new OpenAI({
@@ -28,6 +30,69 @@ export async function POST(req: NextRequest) {
     // Parse and validate request
     const body = await req.json();
     const validated = requestSchema.parse(body);
+    
+    // Check user limits for suggestions
+    const cookieStore = cookies();
+    const supabase = createServerClient(cookieStore);
+    
+    // Get authenticated user
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user) {
+      // Get user's current usage and plan limits
+      const { data: usage } = await supabase
+        .rpc('get_current_usage', { p_user_id: user.id })
+        .single() as { data: { total_replies: number; total_memes: number; total_suggestions: number } | null };
+      
+      // Get user's active plan
+      const { data: userData } = await supabase
+        .from('users')
+        .select(`
+          subscriptions!inner(
+            subscription_plans!inner(
+              suggestion_limit
+            )
+          )
+        `)
+        .eq('id', user.id)
+        .eq('subscriptions.status', 'active')
+        .single() as { data: {
+          subscriptions: Array<{
+            subscription_plans: {
+              suggestion_limit: number;
+            }
+          }>
+        } | null };
+      
+      const plan = userData?.subscriptions?.[0]?.subscription_plans;
+      
+      // If no active plan, get free plan limits
+      let suggestionLimit = 0;
+      if (plan) {
+        suggestionLimit = plan.suggestion_limit;
+      } else {
+        const { data: freePlan } = await supabase
+          .from('subscription_plans')
+          .select('suggestion_limit')
+          .eq('id', 'free')
+          .single();
+        
+        suggestionLimit = freePlan?.suggestion_limit || 0;
+      }
+      
+      // Check if user has reached their suggestion limit
+      if (usage && usage.total_suggestions >= suggestionLimit) {
+        return NextResponse.json(
+          { 
+            error: 'Monthly suggestion limit reached',
+            limit: suggestionLimit,
+            used: usage.total_suggestions,
+            upgradeUrl: '/pricing'
+          },
+          { status: 429 }
+        );
+      }
+    }
 
     // Generate suggestion using GPT-4o
     const examples = {
@@ -108,6 +173,33 @@ Return only the suggestion, nothing else.`;
     const completionTokens = completion.usage?.completion_tokens || 0;
     const tokensUsed = promptTokens + completionTokens;
     const cost = (promptTokens * 0.0000025) + (completionTokens * 0.00001); // $2.50/$10 per 1M tokens
+
+    // Track suggestion usage for authenticated users
+    try {
+      const cookieStore = cookies();
+      const supabase = createServerClient(cookieStore);
+      
+      // Get authenticated user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Track the suggestion usage
+        const { error: trackingError } = await supabase.rpc('track_daily_usage', {
+          p_user_id: user.id,
+          p_usage_type: 'suggestion',
+          p_count: 1
+        });
+        
+        if (trackingError) {
+          console.error('[suggest] Failed to track usage:', trackingError);
+        } else {
+          console.log('[suggest] Successfully tracked suggestion usage for user:', user.id);
+        }
+      }
+    } catch (trackingError) {
+      // Log error but don't fail the request
+      console.error('[suggest] Error tracking suggestion usage:', trackingError);
+    }
 
     return NextResponse.json({
       suggestion,

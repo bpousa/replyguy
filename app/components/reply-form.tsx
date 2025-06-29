@@ -117,7 +117,16 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
         })
       });
       
-      if (!response.ok) throw new Error('Failed to get suggestion');
+      if (!response.ok) {
+        const error = await response.json();
+        if (response.status === 429 && error.limit) {
+          // Show upgrade modal for limit reached
+          setUpgradeLimitType('suggestions');
+          setShowUpgradeModal(true);
+          return;
+        }
+        throw new Error(error.error || 'Failed to get suggestion');
+      }
       
       const data = await response.json();
       setResponseIdea(data.suggestion);

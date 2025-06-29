@@ -23,51 +23,59 @@ export default function CheckoutRedirectPage() {
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
     let retryCount = 0;
-    const maxRetries = 3;
+    const maxRetries = 10; // Increased retries for PKCE flow
+    let hasRedirected = false;
     
     const checkAuthWithRetry = async () => {
+      // Prevent multiple redirects
+      if (hasRedirected) return;
+      
       // If authenticated, no need to continue
-      if (status === 'authenticated') {
+      if (status === 'authenticated' && user) {
+        console.log('[checkout-redirect] Authenticated! User:', user.email);
         return;
       }
       
       // If still loading, wait
       if (status === 'loading') {
+        console.log('[checkout-redirect] Auth still loading, waiting...');
+        timeoutId = setTimeout(checkAuthWithRetry, 500);
         return;
       }
       
       // If unauthenticated, try to refresh session
       if (status === 'unauthenticated' && retryCount < maxRetries) {
         retryCount++;
-        console.log(`[checkout-redirect] Attempt ${retryCount}: Trying to refresh session...`);
+        console.log(`[checkout-redirect] Attempt ${retryCount}/${maxRetries}: Trying to refresh session...`);
         
         try {
           await refreshSession();
           // Wait a bit for the session to propagate
           await new Promise(resolve => setTimeout(resolve, 1000));
           
-          // Don't check status here - let the next cycle handle it
           console.log('[checkout-redirect] Refresh attempt completed, scheduling next check');
         } catch (error) {
           console.error('[checkout-redirect] Session refresh failed:', error);
         }
         
-        // Schedule next retry
-        timeoutId = setTimeout(checkAuthWithRetry, 2000);
+        // Schedule next retry with exponential backoff
+        const delay = Math.min(1000 * Math.pow(1.5, retryCount), 5000);
+        timeoutId = setTimeout(checkAuthWithRetry, delay);
       } else if (status === 'unauthenticated' && retryCount >= maxRetries) {
         // Final timeout - redirect to login
+        hasRedirected = true;
         console.log('[checkout-redirect] No auth after all retries, redirecting to login');
         router.push('/auth/login?error=session_required&from=checkout');
       }
     };
     
     // Start checking after initial delay to allow session establishment
-    timeoutId = setTimeout(checkAuthWithRetry, 2000);
+    timeoutId = setTimeout(checkAuthWithRetry, 3000); // Increased initial delay
     
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [status, router, refreshSession]);
+  }, [status, user, router, refreshSession]);
 
   const proceedToCheckout = async () => {
     if (!planId || !user) return;

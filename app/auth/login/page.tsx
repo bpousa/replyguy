@@ -9,10 +9,9 @@ import { Button } from '@/app/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { Logo } from '@/app/components/logo';
 
-const supabase = createBrowserClient();
-
 export default function LoginPage() {
   const router = useRouter();
+  const supabase = createBrowserClient();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

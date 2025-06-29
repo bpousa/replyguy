@@ -63,34 +63,18 @@ export async function GET(request: NextRequest) {
       session = data.session;
       user = data.user;
     } else if (token && type === 'signup') {
-      // PKCE token verification flow (from email verification)
-      console.log('[auth-callback] Handling PKCE token verification...');
+      // PKCE token verification must happen client-side
+      console.log('[auth-callback] PKCE token detected, redirecting to client-side handler...');
       
-      // For PKCE flow, the token verification happens automatically when Supabase redirects
-      // We need to check if a session already exists
-      const { data: { session: existingSession } } = await supabase.auth.getSession();
+      // Build the verification URL with all necessary parameters
+      const verifyUrl = new URL('/auth/verify', requestUrl.origin);
+      verifyUrl.searchParams.set('token', token);
+      verifyUrl.searchParams.set('type', type);
+      if (plan) verifyUrl.searchParams.set('plan', plan);
+      if (next) verifyUrl.searchParams.set('next', next);
       
-      if (existingSession) {
-        console.log('[auth-callback] Found existing session from PKCE verification');
-        session = existingSession;
-        user = existingSession.user;
-      } else {
-        // Try to refresh to get the session
-        console.log('[auth-callback] No immediate session, trying refresh...');
-        const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
-        
-        if (refreshedSession) {
-          session = refreshedSession;
-          user = refreshedSession.user;
-        } else {
-          // As a last resort, redirect to auth loading page to give more time
-          console.log('[auth-callback] No session found, redirecting to auth loading...');
-          const redirectUrl = new URL('/auth/loading', requestUrl.origin);
-          if (plan) redirectUrl.searchParams.set('plan', plan);
-          if (next) redirectUrl.searchParams.set('next', next);
-          return NextResponse.redirect(redirectUrl);
-        }
-      }
+      // Redirect to client-side verification page
+      return NextResponse.redirect(verifyUrl);
     }
     
     if (!session) {

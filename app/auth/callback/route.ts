@@ -38,12 +38,14 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Check if we have either code or token
+  // If no auth parameters but we're coming from Supabase email verification,
+  // redirect to verify page to handle client-side
   if (!code && !token) {
-    console.error('[auth-callback] No code or token parameter provided');
-    return NextResponse.redirect(
-      new URL('/auth/error?message=Missing%20authentication%20parameters', requestUrl.origin)
-    );
+    console.log('[auth-callback] No auth parameters, redirecting to verify page...');
+    const verifyUrl = new URL('/auth/verify', requestUrl.origin);
+    if (plan) verifyUrl.searchParams.set('plan', plan);
+    if (next) verifyUrl.searchParams.set('next', next);
+    return NextResponse.redirect(verifyUrl);
   }
 
   try {

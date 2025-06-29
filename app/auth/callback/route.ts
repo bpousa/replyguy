@@ -6,6 +6,8 @@ import { cookies } from 'next/headers';
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
+  const token = requestUrl.searchParams.get('token');
+  const type = requestUrl.searchParams.get('type');
   const next = requestUrl.searchParams.get('next');
   const plan = requestUrl.searchParams.get('plan');
   const error = requestUrl.searchParams.get('error');
@@ -13,6 +15,9 @@ export async function GET(request: NextRequest) {
   
   console.log('[auth-callback] Received callback:', {
     code: !!code,
+    token: !!token,
+    tokenPrefix: token?.substring(0, 20),
+    type,
     next,
     plan,
     error,
@@ -28,10 +33,11 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  if (!code) {
-    console.error('[auth-callback] No code parameter provided');
+  // Check if we have either code or token
+  if (!code && !token) {
+    console.error('[auth-callback] No code or token parameter provided');
     return NextResponse.redirect(
-      new URL('/auth/error?message=Missing%20authentication%20code', requestUrl.origin)
+      new URL('/auth/error?message=Missing%20authentication%20parameters', requestUrl.origin)
     );
   }
 
@@ -39,28 +45,65 @@ export async function GET(request: NextRequest) {
     const cookieStore = cookies();
     const supabase = createServerClient(cookieStore);
     
-    // Exchange the code for a session
-    console.log('[auth-callback] Exchanging code for session...');
-    const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+    let session;
+    let user;
     
-    if (exchangeError) {
-      console.error('[auth-callback] Exchange error:', exchangeError);
-      return NextResponse.redirect(
-        new URL(`/auth/error?message=${encodeURIComponent(exchangeError.message)}`, requestUrl.origin)
-      );
+    if (code) {
+      // Standard OAuth code exchange flow
+      console.log('[auth-callback] Exchanging code for session...');
+      const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+      
+      if (exchangeError) {
+        console.error('[auth-callback] Exchange error:', exchangeError);
+        return NextResponse.redirect(
+          new URL(`/auth/error?message=${encodeURIComponent(exchangeError.message)}`, requestUrl.origin)
+        );
+      }
+      
+      session = data.session;
+      user = data.user;
+    } else if (token && type === 'signup') {
+      // PKCE token verification flow (from email verification)
+      console.log('[auth-callback] Handling PKCE token verification...');
+      
+      // For PKCE flow, the token verification happens automatically when Supabase redirects
+      // We need to check if a session already exists
+      const { data: { session: existingSession } } = await supabase.auth.getSession();
+      
+      if (existingSession) {
+        console.log('[auth-callback] Found existing session from PKCE verification');
+        session = existingSession;
+        user = existingSession.user;
+      } else {
+        // Try to refresh to get the session
+        console.log('[auth-callback] No immediate session, trying refresh...');
+        const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
+        
+        if (refreshedSession) {
+          session = refreshedSession;
+          user = refreshedSession.user;
+        } else {
+          // As a last resort, redirect to auth loading page to give more time
+          console.log('[auth-callback] No session found, redirecting to auth loading...');
+          const redirectUrl = new URL('/auth/loading', requestUrl.origin);
+          if (plan) redirectUrl.searchParams.set('plan', plan);
+          if (next) redirectUrl.searchParams.set('next', next);
+          return NextResponse.redirect(redirectUrl);
+        }
+      }
     }
     
-    if (!data.session) {
-      console.error('[auth-callback] No session in exchange response');
+    if (!session) {
+      console.error('[auth-callback] No session created or found');
       return NextResponse.redirect(
         new URL('/auth/error?message=No%20session%20created', requestUrl.origin)
       );
     }
     
-    console.log('[auth-callback] Session created successfully:', {
-      userId: data.session.user.id,
-      email: data.session.user.email,
-      expiresAt: data.session.expires_at
+    console.log('[auth-callback] Session established successfully:', {
+      userId: session.user.id,
+      email: session.user.email,
+      expiresAt: session.expires_at
     });
     
     // The session should now be automatically stored in cookies by Supabase
@@ -93,9 +136,9 @@ export async function GET(request: NextRequest) {
     } else if (next) {
       // Explicit next destination
       redirectTo = next;
-    } else if (data.session.user.user_metadata?.selected_plan) {
+    } else if (user?.user_metadata?.selected_plan) {
       // Plan was stored in user metadata during signup
-      redirectTo = `/auth/checkout-redirect?plan=${data.session.user.user_metadata.selected_plan}`;
+      redirectTo = `/auth/checkout-redirect?plan=${user.user_metadata.selected_plan}`;
     }
     
     console.log('[auth-callback] Redirecting to:', redirectTo);

@@ -14,42 +14,70 @@ export default function AuthLoadingPage() {
 
   useEffect(() => {
     let attempts = 0;
-    const maxAttempts = 10;
+    const maxAttempts = 15; // Increased for PKCE flow
+    let checkInterval: NodeJS.Timeout;
     
     const checkSession = async () => {
       attempts++;
+      console.log(`[auth-loading] Checking session, attempt ${attempts}/${maxAttempts}`);
       
       let { data: { session } } = await supabase.auth.getSession();
       
-      // If no session and we haven't tried refreshing yet, try to refresh
-      if (!session && attempts <= 3) {
-        console.log(`Attempt ${attempts}: No session found, trying to refresh...`);
-        const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
-        session = refreshedSession;
+      // For early attempts, always try to refresh to handle PKCE delay
+      if (!session && attempts <= 5) {
+        console.log('[auth-loading] No session found, trying to refresh...');
+        const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+        
+        if (refreshError) {
+          console.log('[auth-loading] Refresh error:', refreshError.message);
+        } else if (refreshedSession) {
+          console.log('[auth-loading] Session obtained via refresh');
+          session = refreshedSession;
+        }
       }
+      
+      // Also check for auth state changes
+      const { data: authListener } = supabase.auth.onAuthStateChange((event, newSession) => {
+        if (event === 'SIGNED_IN' && newSession) {
+          console.log('[auth-loading] Auth state changed to SIGNED_IN');
+          session = newSession;
+        }
+      });
       
       if (session) {
         // Session found
-        console.log('Session established successfully');
+        console.log('[auth-loading] Session established successfully for:', session.user.email);
+        
+        // Clean up
+        if (checkInterval) clearInterval(checkInterval);
+        authListener.subscription.unsubscribe();
+        
+        // Determine redirect
         if (planId && planId !== 'free') {
-          // User selected a paid plan, redirect to checkout confirmation page
+          console.log('[auth-loading] Redirecting to checkout for plan:', planId);
           router.push(`/auth/checkout-redirect?plan=${planId}`);
         } else {
-          // No plan selected or free plan, go to dashboard
+          console.log('[auth-loading] Redirecting to dashboard');
           router.push('/dashboard');
         }
       } else if (attempts >= maxAttempts) {
         // No session after multiple attempts
-        console.error('Failed to establish session after', attempts, 'attempts');
+        console.error('[auth-loading] Failed to establish session after', attempts, 'attempts');
+        authListener.subscription.unsubscribe();
         router.push('/auth/login?error=session_not_found');
-      } else {
-        // Try again after a short delay
-        setTimeout(checkSession, 500);
       }
     };
     
-    // Start checking after a short delay
-    setTimeout(checkSession, 1000);
+    // Start checking immediately
+    checkSession();
+    
+    // Then check every 500ms
+    checkInterval = setInterval(checkSession, 500);
+    
+    // Cleanup on unmount
+    return () => {
+      if (checkInterval) clearInterval(checkInterval);
+    };
   }, [router, supabase, planId]);
 
   return (

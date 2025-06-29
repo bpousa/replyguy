@@ -36,31 +36,60 @@ export class OpenAIMemeService {
         return userText;
       } else if (userText && enhance) {
         // Enhance user's meme idea
-        prompt = `You are a meme text expert. Take this meme idea and make it funnier while keeping the core concept:
+        prompt = `You are a meme text expert. Enhance this meme idea to work better with Imgflip:
 
 User's idea: "${userText}"
-Context: This is for a ${tone} reply that says: "${reply.substring(0, 200)}..."
+Context: This is for a ${tone} reply
 
-Make it funnier using popular meme formats and internet humor. Keep it under 10 words.
+RULES:
+1. Keep the user's core concept but make it simpler
+2. Use common meme language (y u no, such/much, etc.)
+3. Maximum 8 words
+4. Remove complex punctuation
+5. Make it match popular meme formats
+
+Examples of enhancements:
+- "this isn't working" → "y u no work"
+- "there are problems everywhere" → "bugs everywhere"
+- "I'm confused" → "not sure if serious"
+- "everything is chaotic" → "this is fine"
+
 Reply with ONLY the enhanced meme text, nothing else.`;
         console.log('[OpenAIMeme] Enhancing user text:', userText);
       } else {
         // Generate from scratch based on reply
-        prompt = `You are a meme text expert. Create a hilarious meme caption based on this context:
+        prompt = `You are a meme text expert. Create a SHORT meme caption for this context:
 
 Reply: "${reply.substring(0, 300)}..."
 Tone: ${tone}
 
-Use popular meme formats like:
-- "one does not simply..."
-- "y u no..."
-- "not sure if... or..."
-- "this is fine"
-- "but that's none of my business"
-- Or any other popular meme format
+IMPORTANT RULES:
+1. Use SIMPLE, COMMON meme phrases that work with Imgflip's automeme
+2. Keep it UNDER 8 WORDS - shorter is better!
+3. Avoid complex sentences or punctuation
+4. Stick to these PROVEN formats:
+   - "this is fine"
+   - "y u no [action]"
+   - "not sure if [x] or [y]"
+   - "one does not simply [action]"
+   - "shut up and take my money"
+   - "why not both"
+   - "[noun] everywhere"
+   - "ain't nobody got time for that"
+   - "such [adjective] much [noun]"
+   - "i don't always [x] but when i do [y]"
 
-The meme should capture the essence of the reply in a funny way.
-Keep it under 10 words for maximum impact.
+Examples of GOOD meme text:
+- "this is fine" 
+- "y u no work"
+- "bugs everywhere"
+- "not sure if bug or feature"
+- "one does not simply deploy on friday"
+
+Examples of BAD meme text (too complex):
+- "when you realize the bug was in production all along"
+- "that moment when your code works but you don't know why"
+
 Reply with ONLY the meme text, nothing else.`;
         console.log('[OpenAIMeme] Generating meme from reply');
       }

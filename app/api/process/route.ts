@@ -439,7 +439,10 @@ export async function POST(req: NextRequest) {
       console.log('🎭 Meme Generation Details:', {
         userRequestedMeme: true,
         userProvidedText: validated.memeText || 'none',
-        willAutoGenerate: !validated.memeText
+        willAutoGenerate: !validated.memeText,
+        replyLength: validated.replyLength || 'short',
+        generatedReplyPreview: generateData.data.reply.substring(0, 100) + '...',
+        tone: validated.tone
       });
       
       // Generate meme text using GPT-4o
@@ -543,6 +546,9 @@ export async function POST(req: NextRequest) {
           
           // Don't fail the entire request if meme generation fails
           // This is a nice-to-have feature, not critical
+          
+          // Add info to debug output for user visibility
+          memeSkipReason = `Meme generation failed (${memeResponse.status}): ${errorData.error || 'Unknown error'}`;
         }
       } catch (error) {
         console.error('❌ MEME GENERATION NETWORK ERROR:', {
@@ -563,6 +569,7 @@ export async function POST(req: NextRequest) {
         }
         
         // Don't fail the entire request if meme generation fails
+        memeSkipReason = `Network error: ${error instanceof Error ? error.message : 'Unknown error'}`;
       }
     } else {
       console.log('🚫 Meme generation skipped:', { 

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { imgflipService } from '@/app/lib/services/imgflip.service';
 import { createServerClient } from '@/app/lib/auth';
 import { cookies } from 'next/headers';
+import { getRandomFallback } from '@/app/lib/meme-fallbacks';
 
 // Request validation schema
 const requestSchema = z.object({
@@ -107,15 +108,52 @@ export async function POST(req: NextRequest) {
     console.log('[meme API] 📝 Meme text:', validated.text);
     console.log('[meme API] 📏 Text length:', validated.text.length);
 
-    // Generate the meme
+    // Try to generate the meme with retry logic
     const memeGenerationStart = Date.now();
-    const memeResult = await imgflipService.generateAutomeme(validated.text);
+    let memeResult;
+    let attemptCount = 0;
+    const maxAttempts = 3;
+    let lastError;
+    
+    while (attemptCount < maxAttempts && !memeResult) {
+      attemptCount++;
+      
+      try {
+        // Use original text on first attempt, fallback on retries
+        const textToUse = attemptCount === 1 ? validated.text : getRandomFallback();
+        
+        if (attemptCount > 1) {
+          console.log(`[meme API] 🔄 Retry attempt ${attemptCount} with fallback text: "${textToUse}"`);
+        }
+        
+        memeResult = await imgflipService.generateAutomeme(textToUse);
+        
+        if (attemptCount > 1) {
+          console.log('[meme API] ✅ Fallback text succeeded');
+        }
+      } catch (error) {
+        lastError = error;
+        console.log(`[meme API] ⚠️ Attempt ${attemptCount} failed:`, error instanceof Error ? error.message : error);
+        
+        if (attemptCount < maxAttempts) {
+          // Wait a bit before retry
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+    }
+    
+    if (!memeResult) {
+      throw lastError || new Error('Failed to generate meme after retries');
+    }
+    
     const memeGenerationTime = Date.now() - memeGenerationStart;
 
     console.log('[meme API] ✅ Meme generated successfully:', {
       url: memeResult.url,
       pageUrl: memeResult.pageUrl,
-      generationTime: `${memeGenerationTime}ms`
+      generationTime: `${memeGenerationTime}ms`,
+      attempts: attemptCount,
+      usedFallback: attemptCount > 1
     });
 
     // Track meme usage if user is authenticated

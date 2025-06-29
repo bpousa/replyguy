@@ -21,10 +21,13 @@ export async function POST(req: NextRequest) {
     
     console.log('[meme-text] Request:', {
       hasUserText: !!validated.userText,
+      userText: validated.userText || 'none',
       userTextLength: validated.userText?.length,
       enhance: validated.enhance,
       tone: validated.tone,
-      replyPreview: validated.reply.substring(0, 50) + '...'
+      replyLength: validated.reply.length,
+      replyPreview: validated.reply.substring(0, 100) + '...',
+      userId: validated.userId || 'anonymous'
     });
     
     // Check if OpenAI is configured

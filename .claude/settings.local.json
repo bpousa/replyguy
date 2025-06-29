@@ -101,7 +101,8 @@
       "Bash(pkill:*)",
       "Bash(md5sum:*)",
       "Bash(xxd:*)",
-      "Bash(timeout 30 vercel logs:*)"
+      "Bash(timeout 30 vercel logs:*)",
+      "Bash(npx supabase:*)"
     ],
     "deny": []
   }

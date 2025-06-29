@@ -6,7 +6,7 @@ import { cookies } from 'next/headers';
 
 const requestSchema = z.object({
   planId: z.enum(['free', 'growth', 'professional', 'enterprise']),
-  billingCycle: z.enum(['monthly', 'yearly']).optional().default('monthly'),
+  billingPeriod: z.enum(['monthly', 'yearly']).optional().default('monthly'),
   email: z.string().email().optional(),
 });
 
@@ -50,7 +50,10 @@ export async function POST(req: NextRequest) {
     if (!session) {
       console.error('Failed to establish session after', attempts, 'attempts');
       return NextResponse.json(
-        { error: 'Please sign in to subscribe', details: 'Session could not be established' },
+        { 
+          error: 'Unauthenticated',
+          message: 'Please sign in to access this resource'
+        },
         { status: 401 }
       );
     }
@@ -59,7 +62,7 @@ export async function POST(req: NextRequest) {
     console.log('Session established for user:', user.email);
     
     const body = await req.json();
-    const { planId, billingCycle, email } = requestSchema.parse(body);
+    const { planId, billingPeriod, email } = requestSchema.parse(body);
 
     const userId = user.id;
     const userEmail = email || user.email;
@@ -76,16 +79,22 @@ export async function POST(req: NextRequest) {
     }
 
     // Get the appropriate price ID
-    const priceId = billingCycle === 'yearly' 
+    const priceId = billingPeriod === 'yearly' 
       ? selectedPlan.stripe_price_id_yearly 
       : selectedPlan.stripe_price_id_monthly;
 
     if (!priceId) {
+      console.error(`No ${billingPeriod} price ID found for plan:`, selectedPlan);
       return NextResponse.json(
-        { error: 'Plan pricing not configured' },
+        { 
+          error: 'Plan pricing not configured',
+          details: `Missing ${billingPeriod} price for ${selectedPlan.name} plan`
+        },
         { status: 400 }
       );
     }
+
+    console.log(`Creating checkout session for plan ${planId} (${billingPeriod}), price ID: ${priceId}`);
 
     // Create checkout session
     const checkoutUrl = await stripeService.createCheckoutSession({
@@ -94,7 +103,7 @@ export async function POST(req: NextRequest) {
       successUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?success=true`,
       cancelUrl: `${process.env.NEXT_PUBLIC_APP_URL}/pricing?canceled=true`,
       customerEmail: userEmail,
-      billingCycle,
+      billingCycle: billingPeriod,
     });
 
     return NextResponse.json({ url: checkoutUrl });
@@ -107,8 +116,14 @@ export async function POST(req: NextRequest) {
     }
 
     console.error('Checkout error:', error);
+    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
+    
     return NextResponse.json(
-      { error: 'Failed to create checkout session' },
+      { 
+        error: 'Failed to create checkout session',
+        message: error instanceof Error ? error.message : 'An unexpected error occurred'
+      },
       { status: 500 }
     );
   }

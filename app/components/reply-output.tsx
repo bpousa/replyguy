@@ -133,6 +133,28 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
             </div>
           </Card>
         )}
+        
+        {/* Meme generation failure notice */}
+        {reply.debugInfo?.memeRequested && !reply.memeUrl && reply.debugInfo?.memeSkipReason && (
+          <Card className="p-4 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                  Meme generation unavailable
+                </p>
+                <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                  The meme couldn't be generated with the current text. Try a different response or add custom meme text for better results.
+                </p>
+                {debugMode && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 font-mono">
+                    Debug: {reply.debugInfo.memeSkipReason}
+                  </p>
+                )}
+              </div>
+            </div>
+          </Card>
+        )}
 
         {/* Citations if included */}
         {(() => {

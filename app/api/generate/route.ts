@@ -178,6 +178,8 @@ CRITICAL - Avoid these AI patterns:
 
 EXCEPTION: When including research data/statistics, be precise with numbers and facts. Stats should sound natural, not overly formal.`;
 
+  const currentYear = new Date().getFullYear();
+  
   return `
 Original tweet: "${input.originalTweet}"
 
@@ -187,19 +189,30 @@ ${input.perplexityData ? `
 ${input.perplexityData}
 <<RESEARCH_BLOCK>>
 
-The user specifically requested this factual information. You MUST incorporate these statistics/facts into your response. Make them a natural part of your reply while expressing the user's intended message.
+IMPORTANT GUIDANCE FOR USING THIS DATA:
+- Current year is ${currentYear} - prioritize any ${currentYear} data mentioned above
+- If you see multiple years mentioned, ALWAYS use the most recent data
+- If data shows comparisons (e.g., "increased from ${currentYear - 2} to ${currentYear}"), mention the ${currentYear} figure
+- The user specifically requested this factual information. You MUST incorporate these statistics/facts into your response
+- Make the data a natural part of your reply while expressing the user's intended message
 ` : ''}
 
 Your task: Create a reply that expresses this message: "${input.responseIdea}"
 
 ${input.perplexityData ? `
 REQUIREMENTS (in order of importance):
-1. Include the research data/statistics provided above
+1. Include the research data/statistics provided above (prioritize ${currentYear} data)
 2. Express the user's core message: "${input.responseIdea}"
 3. Make it sound natural and conversational
 4. Follow the ${input.selectedType.name} style pattern
 5. Maintain ${input.tone} tone
-6. Stay under ${charLimit} characters` : `
+6. Stay under ${charLimit} characters
+
+DATA USAGE RULES:
+- When citing statistics, use the MOST RECENT year available in the research
+- If you see "${currentYear - 2}" and "${currentYear}" data, use the ${currentYear} data
+- Don't mention that you're using recent data - just use it naturally
+- Example: If research says "45% in ${currentYear - 2}, rising to 52% in ${currentYear}", just say "52%"` : `
 REQUIREMENTS:
 1. Express the user's core message: "${input.responseIdea}"
 2. Use the ${input.selectedType.name} pattern as a style guide
@@ -214,7 +227,11 @@ ${customStyleInstructions ? customStyleInstructions : styleInstructions}
 ${antiAIPrompt}
 
 ${input.perplexityData ? `
-⚠️ FINAL CHECK: Before writing your reply, ensure you've included the statistics/facts from the research data above. They should feel like a natural part of your response, not an afterthought.` : ''}
+⚠️ FINAL CHECK: Before writing your reply, ensure you've:
+1. Included the statistics/facts from the research data above
+2. Used the MOST RECENT year's data when multiple years are mentioned
+3. Made the data feel like a natural part of your response, not an afterthought
+4. Expressed the user's intended message clearly` : ''}
 
 Write the reply (just the text, no quotes):`;
 }

@@ -123,37 +123,45 @@ export async function POST(req: NextRequest) {
     console.log('❌ CACHE MISS - Proceeding with API calls');
 
     // Generate search query using GPT-4o
+    const currentYear = new Date().getFullYear();
     const queryPrompt = validated.guidance 
       ? `The user has provided specific research guidance: "${validated.guidance}"
 
+Current year: ${currentYear}
+
 Generate a search query that will find EXACTLY what the user requested.
 Focus on finding:
-- Recent statistics or data (last 1-2 years)
-- Current trends and percentages
-- Official reports or studies
-- Specific numbers and facts
+- VERY recent statistics or data (${currentYear} or ${currentYear - 1} only)
+- Current trends and percentages from THIS YEAR
+- Official reports or studies from the past 12 months
+- Specific numbers and facts that are up-to-date
 
-Make the query specific and include relevant terms like "statistics", "data", "report", "study", "percentage", "trends", "recent", "latest", etc.
+Make the query specific and include year indicators like "${currentYear}", "latest ${currentYear}", "current ${currentYear}", etc.
+Include relevant terms like "statistics", "data", "report", "study", "percentage", "trends", "recent", "latest", etc.
 
 Search query:`
       : `Context:
 Tweet: "${validated.originalTweet}"
 User's response idea: "${validated.responseIdea}"
 
+Current year: ${currentYear}
+
 Generate a search query to find relevant CURRENT information, statistics, or trends about this topic.
 
 Guidelines:
-- Focus on recent data (last 1-2 years) to provide information beyond typical LLM knowledge cutoffs
+- Focus on VERY recent data (${currentYear} or ${currentYear - 1} ONLY) to provide the most up-to-date information
+- Include year indicators in the query (e.g., "${currentYear}", "latest ${currentYear}", "Q1 ${currentYear}")
 - Include terms that will return concrete numbers, percentages, or specific facts
 - Consider what statistics would be most relevant to the user's response idea
 - If location matters, include it (USA, global, specific cities)
 - Think broadly - could be economic data, social trends, tech stats, health data, etc.
 
 Good query patterns:
-- "[topic] statistics recent trends report"
-- "[topic] data percentage change latest"
-- "[topic] current numbers study [location]"
-- "recent [topic] rates statistics trends"
+- "[topic] statistics ${currentYear} trends report"
+- "[topic] data percentage change ${currentYear} latest"
+- "[topic] current ${currentYear} numbers study [location]"
+- "latest [topic] rates statistics ${currentYear}"
+- "[topic] market size ${currentYear} forecast"
 
 Search query:`;
 
@@ -190,18 +198,23 @@ Search query:`;
             role: 'user',
             content: `Search for: ${searchQuery}
 
+Current year: ${currentYear}
+Current month: ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+
 Return ONLY concrete statistics, facts, and data with specific numbers. Focus on:
-- Recent statistics (last 1-2 years preferred) that would be beyond typical AI knowledge
-- Exact percentages, numbers, or measurable trends
-- Credible sources (government reports, studies, official data)
-- Current events or developments related to the topic
+- VERY recent statistics from ${currentYear} or late ${currentYear - 1} ONLY
+- Ignore any data from ${currentYear - 2} or earlier unless specifically about historical comparisons
+- Exact percentages, numbers, or measurable trends from THIS YEAR
+- Credible sources with dates (government reports, studies, official data)
+- Current events or developments from the past 6 months
 
 Format your response as bullet points with specific data points. Examples:
-- "X increased/decreased by Y% in 2024 according to [Source]"
-- "[Location] reported Z [metric] as of [Date]"
-- "Study shows [specific finding with numbers]"
+- "X increased/decreased by Y% in ${currentYear} according to [Source]"
+- "[Location] reported Z [metric] as of [Month ${currentYear}]"
+- "Q1 ${currentYear} data shows [specific finding with numbers]"
+- "Latest ${currentYear} report indicates [fact with number]"
 
-IMPORTANT: Focus on providing factual, numerical data that directly relates to the search query. Include diverse statistics if available, not just one type of data.`,
+CRITICAL: If you find older data (like 2023 or earlier), DO NOT include it unless it's being compared to ${currentYear} data. We need the MOST CURRENT information available.`,
           },
         ],
         temperature: 0.2,

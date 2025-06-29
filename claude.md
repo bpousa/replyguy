@@ -359,3 +359,47 @@ When making changes, ask yourself:
 - Does it feel natural to use?
 
 **Your goal**: Build a tool that helps people communicate better on social media with AI assistance that feels invisible.
+
+## CLI Tools
+
+### Stripe CLI (run as root user)
+```bash
+# List products and prices
+stripe products list
+stripe prices list
+
+# Create checkout session for testing
+stripe checkout sessions create --success-url="http://localhost:3000/success" --line-items="price=PRICE_ID,quantity=1"
+
+# Listen to webhooks locally
+stripe listen --forward-to localhost:3000/api/stripe/webhook
+
+# Monitor live logs
+stripe logs tail
+
+# Trigger test events
+stripe trigger checkout.session.completed
+```
+
+### Supabase CLI (run as mike user)
+```bash
+# Run as mike user
+su mike -c "supabase db push"
+su mike -c "supabase functions list"
+su mike -c "supabase db reset"
+```
+
+### Vercel CLI (run as root user)
+```bash
+# Deploy to production
+vercel --prod
+
+# List environment variables
+vercel env ls
+
+# Add environment variable
+vercel env add
+
+# Check deployment status
+vercel ls
+```

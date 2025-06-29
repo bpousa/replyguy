@@ -24,25 +24,69 @@ export default function VerifyPage() {
     const supabase = supabaseRef.current;
     
     const verifyAndEstablishSession = async () => {
-      if (!token || !type) {
-        // This might be a magic link callback, check for existing session
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          console.log('[verify] Magic link session found');
-          setStatus('success');
-          setMessage('Successfully signed in!');
-          setTimeout(() => {
-            if (isMounted) router.push('/dashboard');
-          }, 1000);
-          return;
-        }
+      // First, let Supabase handle any auth data in the URL
+      console.log('[verify] Checking for auth data in URL...');
+      const { data: { session: urlSession }, error: urlError } = await supabase.auth.getSession();
+      
+      if (urlSession) {
+        console.log('[verify] Session found from URL processing!', urlSession.user.email);
+        setStatus('success');
+        setMessage('Email verified successfully!');
         
-        setStatus('error');
-        setMessage('Invalid verification link');
+        setTimeout(() => {
+          if (!isMounted) return;
+          const redirectUrl = plan && plan !== 'free' 
+            ? `/auth/checkout-redirect?plan=${plan}`
+            : next || '/dashboard';
+          
+          console.log('[verify] Redirecting to:', redirectUrl);
+          router.push(redirectUrl);
+        }, 1000);
+        return;
+      }
+      
+      if (!token || !type) {
+        // This might be a redirect from Supabase after email verification
+        // Wait a bit for the session to be established
+        console.log('[verify] No token in URL, checking for session establishment...');
+        
+        let attempts = 0;
+        const maxAttempts = 10;
+        
+        const checkForSession = setInterval(async () => {
+          attempts++;
+          const { data: { session } } = await supabase.auth.getSession();
+          
+          if (session) {
+            clearInterval(checkForSession);
+            console.log('[verify] Session established after Supabase redirect');
+            setStatus('success');
+            setMessage('Email verified successfully!');
+            setTimeout(() => {
+              if (isMounted) {
+                const redirectUrl = plan && plan !== 'free' 
+                  ? `/auth/checkout-redirect?plan=${plan}`
+                  : '/dashboard';
+                router.push(redirectUrl);
+              }
+            }, 1000);
+          } else if (attempts >= maxAttempts) {
+            clearInterval(checkForSession);
+            setStatus('error');
+            setMessage('Verification failed. Please try again.');
+            setTimeout(() => {
+              if (isMounted) router.push('/auth/login');
+            }, 2000);
+          }
+        }, 500);
+        
         return;
       }
 
       console.log('[verify] Starting PKCE token verification...', { token: token.substring(0, 20), type });
+      
+      // Mark that we're in a valid auth flow
+      sessionStorage.setItem('auth_flow_active', 'true');
       
       // For PKCE tokens, we need to wait for Supabase to process the token
       // The client SDK should automatically detect and verify it
@@ -179,6 +223,8 @@ export default function VerifyPage() {
     return () => {
       isMounted = false;
       if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
+      // Clean up auth flow flag on unmount
+      sessionStorage.removeItem('auth_flow_active');
     };
   }, [token, type, plan, next, router]);
 

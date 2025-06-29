@@ -13,6 +13,9 @@ export async function GET(request: NextRequest) {
   const error = requestUrl.searchParams.get('error');
   const error_description = requestUrl.searchParams.get('error_description');
   
+  // Also check for hash fragments (Supabase might use hash-based redirects)
+  const hashFragment = requestUrl.hash;
+  
   console.log('[auth-callback] Received callback:', {
     code: !!code,
     token: !!token,
@@ -22,7 +25,9 @@ export async function GET(request: NextRequest) {
     plan,
     error,
     error_description,
-    url: request.url
+    url: request.url,
+    hashFragment,
+    headers: Object.fromEntries(request.headers.entries())
   });
 
   // Handle Supabase auth errors
@@ -62,14 +67,19 @@ export async function GET(request: NextRequest) {
       
       session = data.session;
       user = data.user;
-    } else if (token && type === 'signup') {
+    } else if (token) {
       // PKCE token verification must happen client-side
-      console.log('[auth-callback] PKCE token detected, redirecting to client-side handler...');
+      // Handle all token types, not just signup
+      console.log('[auth-callback] PKCE token detected, redirecting to client-side handler...', { 
+        tokenPrefix: token.substring(0, 20), 
+        type,
+        plan 
+      });
       
       // Build the verification URL with all necessary parameters
       const verifyUrl = new URL('/auth/verify', requestUrl.origin);
       verifyUrl.searchParams.set('token', token);
-      verifyUrl.searchParams.set('type', type);
+      if (type) verifyUrl.searchParams.set('type', type);
       if (plan) verifyUrl.searchParams.set('plan', plan);
       if (next) verifyUrl.searchParams.set('next', next);
       

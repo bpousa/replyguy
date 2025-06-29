@@ -13,6 +13,9 @@ export default function AuthLoadingPage() {
   const supabase = createBrowserClient();
 
   useEffect(() => {
+    // Mark that we're in a valid auth flow
+    sessionStorage.setItem('auth_flow_active', 'true');
+    
     let attempts = 0;
     const maxAttempts = 15; // Increased for PKCE flow
     let checkInterval: NodeJS.Timeout;
@@ -77,6 +80,7 @@ export default function AuthLoadingPage() {
     // Cleanup on unmount
     return () => {
       if (checkInterval) clearInterval(checkInterval);
+      sessionStorage.removeItem('auth_flow_active');
     };
   }, [router, supabase, planId]);
 

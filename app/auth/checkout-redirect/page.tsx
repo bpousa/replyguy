@@ -20,6 +20,30 @@ export default function CheckoutRedirectPage() {
     'enterprise': 'X Business'
   };
 
+  // Log how user arrived at this page
+  useEffect(() => {
+    console.log('[checkout-redirect] Page loaded:', {
+      planId,
+      authStatus: status,
+      referrer: document.referrer
+    });
+
+    // Guard: If no plan is specified, redirect to pricing
+    if (!planId) {
+      console.log('[checkout-redirect] No plan specified, redirecting to pricing');
+      router.push('/pricing');
+      return;
+    }
+
+    // Guard: Check if user came from a valid auth flow
+    // If referrer is empty and no session, they likely navigated directly
+    if (status === 'unauthenticated' && !document.referrer && !sessionStorage.getItem('auth_flow_active')) {
+      console.log('[checkout-redirect] Direct navigation detected without auth, redirecting to signup');
+      router.push(`/auth/signup?plan=${planId}`);
+      return;
+    }
+  }, [planId, status, router]);
+
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
     let retryCount = 0;

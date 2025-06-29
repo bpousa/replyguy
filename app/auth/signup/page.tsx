@@ -9,10 +9,9 @@ import { Button } from '@/app/components/ui/button';
 import { Loader2, CheckCircle } from 'lucide-react';
 import { Logo } from '@/app/components/logo';
 
-const supabase = createBrowserClient();
-
 export default function SignupPage() {
   const router = useRouter();
+  const supabase = createBrowserClient();
   const searchParams = useSearchParams();
   const planId = searchParams.get('plan');
   const [isLoading, setIsLoading] = useState(false);

@@ -72,16 +72,29 @@ export default function BillingPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userId: user.id }),
+        body: JSON.stringify({ 
+          returnUrl: window.location.href 
+        }),
       });
 
-      const { url } = await response.json();
-      if (url) {
-        window.location.href = url;
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Check if user needs to make a purchase first
+        if (response.status === 422 && data.requiresCheckout) {
+          toast.error('Please upgrade to a paid plan first');
+          router.push('/pricing');
+          return;
+        }
+        throw new Error(data.error || 'Failed to open billing portal');
       }
-    } catch (error) {
+
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error: any) {
       console.error('Error opening billing portal:', error);
-      toast.error('Failed to open billing portal');
+      toast.error(error.message || 'Failed to open billing portal');
     }
   };
 

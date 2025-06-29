@@ -46,11 +46,8 @@ export default function CheckoutRedirectPage() {
           // Wait a bit for the session to propagate
           await new Promise(resolve => setTimeout(resolve, 1000));
           
-          // Check status again
-          if (status === 'authenticated') {
-            console.log('[checkout-redirect] Session established after refresh');
-            return;
-          }
+          // Don't check status here - let the next cycle handle it
+          console.log('[checkout-redirect] Refresh attempt completed, scheduling next check');
         } catch (error) {
           console.error('[checkout-redirect] Session refresh failed:', error);
         }

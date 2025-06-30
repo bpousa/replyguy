@@ -17,12 +17,12 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Get user's subscription first
+    // Get user's subscription first (include both active and trialing)
     const { data: subscriptions, error: subError } = await supabase
       .from('subscriptions')
       .select('*')
       .eq('user_id', user.id)
-      .eq('status', 'active')
+      .in('status', ['active', 'trialing'])
       .order('created_at', { ascending: false })
       .limit(1);
     

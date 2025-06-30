@@ -217,6 +217,7 @@ export async function POST(req: NextRequest) {
             responseIdea: validated.responseIdea,
             responseType: validated.responseType,
             guidance: validated.perplexityGuidance,
+            userId: userId !== 'anonymous' ? userId : undefined,
           }),
         });
 

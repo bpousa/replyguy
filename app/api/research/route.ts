@@ -106,8 +106,8 @@ export async function POST(req: NextRequest) {
           .single();
 
         if (limits) {
-          const researchLimit = limits.research_limit || 0;
-          const researchUsed = limits.research_used || 0;
+          const researchLimit = (limits as any).research_limit || 0;
+          const researchUsed = (limits as any).research_used || 0;
 
           // -1 means unlimited
           if (researchLimit !== -1 && researchUsed >= researchLimit) {

@@ -300,6 +300,26 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
       canceled_at: new Date().toISOString(),
     })
     .eq('stripe_subscription_id', subscription.id);
+
+  // Get user from customer ID
+  const { data: user } = await supabase
+    .from('users')
+    .select('id')
+    .eq('stripe_customer_id', subscription.customer)
+    .single();
+
+  if (user) {
+    // Move user to free plan
+    await supabase
+      .from('users')
+      .update({ 
+        subscription_tier: 'free',
+        subscription_status: 'active' // Free plan is always active
+      })
+      .eq('id', user.id);
+
+    console.log(`User ${user.id} moved to free plan after subscription cancellation`);
+  }
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {

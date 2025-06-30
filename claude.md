@@ -45,7 +45,8 @@ npm test
 ### Available CLI Tools
 You have access to these tools through the CLI:
 - **Vercel**: `vercel` - for deployment and preview
-- **Supabase**: `supabase` - for database operations
+- **Supabase**: `supabase` - for database operations (as mike user: `su mike -c "command"`)
+- **Stripe**: `stripe` - for Stripe operations (as root user)
 - **Git/GitHub**: `git`, `gh` - for version control
 
 **IMPORTANT**: Always test commands and changes locally before committing.

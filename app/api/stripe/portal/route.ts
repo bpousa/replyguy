@@ -59,10 +59,17 @@ export async function POST(req: NextRequest) {
     const returnUrl = `${baseReturnUrl}${baseReturnUrl.includes('?') ? '&' : '?'}billingUpdated=1`;
 
     // Create Stripe billing portal session
-    const portalSession = await stripe.billingPortal.sessions.create({
+    const portalSessionParams: any = {
       customer: userData.stripe_customer_id,
       return_url: returnUrl,
-    });
+    };
+
+    // Add configuration if specified
+    if (process.env.STRIPE_PORTAL_CONFIG_ID) {
+      portalSessionParams.configuration = process.env.STRIPE_PORTAL_CONFIG_ID;
+    }
+
+    const portalSession = await stripe.billingPortal.sessions.create(portalSessionParams);
 
     return NextResponse.json({ url: portalSession.url });
   } catch (error) {

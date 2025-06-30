@@ -184,27 +184,39 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return;
   }
 
-  // Update user with Stripe customer ID
+  // Update user with Stripe customer ID and subscription tier
   await supabase
     .from('users')
-    .update({ stripe_customer_id: customerId })
+    .update({ 
+      stripe_customer_id: customerId,
+      subscription_tier: plan.id,
+      subscription_status: subscription.status
+    })
     .eq('id', userId);
 
   // Calculate billing anchor day
   const billingAnchorDay = new Date(subscription.current_period_start * 1000).getDate();
 
-  // Create subscription record
+  // Create subscription record with trial info if applicable
+  const subscriptionData: any = {
+    user_id: userId,
+    plan_id: plan.id,
+    stripe_subscription_id: subscriptionId,
+    stripe_customer_id: customerId,
+    status: subscription.status,
+    current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+    current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+    billing_anchor_day: billingAnchorDay,
+  };
+
+  // Add trial end date if subscription is trialing
+  if (subscription.trial_end) {
+    subscriptionData.trialing_until = new Date(subscription.trial_end * 1000).toISOString();
+  }
+
   await supabase
     .from('subscriptions')
-    .insert({
-      user_id: userId,
-      plan_id: plan.id,
-      stripe_subscription_id: subscriptionId,
-      status: subscription.status,
-      current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-      current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-      billing_anchor_day: billingAnchorDay,
-    });
+    .insert(subscriptionData);
 }
 
 async function handleSubscriptionUpdate(subscription: Stripe.Subscription, eventType: string) {
@@ -273,19 +285,31 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription, event
       });
   }
 
-  // Handle specific status transitions
-  if (subscription.status === 'past_due' || subscription.status === 'canceled' || subscription.status === 'unpaid') {
-    // Update user's subscription_tier to free immediately
-    const { data: sub } = await supabase
-      .from('subscriptions')
-      .select('user_id')
-      .eq('stripe_subscription_id', subscription.id)
-      .single();
+  // Update user's subscription tier based on status
+  const { data: sub } = await supabase
+    .from('subscriptions')
+    .select('user_id')
+    .eq('stripe_subscription_id', subscription.id)
+    .single();
 
-    if (sub) {
+  if (sub) {
+    if (subscription.status === 'past_due' || subscription.status === 'canceled' || subscription.status === 'unpaid') {
+      // Update user's subscription_tier to free for bad statuses
       await supabase
         .from('users')
-        .update({ subscription_tier: 'free' })
+        .update({ 
+          subscription_tier: 'free',
+          subscription_status: subscription.status
+        })
+        .eq('id', sub.user_id);
+    } else if (subscription.status === 'active' || subscription.status === 'trialing') {
+      // Update user's subscription_tier to the plan for good statuses
+      await supabase
+        .from('users')
+        .update({ 
+          subscription_tier: plan.id,
+          subscription_status: subscription.status
+        })
         .eq('id', sub.user_id);
     }
   }

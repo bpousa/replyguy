@@ -112,7 +112,6 @@ export class StripeService {
       success_url: successUrl,
       cancel_url: cancelUrl,
       subscription_data: {
-        trial_period_days: billingCycle === 'yearly' ? 14 : 7, // Longer trial for yearly
         metadata: {
           userId: userId,
         },

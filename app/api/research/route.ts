@@ -92,6 +92,48 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validated = requestSchema.parse(body);
 
+    // Check research limits
+    if (body.userId) {
+      try {
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_KEY!
+        );
+
+        const { data: limits } = await supabase
+          .rpc('get_user_limits', { p_user_id: body.userId })
+          .single();
+
+        if (limits) {
+          const researchLimit = limits.research_limit || 0;
+          const researchUsed = limits.research_used || 0;
+
+          // -1 means unlimited
+          if (researchLimit !== -1 && researchUsed >= researchLimit) {
+            return NextResponse.json(
+              { 
+                error: 'Research limit reached',
+                limit: researchLimit,
+                used: researchUsed
+              },
+              { status: 429 }
+            );
+          }
+
+          // Track research usage
+          await supabase.rpc('track_daily_usage', {
+            p_user_id: body.userId,
+            p_usage_type: 'research',
+            p_count: 1
+          });
+        }
+      } catch (error) {
+        console.error('Error checking research limits:', error);
+        // Continue without blocking if limit check fails
+      }
+    }
+
     // Check cache first to avoid redundant API calls
     const cacheKey = {
       originalTweet: validated.originalTweet,

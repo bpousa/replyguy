@@ -259,6 +259,11 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription, event
     updateData.trialing_until = new Date(subscription.trial_end * 1000).toISOString();
   }
 
+  // Handle cancellation timestamp
+  if (subscription.canceled_at) {
+    updateData.canceled_at = new Date(subscription.canceled_at * 1000).toISOString();
+  }
+
   // Clear payment failed flag if status is active
   if (subscription.status === 'active') {
     updateData.payment_failed_at = null;

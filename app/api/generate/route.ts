@@ -108,11 +108,27 @@ export async function POST(req: NextRequest) {
     }
 
     // Call Claude 3.5 Sonnet for final generation
+    // Calculate appropriate max_tokens based on character limit
+    // More accurate estimation: 1 token ≈ 3-4 characters for English text
+    // Adding buffer to ensure we can reach character limits
+    let maxTokens;
+    if (charLimit >= 2000) {
+      maxTokens = 800; // Extra-long replies (2000 chars / 2.5 chars per token)
+    } else if (charLimit >= 1000) {
+      maxTokens = 400; // Long replies (1000 chars / 2.5 chars per token)
+    } else if (charLimit >= 560) {
+      maxTokens = 225; // Medium replies (560 chars / 2.5 chars per token)
+    } else {
+      maxTokens = 120; // Short replies (280 chars / 2.3 chars per token)
+    }
+    
+    console.log(`\n🔢 Token calculation: charLimit=${charLimit}, maxTokens=${maxTokens}`);
+    
     const message = await anthropic.messages.create({
       model: 'claude-3-5-sonnet-20241022',
-      max_tokens: Math.min(charLimit / 4, 300), // Adjust tokens based on length
+      max_tokens: maxTokens,
       temperature: 0.8,
-      system: `You are a real person on Twitter having a genuine conversation. Your PRIMARY job is to express the user's intended message while sounding natural and human. The user has told you exactly what they want to say - honor that above all else. Never ignore or override their intent. Make it sound authentic and conversational, but the core message must be what they requested.`,
+      system: `You are a real person on Twitter having a genuine conversation. Your PRIMARY job is to EXPRESS THE USER'S INTENDED MESSAGE while sounding natural and human. The user has told you exactly what they want to say - honor that above all else. NEVER ignore or override their intent. Make it sound authentic and conversational, but the CORE MESSAGE MUST BE what they requested. When research is provided, you are REPLYING TO A TWEET using that research to support your response - you are NOT writing a standalone article.`,
       messages: [{ role: 'user', content: prompt }],
     });
 
@@ -140,6 +156,19 @@ export async function POST(req: NextRequest) {
     const inputCost = message.usage.input_tokens * 0.000003; // $3 per 1M input tokens
     const outputCost = message.usage.output_tokens * 0.000015; // $15 per 1M output tokens
     const cost = inputCost + outputCost;
+    
+    // Debug token vs character ratio
+    console.log('\n📊 === TOKEN VS CHARACTER ANALYSIS ===');
+    console.log('Output tokens used:', message.usage.output_tokens);
+    console.log('Max tokens allowed:', maxTokens);
+    console.log('Characters generated:', reply.length);
+    console.log('Character limit:', charLimit);
+    console.log('Chars per token ratio:', reply.length / message.usage.output_tokens);
+    
+    if (reply.length < charLimit * 0.8 && message.usage.output_tokens >= maxTokens * 0.95) {
+      console.warn('⚠️ Reply may have been truncated by token limit');
+      console.warn(`Generated only ${reply.length}/${charLimit} chars but used ${message.usage.output_tokens}/${maxTokens} tokens`);
+    }
 
     return NextResponse.json({
       data: {
@@ -181,43 +210,48 @@ EXCEPTION: When including research data/statistics, be precise with numbers and 
   const currentYear = new Date().getFullYear();
   
   return `
-Original tweet: "${input.originalTweet}"
+🎯 YOUR MAIN TASK: Write a REPLY to this tweet: "${input.originalTweet}"
+
+The tweet author said: "${input.originalTweet}"
+You need to RESPOND TO THEM with this message: "${input.responseIdea}"
 
 ${input.perplexityData ? `
-🚨 CRITICAL RESEARCH DATA - MUST INCLUDE IN YOUR REPLY:
+📊 RESEARCH DATA TO INCLUDE IN YOUR REPLY:
 <<RESEARCH_BLOCK>>
 ${input.perplexityData}
 <<RESEARCH_BLOCK>>
 
-IMPORTANT GUIDANCE FOR USING THIS DATA:
-- Current year is ${currentYear} - prioritize any ${currentYear} data mentioned above
-- If you see multiple years mentioned, ALWAYS use the most recent data
-- If data shows comparisons (e.g., "increased from ${currentYear - 2} to ${currentYear}"), mention the ${currentYear} figure
-- The user specifically requested this factual information. You MUST incorporate these statistics/facts into your response
-- Make the data a natural part of your reply while expressing the user's intended message
+CRITICAL: You are REPLYING TO THE TWEET ABOVE. The research should support your response, but you must:
+1. Address the tweet author directly (use "you" when appropriate)
+2. Reference what they said in their tweet
+3. Make it clear you're responding to their specific point
+4. Use the research to strengthen YOUR RESPONSE to THEIR TWEET
+5. This is a CONVERSATION, not a blog post or article
 ` : ''}
-
-Your task: Create a reply that expresses this message: "${input.responseIdea}"
 
 ${input.perplexityData ? `
 REQUIREMENTS (in order of importance):
-1. Include the research data/statistics provided above (prioritize ${currentYear} data)
+1. Reply directly to the tweet above - you're responding to what they said
 2. Express the user's core message: "${input.responseIdea}"
-3. Make it sound natural and conversational
-4. Follow the ${input.selectedType.name} style pattern
-5. Maintain ${input.tone} tone
-6. Stay under ${charLimit} characters
+3. Incorporate the research data naturally into your response
+4. Make it sound conversational and human
+5. Follow the ${input.selectedType.name} style pattern
+6. Maintain ${input.tone} tone
+7. Stay under ${charLimit} characters
 
-DATA USAGE RULES:
-- When citing statistics, use the MOST RECENT year available in the research
-- If you see "${currentYear - 2}" and "${currentYear}" data, use the ${currentYear} data
-- Don't mention that you're using recent data - just use it naturally
-- Example: If research says "45% in ${currentYear - 2}, rising to 52% in ${currentYear}", just say "52%"` : `
+CRITICAL REMINDERS:
+- You are REPLYING TO THE SPECIFIC TWEET ABOVE - acknowledge what they said
+- Start with addressing their point, then weave in supporting research
+- Use conversational transitions like "That's why...", "Actually...", "You're right that..."
+- The research backs up YOUR RESPONSE to THEIR TWEET
+- This is a Twitter reply, not an informational article
+- If using stats, prefer ${currentYear} data when available` : `
 REQUIREMENTS:
-1. Express the user's core message: "${input.responseIdea}"
-2. Use the ${input.selectedType.name} pattern as a style guide
-3. Maintain ${input.tone} tone
-4. Stay under ${charLimit} characters`}
+1. Reply directly to the tweet above
+2. Express the user's core message: "${input.responseIdea}"
+3. Use the ${input.selectedType.name} pattern as a style guide
+4. Maintain ${input.tone} tone
+5. Stay under ${charLimit} characters`}
 
 Style guidance:
 - Pattern: ${input.selectedType.pattern}
@@ -225,13 +259,6 @@ Style guidance:
 ${customStyleInstructions ? customStyleInstructions : styleInstructions}
 
 ${antiAIPrompt}
-
-${input.perplexityData ? `
-⚠️ FINAL CHECK: Before writing your reply, ensure you've:
-1. Included the statistics/facts from the research data above
-2. Used the MOST RECENT year's data when multiple years are mentioned
-3. Made the data feel like a natural part of your response, not an afterthought
-4. Expressed the user's intended message clearly` : ''}
 
 Write the reply (just the text, no quotes):`;
 }

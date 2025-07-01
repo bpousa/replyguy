@@ -40,6 +40,8 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
   const [isSuggestingIdea, setIsSuggestingIdea] = useState(false);
   const [useCustomStyle, setUseCustomStyle] = useState(false);
   const [hasActiveStyle, setHasActiveStyle] = useState(false);
+  const [isSuggestingResearch, setIsSuggestingResearch] = useState(false);
+  const [researchSuggestions, setResearchSuggestions] = useState<string[]>([]);
   
   // Get user plan from subscription
   const userPlan = useMemo(() => {
@@ -135,6 +137,47 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
       toast.error('Failed to generate suggestion');
     } finally {
       setIsSuggestingIdea(false);
+    }
+  };
+
+  const handleSuggestResearch = async () => {
+    if (!originalTweet.trim() || !responseIdea.trim()) {
+      toast.error('Please enter a tweet and response idea first');
+      return;
+    }
+    
+    setIsSuggestingResearch(true);
+    setResearchSuggestions([]);
+    try {
+      const response = await fetch('/api/suggest-research', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          originalTweet,
+          responseIdea,
+          responseType,
+          tone
+        })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        if (response.status === 429 && error.limit) {
+          // Show upgrade modal for limit reached
+          setUpgradeLimitType('suggestions');
+          setShowUpgradeModal(true);
+          return;
+        }
+        throw new Error(error.error || 'Failed to get research suggestions');
+      }
+      
+      const data = await response.json();
+      setResearchSuggestions(data.suggestions || []);
+      toast.success('Research suggestions generated!');
+    } catch (error) {
+      toast.error('Failed to generate research suggestions');
+    } finally {
+      setIsSuggestingResearch(false);
     }
   };
 
@@ -367,9 +410,22 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
       {/* Perplexity Guidance - Only show when research is enabled and plan supports it */}
       {needsResearch && userPlan.enable_perplexity_guidance && (
         <div className="space-y-2">
-          <Label htmlFor="perplexity-guidance">
-            Research Guidance (Optional)
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="perplexity-guidance">
+              Research Guidance (Optional)
+            </Label>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleSuggestResearch}
+              disabled={isSuggestingResearch || !originalTweet.trim() || !responseIdea.trim()}
+              className="text-xs"
+            >
+              <Lightbulb className="w-3 h-3 mr-1" />
+              {isSuggestingResearch ? 'Suggesting...' : 'Suggest'}
+            </Button>
+          </div>
           <Textarea
             id="perplexity-guidance"
             placeholder="What specific facts, stats, or current events should we look for? (e.g., 'recent tech layoffs statistics', 'latest climate change data')"
@@ -378,6 +434,23 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
             className="min-h-[60px]"
             maxLength={200}
           />
+          {researchSuggestions.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-gray-600">Suggestions:</p>
+              <div className="flex flex-wrap gap-2">
+                {researchSuggestions.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => setPerplexityGuidance(suggestion)}
+                    className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <p className="text-xs text-gray-500">
             Guide the research to find specific, relevant information
           </p>

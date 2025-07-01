@@ -20,8 +20,8 @@ CREATE TABLE IF NOT EXISTS public.referrals (
 CREATE TABLE IF NOT EXISTS public.referral_bonuses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE UNIQUE,
-  bonus_replies INTEGER NOT NULL DEFAULT 0 CHECK (bonus_replies >= 0 AND bonus_replies <= 40), -- Max 40 bonus (50 total with base 10)
-  bonus_research INTEGER NOT NULL DEFAULT 0 CHECK (bonus_research >= 0 AND bonus_research <= 4), -- Max 4 bonus (5 total with base 1)
+  bonus_replies INTEGER NOT NULL DEFAULT 0 CHECK (bonus_replies >= 0 AND bonus_replies <= 100), -- Max 100 bonus for paid users (10 referrals)
+  bonus_research INTEGER NOT NULL DEFAULT 0 CHECK (bonus_research >= 0 AND bonus_research <= 10), -- Max 10 bonus for paid users
   total_referrals INTEGER NOT NULL DEFAULT 0 CHECK (total_referrals >= 0),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -69,6 +69,9 @@ DECLARE
   v_referral_id UUID;
   v_current_bonus_replies INTEGER;
   v_current_bonus_research INTEGER;
+  v_referrer_tier TEXT;
+  v_max_bonus_replies INTEGER;
+  v_max_bonus_research INTEGER;
 BEGIN
   -- Get the referrer ID from the referral record
   SELECT id, referrer_id INTO v_referral_id, v_referrer_id
@@ -95,16 +98,30 @@ BEGIN
     VALUES (v_referrer_id, 0, 0, 0);
   END IF;
   
+  -- Get referrer's subscription tier to determine caps
+  SELECT subscription_tier INTO v_referrer_tier
+  FROM users
+  WHERE id = v_referrer_id;
+  
+  -- Set caps based on tier (paid users get higher caps)
+  IF v_referrer_tier IN ('basic', 'pro', 'x_business', 'growth', 'professional', 'enterprise') THEN
+    v_max_bonus_replies := 100;  -- 10 referrals * 10 replies
+    v_max_bonus_research := 10;  -- 10 referrals * 1 research
+  ELSE
+    v_max_bonus_replies := 40;   -- 4 referrals * 10 replies  
+    v_max_bonus_research := 4;   -- 4 referrals * 1 research
+  END IF;
+  
   -- Update referral status
   UPDATE referrals
   SET status = 'completed',
       completed_at = NOW()
   WHERE id = v_referral_id;
   
-  -- Update referrer's bonuses (with caps)
+  -- Update referrer's bonuses (with tier-specific caps)
   UPDATE referral_bonuses
-  SET bonus_replies = LEAST(bonus_replies + 10, 40), -- Cap at 40 bonus replies
-      bonus_research = LEAST(bonus_research + 1, 4),  -- Cap at 4 bonus research
+  SET bonus_replies = LEAST(bonus_replies + 10, v_max_bonus_replies),
+      bonus_research = LEAST(bonus_research + 1, v_max_bonus_research),
       total_referrals = total_referrals + 1,
       updated_at = NOW()
   WHERE user_id = v_referrer_id;
@@ -148,21 +165,15 @@ BEGIN
   -- Get current usage
   SELECT * INTO v_usage FROM get_current_usage(p_user_id);
   
-  -- Get referral bonuses (only for free tier)
-  IF v_subscription_tier = 'free' OR v_subscription_tier IS NULL THEN
-    SELECT COALESCE(bonus_replies, 0), COALESCE(bonus_research, 0) 
-    INTO v_bonus_replies, v_bonus_research
-    FROM referral_bonuses 
-    WHERE user_id = p_user_id;
-    
-    -- Default to 0 if no bonus record
-    v_bonus_replies := COALESCE(v_bonus_replies, 0);
-    v_bonus_research := COALESCE(v_bonus_research, 0);
-  ELSE
-    -- Paid users don't get referral bonuses
-    v_bonus_replies := 0;
-    v_bonus_research := 0;
-  END IF;
+  -- Get referral bonuses for ALL users (both free and paid)
+  SELECT COALESCE(bonus_replies, 0), COALESCE(bonus_research, 0) 
+  INTO v_bonus_replies, v_bonus_research
+  FROM referral_bonuses 
+  WHERE user_id = p_user_id;
+  
+  -- Default to 0 if no bonus record
+  v_bonus_replies := COALESCE(v_bonus_replies, 0);
+  v_bonus_research := COALESCE(v_bonus_research, 0);
   
   -- Return limits and usage with bonuses applied
   RETURN QUERY

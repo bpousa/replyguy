@@ -18,6 +18,7 @@ export function ReferralStats({ isFreeTier }: ReferralStatsProps) {
   const [stats, setStats] = useState<any>(null);
   const [referralUrl, setReferralUrl] = useState('');
   const [referralCode, setReferralCode] = useState('');
+  const [isPaidTier, setIsPaidTier] = useState(false);
   
   const generateReferralCode = async () => {
     try {
@@ -46,6 +47,7 @@ export function ReferralStats({ isFreeTier }: ReferralStatsProps) {
       setStats(data.stats);
       setReferralUrl(data.referralUrl);
       setReferralCode(data.referralCode);
+      setIsPaidTier(data.isPaidTier || false);
       
       // Generate referral code if doesn't exist
       if (!data.referralCode) {
@@ -61,23 +63,6 @@ export function ReferralStats({ isFreeTier }: ReferralStatsProps) {
     
     fetchReferralStats();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  
-  if (!isFreeTier) {
-    return (
-      <Card className="p-6">
-        <div className="text-center">
-          <Gift className="h-12 w-12 mx-auto mb-3 text-gray-400" />
-          <h3 className="font-semibold mb-2">Referral Program</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            The referral program is available for free tier users only.
-          </p>
-          <p className="text-xs text-gray-500">
-            As a paid subscriber, you already have access to all features!
-          </p>
-        </div>
-      </Card>
-    );
-  }
   
   if (loading) {
     return (
@@ -108,6 +93,7 @@ export function ReferralStats({ isFreeTier }: ReferralStatsProps) {
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
               Earn +10 replies and +1 research for each friend who signs up
+              {isPaidTier && <span className="text-purple-600 font-medium"> • Premium members can refer up to 10 friends!</span>}
             </p>
           </div>
           <Button
@@ -201,6 +187,7 @@ export function ReferralStats({ isFreeTier }: ReferralStatsProps) {
                 <p className="text-sm font-medium">You can earn {remainingReplies} more replies!</p>
                 <p className="text-xs text-gray-600 dark:text-gray-400">
                   Invite {Math.ceil(remainingReplies / 10)} more friends to maximize your bonus
+                  {isPaidTier && <span className="block text-purple-600 font-medium mt-1">Premium perk: You get 2.5x more referral capacity!</span>}
                 </p>
               </div>
               <Button

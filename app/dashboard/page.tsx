@@ -300,7 +300,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Referral Section - Only show for logged in users */}
+        {/* Referral Section - Show for all logged in users */}
         {user && (
           <div className="mt-8">
             <ReferralStats 

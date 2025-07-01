@@ -72,14 +72,15 @@ export async function GET(req: NextRequest) {
       referralCode: userData.referral_code,
       referralUrl: userData.referral_code ? `${appUrl}/auth/signup?ref=${userData.referral_code}` : null,
       isFreeTier: userData.subscription_tier === 'free' || !userData.subscription_tier,
+      isPaidTier: isPaidTier(userData.subscription_tier),
       stats: {
         totalReferrals: bonuses?.total_referrals || 0,
         completedReferrals: completedReferrals.length,
         pendingReferrals: pendingReferrals.length,
         bonusReplies: bonuses?.bonus_replies || 0,
         bonusResearch: bonuses?.bonus_research || 0,
-        maxBonusReplies: 40, // Cap
-        maxBonusResearch: 4  // Cap
+        maxBonusReplies: isPaidTier(userData.subscription_tier) ? 100 : 40, // Higher cap for paid users
+        maxBonusResearch: isPaidTier(userData.subscription_tier) ? 10 : 4  // Higher cap for paid users
       },
       referrals: referrals || []
     });
@@ -91,4 +92,10 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Helper function to check if user is on paid tier
+function isPaidTier(tier: string | null): boolean {
+  const paidTiers = ['basic', 'pro', 'x_business', 'growth', 'professional', 'enterprise'];
+  return tier ? paidTiers.includes(tier) : false;
 }

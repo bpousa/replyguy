@@ -8,17 +8,48 @@ import { toast } from 'react-hot-toast';
 import { Button } from '@/app/components/ui/button';
 import { Loader2, CheckCircle } from 'lucide-react';
 import { Logo } from '@/app/components/logo';
+import { Gift } from 'lucide-react';
 
 export default function SignupPage() {
   const router = useRouter();
   const supabase = createBrowserClient();
   const searchParams = useSearchParams();
   const planId = searchParams.get('plan');
+  const referralCode = searchParams.get('ref');
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
+  const [validatedReferral, setValidatedReferral] = useState<{ valid: boolean; message?: string } | null>(null);
+  
+  // Validate referral code on mount
+  useEffect(() => {
+    const validateReferralCode = async () => {
+      if (!referralCode) return;
+      
+      try {
+        const response = await fetch('/api/referral/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ referralCode })
+        });
+        
+        const data = await response.json();
+        setValidatedReferral(data);
+        
+        if (data.valid) {
+          toast.success('Referral code applied! You\'ll both get bonus features.');
+        } else {
+          toast.error(data.message || 'Invalid referral code');
+        }
+      } catch (error) {
+        console.error('Error validating referral code:', error);
+      }
+    };
+    
+    validateReferralCode();
+  }, [referralCode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +73,8 @@ export default function SignupPage() {
         options: {
           emailRedirectTo: `${window.location.origin}/auth/verify${planId ? `?plan=${planId}` : ''}`,
           data: {
-            selected_plan: planId || 'free'
+            selected_plan: planId || 'free',
+            referral_code: referralCode || ''
           }
         },
       });
@@ -138,6 +170,18 @@ export default function SignupPage() {
 
         {!showSuccess && (
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {/* Referral Badge */}
+          {referralCode && validatedReferral?.valid && (
+            <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3">
+              <div className="flex items-center gap-2 text-sm">
+                <Gift className="h-4 w-4 text-purple-600" />
+                <span className="font-medium text-purple-900 dark:text-purple-100">
+                  Referred by a friend! You&apos;ll get bonus features when you sign up.
+                </span>
+              </div>
+            </div>
+          )}
+          
           <div className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">

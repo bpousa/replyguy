@@ -34,21 +34,22 @@ export async function POST(req: NextRequest) {
       });
     }
     
-    // Check if referrer is on free tier (only free users can refer)
-    const { data: subscription } = await supabase
-      .from('subscriptions')
-      .select('plan_id')
-      .eq('user_id', referrer.id)
-      .eq('status', 'active')
+    // All users can now refer (both free and paid)
+    const { data: userData } = await supabase
+      .from('users')
+      .select('subscription_tier')
+      .eq('id', referrer.id)
       .single();
     
-    const isFreeTier = !subscription || subscription.plan_id === 'free';
+    const isFreeTier = !userData?.subscription_tier || userData.subscription_tier === 'free';
+    const isPaidTier = userData?.subscription_tier && ['basic', 'pro', 'x_business', 'growth', 'professional', 'enterprise'].includes(userData.subscription_tier);
     
     return NextResponse.json({
       valid: true,
       referrerId: referrer.id,
       isFreeTier,
-      message: isFreeTier ? 'Valid referral code' : 'Referral code is from a paid user'
+      isPaidTier,
+      message: 'Valid referral code'
     });
     
   } catch (error) {

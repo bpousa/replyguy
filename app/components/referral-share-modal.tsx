@@ -30,6 +30,10 @@ export function ReferralShareModal({
 }: ReferralShareModalProps) {
   const [copied, setCopied] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(0);
+  const [copiedTemplate, setCopiedTemplate] = useState<string | null>(null);
+  
+  // Ensure we display the clean URL
+  const displayUrl = referralUrl.replace(/https:\/\/[^\/]+/, 'https://replyguy.appendment.com');
   
   // Email and social media templates
   const templates = {
@@ -41,7 +45,7 @@ export function ReferralShareModal({
 I've been using ReplyGuy to create better Twitter/X replies with AI, and thought you might like it too.
 
 Sign up with my link and we both get bonus features:
-${referralUrl}
+${displayUrl}
 
 You'll get:
 ✓ 10 free AI-powered replies per month
@@ -61,7 +65,7 @@ Best,
 Quick share - I've been using ReplyGuy to help write Twitter/X replies. It uses AI to make responses more engaging and human-like.
 
 If you sign up with my referral link, you get 10 free replies per month:
-${referralUrl}
+${displayUrl}
 
 Plus you can:
 - Choose from different reply styles
@@ -80,7 +84,7 @@ Cheers,
         text: `Just discovered ReplyGuy - an AI tool that helps write better Twitter replies! 🚀
 
 Sign up with my link for 10 free AI-powered replies per month:
-${referralUrl}
+${displayUrl}
 
 #AI #TwitterTips #SocialMedia`
       },
@@ -92,7 +96,7 @@ This AI-powered tool helps craft thoughtful, engaging replies for Twitter/X in s
 
 If you're looking to save time while maintaining authentic interactions, check it out. Sign up with my referral link for 10 free replies per month:
 
-${referralUrl}
+${displayUrl}
 
 #ProductivityTools #AI #SocialMediaMarketing`
       },
@@ -102,7 +106,7 @@ ${referralUrl}
 
 ReplyGuy helps you write better replies using AI - saves time and makes your responses more engaging.
 
-Sign up with my link and get 10 free replies per month: ${referralUrl}
+Sign up with my link and get 10 free replies per month: ${displayUrl}
 
 Perfect if you want to be more active on social media but struggle with what to say 😊`
       }
@@ -117,6 +121,19 @@ Perfect if you want to be more active on social media but struggle with what to 
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       toast.error('Failed to copy');
+    }
+  };
+  
+  const copyEmailTemplate = async (templateIndex: number) => {
+    try {
+      const template = templates.email[templateIndex];
+      const fullEmail = `Subject: ${template.subject}\n\n${template.body}`;
+      await navigator.clipboard.writeText(fullEmail);
+      setCopiedTemplate(`email-${templateIndex}`);
+      toast.success('Email template copied!');
+      setTimeout(() => setCopiedTemplate(null), 2000);
+    } catch (err) {
+      toast.error('Failed to copy email template');
     }
   };
   
@@ -191,14 +208,14 @@ Perfect if you want to be more active on social media but struggle with what to 
             <label className="block text-sm font-medium mb-2">Your Referral Link</label>
             <div className="flex gap-2">
               <Input 
-                value={referralUrl} 
+                value={displayUrl} 
                 readOnly 
                 className="font-mono text-sm"
               />
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => copyToClipboard(referralUrl)}
+                onClick={() => copyToClipboard(displayUrl)}
               >
                 {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </Button>
@@ -251,24 +268,51 @@ Perfect if you want to be more active on social media but struggle with what to 
               {templates.email.map((template, index) => (
                 <div 
                   key={index}
-                  className={`border rounded-lg p-3 cursor-pointer transition-colors ${
-                    selectedTemplate === index ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'hover:border-gray-300'
-                  }`}
-                  onClick={() => setSelectedTemplate(index)}
+                  className="border rounded-lg p-3 transition-colors hover:border-gray-300"
                 >
-                  <div className="font-medium text-sm mb-1">{template.subject}</div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
-                    {template.body.substring(0, 100)}...
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <div className="font-medium text-sm mb-1">{template.subject}</div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+                        {template.body.substring(0, 100)}...
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => copyEmailTemplate(index)}
+                    >
+                      {copiedTemplate === `email-${index}` ? (
+                        <Check className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => copyEmailTemplate(index)}
+                    >
+                      <Copy className="h-3 w-3 mr-2" />
+                      Copy Full Email
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedTemplate(index);
+                        shareViaEmail();
+                      }}
+                    >
+                      <Mail className="h-3 w-3 mr-2" />
+                      Open in Email
+                    </Button>
                   </div>
                 </div>
               ))}
-              <Button
-                className="w-full"
-                onClick={shareViaEmail}
-              >
-                <Mail className="h-4 w-4 mr-2" />
-                Send Selected Email Template
-              </Button>
             </div>
           </div>
           

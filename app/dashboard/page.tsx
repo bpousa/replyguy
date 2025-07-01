@@ -12,6 +12,7 @@ import { SubscriptionStatusBanner } from '@/app/components/subscription-status-b
 import { PlanBadge } from '@/app/components/plan-badge';
 import Image from 'next/image';
 import { ReferralStats } from '@/app/components/referral-stats';
+import { ReferralWelcomeModal } from '@/app/components/referral-welcome-modal';
 
 
 export default function HomePage() {
@@ -24,6 +25,9 @@ export default function HomePage() {
   const [subscription, setSubscription] = useState<any>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState('');
+  const [showReferralWelcome, setShowReferralWelcome] = useState(false);
+  const [referralCode, setReferralCode] = useState('');
+  const [referralUrl, setReferralUrl] = useState('');
   
   useEffect(() => {
     const loadUserData = async () => {
@@ -122,6 +126,27 @@ export default function HomePage() {
       } else {
         // No usage record for today yet
         setDailyCount(0);
+      }
+      
+      // Check if user has seen referral welcome modal
+      const hasSeenWelcome = localStorage.getItem('hasSeenReferralWelcome');
+      if (!hasSeenWelcome) {
+        // Generate or fetch referral code
+        try {
+          const response = await fetch('/api/referral/generate', {
+            method: 'POST',
+            credentials: 'include'
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            setReferralCode(data.referralCode);
+            setReferralUrl(data.referralUrl);
+            setShowReferralWelcome(true);
+          }
+        } catch (error) {
+          console.error('Failed to fetch referral code:', error);
+        }
       }
     };
     
@@ -335,6 +360,15 @@ export default function HomePage() {
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         message={upgradeMessage}
+      />
+      
+      {/* Referral Welcome Modal */}
+      <ReferralWelcomeModal
+        isOpen={showReferralWelcome}
+        onClose={() => setShowReferralWelcome(false)}
+        referralCode={referralCode}
+        referralUrl={referralUrl}
+        isFreeTier={subscription?.subscription_plans?.id === 'free' || !subscription}
       />
     </main>
   );

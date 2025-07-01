@@ -11,6 +11,7 @@ import UpgradeModal from '@/app/components/upgrade-modal';
 import { SubscriptionStatusBanner } from '@/app/components/subscription-status-banner';
 import { PlanBadge } from '@/app/components/plan-badge';
 import Image from 'next/image';
+import { ReferralStats } from '@/app/components/referral-stats';
 
 
 export default function HomePage() {
@@ -298,6 +299,15 @@ export default function HomePage() {
             />
           </div>
         </div>
+
+        {/* Referral Section - Only show for logged in users */}
+        {user && (
+          <div className="mt-8">
+            <ReferralStats 
+              isFreeTier={subscription?.subscription_plans?.id === 'free' || !subscription}
+            />
+          </div>
+        )}
 
         {/* Features section */}
         <div className="mt-16 grid md:grid-cols-3 gap-6">

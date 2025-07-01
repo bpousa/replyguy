@@ -10,11 +10,13 @@ CREATE TABLE IF NOT EXISTS public.referrals (
   status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'expired')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   completed_at TIMESTAMPTZ,
-  UNIQUE(referred_id), -- A user can only be referred once
-  INDEX idx_referrals_code (referral_code),
-  INDEX idx_referrals_referrer (referrer_id),
-  INDEX idx_referrals_status (status)
+  UNIQUE(referred_id) -- A user can only be referred once
 );
+
+-- Create indexes for referrals table
+CREATE INDEX idx_referrals_code ON public.referrals(referral_code);
+CREATE INDEX idx_referrals_referrer ON public.referrals(referrer_id);
+CREATE INDEX idx_referrals_status ON public.referrals(status);
 
 -- Create referral bonuses table to track earned bonuses
 CREATE TABLE IF NOT EXISTS public.referral_bonuses (

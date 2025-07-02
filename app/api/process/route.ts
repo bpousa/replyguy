@@ -459,6 +459,7 @@ export async function POST(req: NextRequest) {
           body: JSON.stringify({
             userText: validated.memeText,
             reply: generateData.data.reply,
+            originalTweet: validated.originalTweet,
             tone: validated.tone,
             enhance: validated.memeTextMode === 'enhance',
             userId: userId
@@ -467,29 +468,59 @@ export async function POST(req: NextRequest) {
         
         if (memeTextResponse.ok) {
           const memeTextData = await memeTextResponse.json();
-          finalMemeText = memeTextData.text;
-          console.log('✅ Meme text generated:', {
-            text: finalMemeText,
-            enhanced: memeTextData.enhanced,
-            method: memeTextData.method
-          });
+          
+          // Check if we got template-specific data
+          if (memeTextData.templateId && !memeTextData.useAutomeme) {
+            console.log('✅ Template-specific meme data:', {
+              templateId: memeTextData.templateId,
+              templateName: memeTextData.templateName,
+              method: memeTextData.method
+            });
+            
+            // Prepare request for template-specific meme
+            var memeRequestBody: any = {
+              templateId: memeTextData.templateId,
+              templateName: memeTextData.templateName,
+              topText: memeTextData.topText,
+              bottomText: memeTextData.bottomText,
+              text: memeTextData.text,
+              userId: userId
+            };
+          } else {
+            // Use automeme approach
+            finalMemeText = memeTextData.text;
+            console.log('✅ Automeme text generated:', {
+              text: finalMemeText,
+              enhanced: memeTextData.enhanced,
+              method: memeTextData.method
+            });
+            
+            var memeRequestBody: any = {
+              text: finalMemeText,
+              userId: userId
+            };
+          }
         } else {
           // Fallback if meme text generation fails
           finalMemeText = validated.memeText || 'this is fine';
           console.warn('⚠️ Meme text generation failed, using fallback:', finalMemeText);
+          
+          var memeRequestBody: any = {
+            text: finalMemeText,
+            userId: userId
+          };
         }
       } catch (error) {
         console.error('❌ Error generating meme text:', error);
         finalMemeText = validated.memeText || 'this is fine';
+        
+        var memeRequestBody: any = {
+          text: finalMemeText,
+          userId: userId
+        };
       }
       
-      console.log('🎨 Attempting meme generation with text:', finalMemeText);
-      
-      // Log exact parameters being sent to meme API
-      const memeRequestBody = {
-        text: finalMemeText,
-        userId: userId
-      };
+      console.log('🎨 Attempting meme generation');
       console.log('📤 Meme API Request Parameters:', JSON.stringify(memeRequestBody, null, 2));
       console.log('📍 Meme API URL:', new URL('/api/meme', req.url).toString());
       

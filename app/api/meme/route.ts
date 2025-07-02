@@ -7,7 +7,11 @@ import { getRandomFallback } from '@/app/lib/meme-fallbacks';
 
 // Request validation schema
 const requestSchema = z.object({
-  text: z.string().min(1).max(100),
+  text: z.string().min(1).max(100).optional(),
+  templateId: z.string().optional(),
+  templateName: z.string().optional(),
+  topText: z.string().max(100).optional(),
+  bottomText: z.string().max(100).optional(),
   userId: z.string().optional(),
 });
 
@@ -105,45 +109,83 @@ export async function POST(req: NextRequest) {
     }
 
     console.log('[meme API] 🎨 Starting meme generation');
-    console.log('[meme API] 📝 Meme text:', validated.text);
-    console.log('[meme API] 📏 Text length:', validated.text.length);
-
-    // Try to generate the meme with retry logic
+    console.log('[meme API] 📋 Generation type:', validated.templateId ? 'template-specific' : 'automeme');
+    
+    // Try to generate the meme
     const memeGenerationStart = Date.now();
     let memeResult;
     let attemptCount = 0;
-    const maxAttempts = 3;
-    let lastError;
     
-    while (attemptCount < maxAttempts && !memeResult) {
-      attemptCount++;
+    // Check if this is a template-specific request
+    if (validated.templateId && (validated.topText || validated.bottomText || validated.text)) {
+      console.log('[meme API] 🎯 Using captionImage for template:', {
+        templateId: validated.templateId,
+        templateName: validated.templateName,
+        hasTopText: !!validated.topText,
+        hasBottomText: !!validated.bottomText,
+        hasSingleText: !!validated.text
+      });
       
       try {
-        // Use original text on first attempt, fallback on retries
-        const textToUse = attemptCount === 1 ? validated.text : getRandomFallback();
-        
-        if (attemptCount > 1) {
-          console.log(`[meme API] 🔄 Retry attempt ${attemptCount} with fallback text: "${textToUse}"`);
-        }
-        
-        memeResult = await imgflipService.generateAutomeme(textToUse);
-        
-        if (attemptCount > 1) {
-          console.log('[meme API] ✅ Fallback text succeeded');
-        }
+        // Use captionImage for specific template
+        memeResult = await imgflipService.captionImage(
+          validated.templateId,
+          validated.topText || validated.text || '',
+          validated.bottomText || ''
+        );
+        console.log('[meme API] ✅ Template-specific meme generated successfully');
       } catch (error) {
-        lastError = error;
-        console.log(`[meme API] ⚠️ Attempt ${attemptCount} failed:`, error instanceof Error ? error.message : error);
+        console.error('[meme API] ❌ Template caption failed:', error);
         
-        if (attemptCount < maxAttempts) {
-          // Wait a bit before retry
-          await new Promise(resolve => setTimeout(resolve, 500));
+        // Fallback to automeme with the text
+        const fallbackText = validated.topText || validated.text || validated.bottomText || 'this is fine';
+        console.log('[meme API] 🔄 Falling back to automeme with:', fallbackText);
+        
+        try {
+          memeResult = await imgflipService.generateAutomeme(fallbackText);
+        } catch (automemeError) {
+          throw automemeError;
         }
       }
-    }
-    
-    if (!memeResult) {
-      throw lastError || new Error('Failed to generate meme after retries');
+    } else {
+      // Use automeme approach with retry logic
+      console.log('[meme API] 📝 Using automeme with text:', validated.text);
+      console.log('[meme API] 📏 Text length:', validated.text?.length || 0);
+      
+      attemptCount = 0;
+      const maxAttempts = 3;
+      let lastError;
+      
+      while (attemptCount < maxAttempts && !memeResult) {
+        attemptCount++;
+        
+        try {
+          // Use original text on first attempt, fallback on retries
+          const textToUse = attemptCount === 1 ? (validated.text || 'this is fine') : getRandomFallback();
+          
+          if (attemptCount > 1) {
+            console.log(`[meme API] 🔄 Retry attempt ${attemptCount} with fallback text: "${textToUse}"`);
+          }
+          
+          memeResult = await imgflipService.generateAutomeme(textToUse);
+          
+          if (attemptCount > 1) {
+            console.log('[meme API] ✅ Fallback text succeeded');
+          }
+        } catch (error) {
+          lastError = error;
+          console.log(`[meme API] ⚠️ Attempt ${attemptCount} failed:`, error instanceof Error ? error.message : error);
+          
+          if (attemptCount < maxAttempts) {
+            // Wait a bit before retry
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
+      }
+      
+      if (!memeResult) {
+        throw lastError || new Error('Failed to generate meme after retries');
+      }
     }
     
     const memeGenerationTime = Date.now() - memeGenerationStart;
@@ -152,7 +194,7 @@ export async function POST(req: NextRequest) {
       url: memeResult.url,
       pageUrl: memeResult.pageUrl,
       generationTime: `${memeGenerationTime}ms`,
-      attempts: attemptCount,
+      attempts: attemptCount || 1,
       usedFallback: attemptCount > 1
     });
 

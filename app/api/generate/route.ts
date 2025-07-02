@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
       model: 'claude-3-5-sonnet-20241022',
       max_tokens: maxTokens,
       temperature: 0.8,
-      system: `You are a real person on Twitter having a genuine conversation. Your PRIMARY job is to EXPRESS THE USER'S INTENDED MESSAGE while sounding natural and human. The user has told you exactly what they want to say - honor that above all else. NEVER ignore or override their intent. Make it sound authentic and conversational, but the CORE MESSAGE MUST BE what they requested. When research is provided, you are REPLYING TO A TWEET using that research to support your response - you are NOT writing a standalone article.`,
+      system: `You are typing a quick reply on Twitter/X. Write exactly like a real person would - casual, direct, sometimes imperfect. The user told you what they want to say, so say it naturally. No essay writing, no perfect grammar needed. Just real human replies. When stats/research are included, drop them in naturally like you're sharing something you just learned.`,
       messages: [{ role: 'user', content: prompt }],
     });
 
@@ -137,8 +137,8 @@ export async function POST(req: NextRequest) {
     console.log('\n🤖 === CLAUDE GENERATION RESPONSE ===');
     console.log('Raw reply:', reply);
     
-    // Apply anti-AI processing
-    reply = AntiAIDetector.process(reply);
+    // Apply anti-AI processing (now async to support dynamic patterns)
+    reply = await AntiAIDetector.process(reply);
     
     console.log('\n🔧 === AFTER ANTI-AI PROCESSING ===');
     console.log('Processed reply:', reply);
@@ -195,17 +195,23 @@ export async function POST(req: NextRequest) {
 
 function buildGenerationPrompt(input: any, charLimit: number, styleInstructions: string, customStyleInstructions: string = ''): string {
   const antiAIPrompt = `
-CRITICAL - Avoid these AI patterns:
-- NEVER start with: "Great point", "Absolutely", "I think", "Indeed", "Fascinating", "Fair enough", "Well,", "So,", "Oh,"
-- NO transitions like: Moreover, Furthermore, Additionally, Nevertheless, However, Thus, Hence
-- NO corporate words: leverage, optimize, streamline, robust, comprehensive, innovative
-- NO phrases like: "It's worth noting", "One might argue", "In essence"
-- MAXIMUM 1 emoji per reply (prefer zero)
-- NO excessive positivity or enthusiasm
-- NO em dashes (—) or semicolons
-- Write like you're texting a friend, not writing an essay
+Write like real people actually write on Twitter:
+- Start mid-thought sometimes: "honestly the worst part is..." or "nah that's not even..."
+- Use casual language: "tbh", "ngl", "idk", "lol" (but sparingly)
+- Drop subjects sometimes: "can't believe this" instead of "I can't believe this"
+- Natural reactions: "wait what", "oh damn", "yikes", "lmao okay"
+- Imperfect punctuation: occasional missing periods, lowercase starts
+- Real disagreement: "nah", "eh", "not really", "hard disagree"
+- Natural enthusiasm: "this is sick", "love this", "so good"
+- Skip perfect transitions - just jump to your point
+- One emoji max (and only if it really fits)
 
-EXCEPTION: When including research data/statistics, be precise with numbers and facts. Stats should sound natural, not overly formal.`;
+When sharing facts/stats:
+- Lead with reaction: "wait this is wild - [stat]"
+- Or casual discovery: "just found out [fact] and now i can't stop thinking about it"
+- Or simple share: "fun fact: [stat]"
+
+BE BRIEF. Most replies should be 1-2 sentences unless they specifically asked for more.`;
 
   const currentYear = new Date().getFullYear();
   

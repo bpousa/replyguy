@@ -103,7 +103,8 @@
       "Bash(xxd:*)",
       "Bash(timeout 30 vercel logs:*)",
       "Bash(npx supabase:*)",
-      "Bash(kill:*)"
+      "Bash(kill:*)",
+      "Bash(su mike -c \"find . -name '*.sql' -type f | grep -E '(migration|schema)' | head -10\")"
     ],
     "deny": []
   }

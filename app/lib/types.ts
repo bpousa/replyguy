@@ -100,6 +100,9 @@ export interface GeneratedReply {
     memeText?: string;
     memeSkipReason?: string;
   };
+  // Metadata for feedback
+  originalTweet?: string;
+  responseIdea?: string;
 }
 
 export interface APIResponse<T = any> {

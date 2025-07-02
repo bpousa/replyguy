@@ -6,7 +6,7 @@ import { GeneratedReply } from '@/app/lib/types';
 import { formatCost, formatDuration, copyToClipboard } from '@/app/lib/utils';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
-import { Copy, Check, Sparkles, DollarSign, Clock, Info, Link, ExternalLink, AlertCircle } from 'lucide-react';
+import { Copy, Check, Sparkles, DollarSign, Clock, Info, Link, ExternalLink, AlertCircle, Flag, ThumbsUp, MessageSquare } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LoadingReplyGuy } from './loading-reply-guy';
@@ -19,6 +19,11 @@ interface ReplyOutputProps {
 
 export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: ReplyOutputProps) {
   const [copied, setCopied] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackSent, setFeedbackSent] = useState(false);
+  const [showPhraseReport, setShowPhraseReport] = useState(false);
+  const [selectedText, setSelectedText] = useState('');
+  const [reportingPhrase, setReportingPhrase] = useState(false);
   const searchParams = useSearchParams();
   const debugMode = searchParams.get('debug') === 'true';
 
@@ -32,6 +37,76 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
       setTimeout(() => setCopied(false), 2000);
     } else {
       toast.error('Failed to copy to clipboard');
+    }
+  };
+
+  const handleFeedback = async (feedbackType: 'sounds_ai' | 'sounds_human') => {
+    if (!reply || feedbackSent) return;
+    
+    try {
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          replyText: reply.reply,
+          feedbackType,
+        }),
+      });
+      
+      if (response.ok) {
+        setFeedbackSent(true);
+        toast.success(feedbackType === 'sounds_ai' 
+          ? 'Thanks! We\'ll work on making replies more natural.' 
+          : 'Great! Thanks for the feedback.');
+        setShowFeedback(false);
+      } else {
+        toast.error('Failed to send feedback');
+      }
+    } catch (error) {
+      console.error('Feedback error:', error);
+      toast.error('Failed to send feedback');
+    }
+  };
+
+  const handleTextSelection = () => {
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim().length > 0) {
+      setSelectedText(selection.toString().trim());
+      setShowPhraseReport(true);
+    }
+  };
+
+  const handlePhraseReport = async () => {
+    if (!reply || !selectedText || reportingPhrase) return;
+    
+    setReportingPhrase(true);
+    
+    try {
+      const response = await fetch('/api/ai-phrases/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          replyText: reply.reply,
+          reportedPhrase: selectedText,
+          originalTweet: reply.originalTweet,
+          responseIdea: reply.responseIdea,
+          replyType: reply.replyType,
+        }),
+      });
+      
+      if (response.ok) {
+        toast.success('Thanks! This helps us improve our AI detection.');
+        setShowPhraseReport(false);
+        setSelectedText('');
+        setFeedbackSent(true);
+      } else {
+        toast.error('Failed to report phrase');
+      }
+    } catch (error) {
+      console.error('Phrase report error:', error);
+      toast.error('Failed to report phrase');
+    } finally {
+      setReportingPhrase(false);
     }
   };
 
@@ -64,23 +139,105 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
         className="space-y-4"
       >
         {/* Main Reply */}
-        <Card className="p-6 relative">
-          <div className="pr-12">
-            <p className="text-lg leading-relaxed">{reply.reply}</p>
+        <Card className="p-4 sm:p-6 relative overflow-hidden">
+          <div className="pr-10 sm:pr-12">
+            <p 
+              className="text-base sm:text-lg leading-relaxed break-words select-text whitespace-pre-wrap"
+              onMouseUp={handleTextSelection}
+              onTouchEnd={handleTextSelection}
+              style={{ 
+                wordBreak: 'break-word',
+                overflowWrap: 'break-word',
+                hyphens: 'auto'
+              }}
+            >
+              {reply.reply}
+            </p>
           </div>
           <Button
             size="icon"
             variant="ghost"
-            className="absolute top-4 right-4"
+            className="absolute top-2 right-2 sm:top-4 sm:right-4 h-8 w-8 sm:h-10 sm:w-10"
             onClick={handleCopy}
           >
             {copied ? (
-              <Check className="w-4 h-4 text-green-500" />
+              <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
             ) : (
-              <Copy className="w-4 h-4" />
+              <Copy className="w-3 h-3 sm:w-4 sm:h-4" />
             )}
           </Button>
+          
+          {/* Phrase Report Popup */}
+          {showPhraseReport && selectedText && (
+            <div className="absolute top-full left-4 right-4 sm:left-1/2 sm:right-auto sm:transform sm:-translate-x-1/2 mt-2 z-10 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-3 max-w-xs mx-auto">
+              <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                Report &quot;{selectedText.length > 30 ? selectedText.substring(0, 30) + '...' : selectedText}&quot; as AI-sounding?
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handlePhraseReport}
+                  disabled={reportingPhrase}
+                  className="text-xs flex-1 sm:flex-initial"
+                >
+                  {reportingPhrase ? 'Reporting...' : 'Report'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setShowPhraseReport(false);
+                    setSelectedText('');
+                  }}
+                  className="text-xs flex-1 sm:flex-initial"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
+
+        {/* Feedback Section */}
+        {!feedbackSent && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between px-2">
+              <button
+                onClick={() => setShowFeedback(!showFeedback)}
+                className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 flex items-center gap-1 transition-colors"
+              >
+                <MessageSquare className="w-3 h-3" />
+                How does this sound?
+              </button>
+              {showFeedback && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleFeedback('sounds_human')}
+                    className="text-xs h-7 px-2"
+                  >
+                    <ThumbsUp className="w-3 h-3 mr-1" />
+                    Natural
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleFeedback('sounds_ai')}
+                    className="text-xs h-7 px-2"
+                  >
+                    <Flag className="w-3 h-3 mr-1" />
+                    Too AI
+                  </Button>
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-gray-400 dark:text-gray-500 px-2 italic">
+              Tip: Select any AI-sounding phrase to report it specifically
+            </p>
+          </div>
+        )}
 
         {/* Meme debug logging */}
         {(() => {
@@ -110,9 +267,9 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
         
         {/* Meme if included */}
         {reply.memeUrl && (
-          <Card className="p-4 bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800">
+          <Card className="p-4 bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800 overflow-hidden">
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <h3 className="font-medium text-sm text-purple-900 dark:text-purple-100">
                   Generated Meme
                 </h3>
@@ -120,16 +277,20 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
                   href={reply.memePageUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-purple-600 hover:text-purple-700 dark:text-purple-400"
+                  className="text-xs text-purple-600 hover:text-purple-700 dark:text-purple-400 inline-flex items-center gap-1"
                 >
-                  View on Imgflip →
+                  View on Imgflip
+                  <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
-              <img
-                src={reply.memeUrl}
-                alt="Generated meme"
-                className="rounded-lg w-full max-w-md mx-auto"
-              />
+              <div className="relative w-full overflow-hidden rounded-lg">
+                <img
+                  src={reply.memeUrl}
+                  alt="Generated meme"
+                  className="w-full h-auto max-w-full sm:max-w-md mx-auto block"
+                  style={{ maxHeight: '400px', objectFit: 'contain' }}
+                />
+              </div>
             </div>
           </Card>
         )}

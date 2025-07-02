@@ -67,7 +67,7 @@ BEGIN
   SELECT 
     issue as pattern_type,
     COUNT(*) as occurrence_count,
-    ARRAY_AGG(DISTINCT LEFT(reply_text, 100) ORDER BY reply_text) FILTER (WHERE reply_text IS NOT NULL)[1:5] as example_replies
+    (ARRAY_AGG(DISTINCT LEFT(reply_text, 100) ORDER BY reply_text) FILTER (WHERE reply_text IS NOT NULL))[1:5] as example_replies
   FROM feedback_analysis
   GROUP BY issue
   ORDER BY occurrence_count DESC;

@@ -39,6 +39,8 @@ export async function POST(req: NextRequest) {
       .from('users')
       .select(`
         *,
+        bonus_replies,
+        bonus_research,
         subscriptions!inner(
           status,
           plan_id,
@@ -100,13 +102,16 @@ export async function POST(req: NextRequest) {
     // Use meme limit from the plan
     const memeLimit = plan.meme_limit || 0;
     
+    // Add bonus replies to the base limit
+    const totalReplyLimit = plan.reply_limit + (userData.bonus_replies || 0);
+    
     // Check if user can generate more replies
-    const canGenerate = currentUsage.total_replies < plan.reply_limit;
+    const canGenerate = currentUsage.total_replies < totalReplyLimit;
     const canGenerateMeme = memeLimit > 0 && currentUsage.total_memes < memeLimit;
     const canUseSuggestions = plan.suggestion_limit === -1 || currentUsage.total_suggestions < plan.suggestion_limit;
 
     // Calculate remaining
-    const repliesRemaining = plan.reply_limit - currentUsage.total_replies;
+    const repliesRemaining = totalReplyLimit - currentUsage.total_replies;
     const memesRemaining = memeLimit - currentUsage.total_memes;
     const suggestionsRemaining = plan.suggestion_limit === -1 ? 'unlimited' : plan.suggestion_limit - currentUsage.total_suggestions;
 
@@ -117,7 +122,9 @@ export async function POST(req: NextRequest) {
       limits: {
         plan_id: mappedPlanId,
         plan_name: plan.name,
-        reply_limit: plan.reply_limit,
+        reply_limit: totalReplyLimit,
+        base_reply_limit: plan.reply_limit,
+        bonus_replies: userData.bonus_replies || 0,
         replies_used: currentUsage.total_replies,
         meme_limit: memeLimit,
         memes_used: currentUsage.total_memes,

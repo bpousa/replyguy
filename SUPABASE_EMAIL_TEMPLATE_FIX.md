@@ -4,25 +4,22 @@
 Users are being redirected directly to `/dashboard` after email confirmation, bypassing the `/auth/callback` route. This causes the session to not be properly established.
 
 ## The Solution
-Update your Supabase email templates to redirect to the callback route.
+Update your Supabase settings to use the correct redirect URLs.
 
 ### Steps to Fix:
 
-1. **Go to Supabase Dashboard** → Authentication → Email Templates
+1. **Go to Supabase Dashboard** → Authentication → URL Configuration
 
-2. **Update the Confirm Signup template**:
-   
-   Change from:
-   ```html
-   <a href="{{ .ConfirmationURL }}">Confirm your email</a>
-   ```
-   
-   To:
-   ```html
-   <a href="{{ .SiteURL }}/auth/callback?token={{ .Token }}&type=signup&redirect_to={{ .SiteURL }}/dashboard">Confirm your email</a>
-   ```
+2. **Update these settings**:
+   - **Site URL**: `https://replyguy.appendment.com`
+   - **Redirect URLs** (add ALL of these):
+     ```
+     https://replyguy.appendment.com/auth/callback
+     https://replyguy.appendment.com/auth/email-confirmed
+     https://replyguy.appendment.com/dashboard
+     ```
 
-3. **OR if using the default template**, update the **Redirect URL** in Authentication → URL Configuration:
+3. **IMPORTANT**: In the **Email Templates** section:
    
    - Site URL: `https://replyguy.appendment.com`
    - Redirect URLs (add these):

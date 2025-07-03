@@ -40,11 +40,19 @@ export default function DashboardLayout({
         const urlHash = window.location.hash;
         const hasSupabaseSession = urlHash.includes('access_token') || urlHash.includes('refresh_token');
         
-        const isAuthFlow = authFlowComplete || sessionStorageFlow === 'true' || hasSupabaseSession;
-        
+        // If we have session tokens in URL, we MUST process them before checking for session
         if (hasSupabaseSession) {
-          console.log('[dashboard] Detected Supabase session in URL hash');
+          console.log('[dashboard] Detected Supabase session in URL hash, processing...');
+          
+          // The Supabase client should automatically process these on initialization
+          // But we need to give it time
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Also set auth flow marker
+          sessionStorage.setItem('auth_flow_active', 'true');
         }
+        
+        const isAuthFlow = authFlowComplete || sessionStorageFlow === 'true' || hasSupabaseSession;
         
         // First check if we have a session
         const { data: { session } } = await supabase.auth.getSession();
@@ -54,9 +62,9 @@ export default function DashboardLayout({
           if (isAuthFlow) {
             console.log('[dashboard] In active auth flow, waiting for session...');
             
-            // Try multiple times with increasing delays
-            for (let i = 0; i < 5; i++) {
-              await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+            // Try multiple times with increasing delays (longer for email confirmation)
+            for (let i = 0; i < 10; i++) {
+              await new Promise(resolve => setTimeout(resolve, 2000)); // 2 seconds between attempts
               
               const { data: { session: retrySession } } = await supabase.auth.getSession();
               

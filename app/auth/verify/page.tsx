@@ -128,7 +128,7 @@ export default function VerifyPage() {
       try {
         console.log('[verify] Attempting to verify OTP token...');
         const { data, error } = await supabase.auth.verifyOtp({
-          token_hash: token,
+          token: token,
           type: type as any
         });
         

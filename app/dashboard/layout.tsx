@@ -43,13 +43,51 @@ export default function DashboardLayout({
         // If we have session tokens in URL, we MUST process them before checking for session
         if (hasSupabaseSession) {
           console.log('[dashboard] Detected Supabase session in URL hash, processing...');
-          
-          // The Supabase client should automatically process these on initialization
-          // But we need to give it time
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          // Also set auth flow marker
           sessionStorage.setItem('auth_flow_active', 'true');
+          
+          // Parse the hash parameters
+          const hashParams = new URLSearchParams(urlHash.substring(1));
+          const accessToken = hashParams.get('access_token');
+          const refreshToken = hashParams.get('refresh_token');
+          
+          if (accessToken && refreshToken) {
+            console.log('[dashboard] Setting session from URL hash tokens...');
+            try {
+              const { data, error } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken
+              });
+              
+              if (error) {
+                console.error('[dashboard] Failed to set session:', error);
+              } else if (data.session) {
+                console.log('[dashboard] Session set successfully from hash!');
+                setUser(data.session.user);
+                
+                // Ensure user exists in database
+                try {
+                  const response = await fetch('/auth/ensure-user', {
+                    credentials: 'include'
+                  });
+                  if (response.ok) {
+                    console.log('[dashboard] User existence confirmed');
+                  } else {
+                    console.error('[dashboard] Failed to ensure user exists');
+                  }
+                } catch (err) {
+                  console.error('[dashboard] Error ensuring user:', err);
+                }
+                
+                // Clear the hash from URL
+                window.history.replaceState(null, '', window.location.pathname + window.location.search);
+                // Clear auth flow marker after success
+                sessionStorage.removeItem('auth_flow_active');
+                return;
+              }
+            } catch (err) {
+              console.error('[dashboard] Error setting session from hash:', err);
+            }
+          }
         }
         
         const isAuthFlow = authFlowComplete || sessionStorageFlow === 'true' || hasSupabaseSession;
@@ -102,6 +140,20 @@ export default function DashboardLayout({
         }
         
         setUser(user);
+        
+        // Ensure user exists in database
+        try {
+          const response = await fetch('/auth/ensure-user', {
+            credentials: 'include'
+          });
+          if (response.ok) {
+            console.log('[dashboard] User existence confirmed');
+          } else {
+            console.error('[dashboard] Failed to ensure user exists');
+          }
+        } catch (err) {
+          console.error('[dashboard] Error ensuring user:', err);
+        }
         
         // Get user's subscription from users table
         const { data: userData } = await supabase

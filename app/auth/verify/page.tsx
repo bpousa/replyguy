@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@/app/lib/auth';
 import { Loader2, CheckCircle } from 'lucide-react';
@@ -10,201 +10,176 @@ export default function VerifyPage() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
   const [message, setMessage] = useState('Verifying your email...');
-  const checkIntervalRef = useRef<NodeJS.Timeout>();
-  const supabaseRef = useRef(createBrowserClient());
+  const [debugInfo, setDebugInfo] = useState<string[]>([]);
   
   // Extract parameters
   const token = searchParams.get('token');
   const type = searchParams.get('type');
   const plan = searchParams.get('plan');
   const next = searchParams.get('next');
-  const from = searchParams.get('from');
+
+  const addDebugInfo = (info: string) => {
+    console.log('[verify]', info);
+    setDebugInfo(prev => [...prev, `${new Date().toISOString().substr(11, 8)} - ${info}`]);
+  };
 
   useEffect(() => {
     let isMounted = true;
-    const supabase = supabaseRef.current;
     
-    // Listen for auth state changes
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[verify] Auth state changed:', event, session?.user?.email);
+    const verifyEmail = async () => {
+      const supabase = createBrowserClient();
       
-      if (event === 'SIGNED_IN' && session && isMounted) {
+      addDebugInfo('Starting email verification process...');
+      addDebugInfo(`URL: ${window.location.href}`);
+      addDebugInfo(`Token present: ${!!token}`);
+      addDebugInfo(`Type: ${type}`);
+      
+      // Check if we already have a session
+      const { data: { session: existingSession } } = await supabase.auth.getSession();
+      if (existingSession) {
+        addDebugInfo('Existing session found, redirecting...');
         setStatus('success');
-        setMessage('Email verified successfully!');
-        sessionStorage.setItem('auth_flow_active', 'true');
-        
-        setTimeout(() => {
-          if (!isMounted) return;
-          const redirectUrl = plan && plan !== 'free' 
-            ? `/auth/checkout-redirect?plan=${plan}`
-            : next || '/dashboard';
-          
-          console.log('[verify] Redirecting after auth state change to:', redirectUrl);
-          router.push(redirectUrl);
-        }, 500);
-      }
-    });
-    
-    const verifyAndEstablishSession = async () => {
-      // Mark that we're in an active auth flow immediately
-      if (token || type || from === 'email-callback') {
-        sessionStorage.setItem('auth_flow_active', 'true');
-      }
-      
-      // For PKCE token verification, explicitly verify the OTP
-      if (token && type) {
-        console.log('[verify] PKCE token detected, verifying OTP...', {
-          tokenLength: token.length,
-          tokenPrefix: token.substring(0, 20),
-          type
-        });
-        
-        try {
-          // Verify the OTP token with Supabase
-          console.log('[verify] Verifying OTP token with Supabase...');
-          // For PKCE tokens from email, use 'token_hash'
-          const { data, error: verifyError } = await supabase.auth.verifyOtp({
-            token_hash: token,
-            type: type as 'signup' | 'recovery' | 'invite' | 'magiclink' | 'email_change' | 'email'
-          });
-          
-          if (verifyError) {
-            console.error('[verify] OTP verification error:', verifyError);
-            throw verifyError;
-          }
-          
-          if (data?.user) {
-            console.log('[verify] OTP verified successfully, user:', data.user.email);
-            
-            // Check if we now have a session
-            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-            
-            if (sessionError) {
-              console.error('[verify] Error getting session after OTP verification:', sessionError);
-              throw sessionError;
-            }
-            
-            if (session) {
-              console.log('[verify] Session established after OTP verification:', session.user?.email);
-              // Let the auth state listener handle the redirect
-              return;
-            } else {
-              console.log('[verify] No session immediately after OTP verification, will continue checking...');
-              // Continue to the polling logic below
-            }
-          } else {
-            console.error('[verify] OTP verification succeeded but no user data returned');
-            throw new Error('Verification succeeded but no user data returned');
-          }
-        } catch (err: any) {
-          console.error('[verify] Error during OTP verification:', err);
-          setStatus('error');
-          
-          // Provide specific error messages based on the error
-          let errorMessage = 'Verification failed. Please try again.';
-          if (err.message?.includes('expired') || err.code === 'otp_expired') {
-            errorMessage = 'This confirmation link has expired. Please sign up again.';
-          } else if (err.message?.includes('invalid') || err.code === 'invalid_request') {
-            errorMessage = 'This confirmation link is invalid. Please sign up again.';
-          }
-          
-          setMessage(errorMessage);
-          setTimeout(() => {
-            if (isMounted) router.push('/auth/login?error=verification_failed');
-          }, 3000);
-          return;
-        }
-      }
-      
-      // Wait a moment for Supabase to process any auth data
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Check if we have a session
-      console.log('[verify] Checking for session...');
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (session) {
-        console.log('[verify] Session found!', session.user.email);
-        setStatus('success');
-        setMessage('Email verified successfully!');
-        
-        // Mark auth flow as active
-        sessionStorage.setItem('auth_flow_active', 'true');
-        
-        setTimeout(() => {
-          if (!isMounted) return;
-          const redirectUrl = plan && plan !== 'free' 
-            ? `/auth/checkout-redirect?plan=${plan}`
-            : next || '/dashboard';
-          
-          console.log('[verify] Redirecting to:', redirectUrl);
-          router.push(redirectUrl);
-        }, 1000);
+        setMessage('Already signed in!');
+        const redirectUrl = plan && plan !== 'free' 
+          ? `/auth/checkout-redirect?plan=${plan}`
+          : next || '/dashboard';
+        setTimeout(() => router.push(redirectUrl), 500);
         return;
       }
-      
-      // Continue with session checking whether we came from token verification or not
-      console.log('[verify] Starting session check...', { hasToken: !!token, from });
-      
-      // This handles both token verification follow-up and regular session establishment
-      // If we're coming from email-callback or just verified a token, be more aggressive about checking
-      const isFromEmailCallback = from === 'email-callback';
-      const isAfterTokenVerification = !!token && !!type;
-      const needsAggressiveChecking = isFromEmailCallback || isAfterTokenVerification;
-      
-      let attempts = 0;
-      const maxAttempts = needsAggressiveChecking ? 30 : 10; // More attempts if we expect a session
-      const checkInterval = needsAggressiveChecking ? 250 : 500; // Faster checks if we expect a session
-      
-      const checkForSession = setInterval(async () => {
-        attempts++;
-        const { data: { session } } = await supabase.auth.getSession();
+    
+      if (!token || !type) {
+        addDebugInfo('No token or type in URL, checking for session...');
         
-        if (session) {
-          clearInterval(checkForSession);
-          console.log('[verify] Session established!', { attempts, email: session.user?.email });
-          setStatus('success');
-          setMessage('Email verified successfully!');
-          // Mark auth flow as complete
-          sessionStorage.removeItem('auth_flow_active');
-          setTimeout(() => {
-            if (isMounted) {
+        // This might be a redirect from Supabase after processing
+        // Let's check the URL hash for tokens
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        
+        if (accessToken && refreshToken) {
+          addDebugInfo('Found tokens in URL hash, setting session...');
+          try {
+            const { data, error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken
+            });
+            
+            if (error) throw error;
+            
+            if (data.session) {
+              addDebugInfo('Session set successfully from hash tokens!');
+              setStatus('success');
+              setMessage('Email verified successfully!');
+              
+              // Ensure user exists
+              await fetch('/auth/ensure-user', { credentials: 'include' });
+              
               const redirectUrl = plan && plan !== 'free' 
                 ? `/auth/checkout-redirect?plan=${plan}`
                 : next || '/dashboard';
-              router.push(redirectUrl);
+              setTimeout(() => router.push(redirectUrl), 1000);
+              return;
             }
-          }, 1000);
-        } else if (attempts >= maxAttempts) {
-          clearInterval(checkForSession);
-          console.error('[verify] Failed to find session after', attempts, 'attempts');
-          setStatus('error');
+          } catch (error) {
+            addDebugInfo(`Failed to set session from hash: ${error}`);
+          }
+        }
+      
+        // No tokens found, wait for session
+        addDebugInfo('No tokens found, polling for session...');
+        let attempts = 0;
+        const maxAttempts = 20; // 10 seconds
+        
+        const checkInterval = setInterval(async () => {
+          attempts++;
+          const { data: { session } } = await supabase.auth.getSession();
           
-          let errorMessage = 'Verification failed. Please try again.';
-          if (isFromEmailCallback) {
-            errorMessage = 'Email verification may have expired. Please try signing up again.';
-          } else if (isAfterTokenVerification) {
-            errorMessage = 'Email verified but session could not be established. Please try logging in.';
+          if (session) {
+            clearInterval(checkInterval);
+            addDebugInfo('Session found after polling!');
+            setStatus('success');
+            setMessage('Email verified successfully!');
+            
+            // Ensure user exists
+            await fetch('/auth/ensure-user', { credentials: 'include' });
+            
+            const redirectUrl = plan && plan !== 'free' 
+              ? `/auth/checkout-redirect?plan=${plan}`
+              : '/dashboard';
+            setTimeout(() => router.push(redirectUrl), 1000);
+          } else if (attempts >= maxAttempts) {
+            clearInterval(checkInterval);
+            addDebugInfo('Session polling timed out');
+            setStatus('error');
+            setMessage('Verification timed out. Please try logging in.');
+            setTimeout(() => router.push('/auth/login'), 2000);
+          }
+        }, 500);
+        
+        return;
+      }
+
+      // We have a PKCE token, let Supabase process it
+      addDebugInfo('PKCE token detected, waiting for Supabase to process...');
+      sessionStorage.setItem('auth_flow_active', 'true');
+      
+      // For PKCE tokens, Supabase needs to process them automatically
+      // We just need to wait for the session to appear
+      let attempts = 0;
+      const maxAttempts = 40; // 20 seconds
+      
+      const checkInterval = setInterval(async () => {
+        attempts++;
+        addDebugInfo(`Checking for session (attempt ${attempts}/${maxAttempts})...`);
+        
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          addDebugInfo(`Session check error: ${error.message}`);
+        }
+        
+        if (session) {
+          clearInterval(checkInterval);
+          addDebugInfo('Session established successfully!');
+          setStatus('success');
+          setMessage('Email verified successfully!');
+          
+          // Ensure user exists
+          try {
+            const response = await fetch('/auth/ensure-user', { credentials: 'include' });
+            if (response.ok) {
+              addDebugInfo('User existence confirmed');
+            } else {
+              addDebugInfo('Failed to ensure user exists');
+            }
+          } catch (err) {
+            addDebugInfo(`Error ensuring user: ${err}`);
           }
           
-          setMessage(errorMessage);
+          const redirectUrl = plan && plan !== 'free' 
+            ? `/auth/checkout-redirect?plan=${plan}`
+            : next || '/dashboard';
+          
+          addDebugInfo(`Redirecting to: ${redirectUrl}`);
           setTimeout(() => {
-            if (isMounted) router.push('/auth/login?error=verification_failed');
+            if (isMounted) router.push(redirectUrl);
+          }, 1000);
+        } else if (attempts >= maxAttempts) {
+          clearInterval(checkInterval);
+          addDebugInfo('Session establishment timed out');
+          setStatus('error');
+          setMessage('Verification timed out. Please try logging in.');
+          setTimeout(() => {
+            if (isMounted) router.push('/auth/login?error=verification_timeout');
           }, 2000);
-        } else if (attempts % 5 === 0) {
-          console.log(`[verify] Still checking for session... (attempt ${attempts}/${maxAttempts})`);
         }
-      }, checkInterval);
-
+      }, 500);
     };
     
-    verifyAndEstablishSession();
+    verifyEmail();
     
     return () => {
       isMounted = false;
-      if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
-      authListener.subscription.unsubscribe();
-      // Clean up auth flow flag on unmount
       sessionStorage.removeItem('auth_flow_active');
     };
   }, [token, type, plan, next, router]);
@@ -220,6 +195,13 @@ export default function VerifyPage() {
             </h2>
             <p className="text-gray-600">{message}</p>
             <p className="text-sm text-gray-500 mt-2">This may take a few seconds...</p>
+            {process.env.NODE_ENV === 'development' && debugInfo.length > 0 && (
+              <div className="mt-4 p-3 bg-gray-100 rounded text-xs text-left max-h-40 overflow-y-auto">
+                {debugInfo.map((info, i) => (
+                  <div key={i} className="font-mono">{info}</div>
+                ))}
+              </div>
+            )}
           </>
         )}
         

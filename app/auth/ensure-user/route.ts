@@ -1,0 +1,74 @@
+import { NextResponse } from 'next/server';
+import { createServerClient } from '@/app/lib/auth';
+import { cookies } from 'next/headers';
+
+// This route ensures a user exists in public.users table
+export async function GET() {
+  try {
+    const cookieStore = cookies();
+    const supabase = createServerClient(cookieStore);
+    
+    // Get current session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !session) {
+      return NextResponse.json({ error: 'No session' }, { status: 401 });
+    }
+    
+    // Check if user exists in public.users
+    const { data: existingUser, error: checkError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', session.user.id)
+      .maybeSingle();
+    
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('[ensure-user] Error checking user:', checkError);
+      return NextResponse.json({ error: 'Database error' }, { status: 500 });
+    }
+    
+    if (!existingUser) {
+      console.log('[ensure-user] User not found in public.users, creating...');
+      
+      // Create user
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert({
+          id: session.user.id,
+          email: session.user.email,
+          full_name: session.user.user_metadata?.full_name || '',
+          referral_code: Math.random().toString(36).substring(2, 8).toUpperCase(),
+          referred_by: null // Will be updated by trigger if referral code was used
+        });
+      
+      if (insertError) {
+        console.error('[ensure-user] Error creating user:', insertError);
+        return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
+      }
+      
+      // Create free subscription
+      const { error: subError } = await supabase
+        .from('subscriptions')
+        .insert({
+          user_id: session.user.id,
+          plan_id: 'free',
+          status: 'active',
+          current_period_start: new Date().toISOString(),
+          current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        });
+      
+      if (subError && subError.code !== '23505') { // Ignore duplicate key errors
+        console.error('[ensure-user] Error creating subscription:', subError);
+      }
+      
+      console.log('[ensure-user] User created successfully');
+    } else {
+      console.log('[ensure-user] User already exists');
+    }
+    
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('[ensure-user] Unexpected error:', error);
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  }
+}

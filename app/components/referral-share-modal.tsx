@@ -48,10 +48,12 @@ Sign up with my link and we both get bonus features:
 ${displayUrl}
 
 You'll get:
-✓ 10 free AI-powered replies per month (resets monthly)
-✓ 1 research credit to find facts & stats
+✓ 10 free AI-powered replies every month (resets monthly)
+✓ 1 research credit every month to find facts & stats
 ✓ Access to multiple reply styles
 ✓ Daily goal tracking
+
+Plus, when you join with my link, I get +10 more replies per month too!
 
 It's helped me save time and write more engaging replies. Give it a try!
 
@@ -64,7 +66,7 @@ Best,
 
 Quick share - I've been using ReplyGuy to help write Twitter/X replies. It uses AI to make responses more engaging and human-like.
 
-If you sign up with my referral link, you get 10 free replies per month (resets monthly):
+If you sign up with my referral link, you get 10 free replies every month (resets monthly), and I get +10 more replies per month too:
 ${displayUrl}
 
 Plus you can:
@@ -83,7 +85,7 @@ Cheers,
         platform: 'twitter',
         text: `Just discovered ReplyGuy - an AI tool that helps write better Twitter replies! 🚀
 
-Sign up with my link for 10 free AI-powered replies per month (resets monthly):
+Sign up with my link for 10 free AI-powered replies every month! (resets monthly)
 ${displayUrl}
 
 #AI #TwitterTips #SocialMedia`
@@ -348,9 +350,10 @@ Perfect if you want to be more active on social media but struggle with what to 
             <ul className="space-y-1 text-gray-600 dark:text-gray-400">
               <li>• Share your referral link with friends</li>
               <li>• When they sign up and verify their email, you both get rewards</li>
-              <li>• You get: +10 replies and +1 research per referral</li>
-              <li>• They get: 10 free replies per month and 1 research credit per month (both reset monthly)</li>
-              <li>• Maximum bonus: 40 extra replies + 4 extra research</li>
+              <li>• You get: <strong>+10 replies per month</strong> and <strong>+1 research per month</strong> for each referral (forever!)</li>
+              <li>• They get: <strong>10 free replies per month</strong> and <strong>1 research credit per month</strong> (both reset monthly)</li>
+              <li>• Free users can refer up to 4 friends (40 bonus replies/month)</li>
+              <li>• Paid users can refer up to 10 friends (100 bonus replies/month)</li>
             </ul>
           </div>
         </div>

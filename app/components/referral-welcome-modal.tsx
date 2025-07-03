@@ -57,7 +57,8 @@ export function ReferralWelcomeModal({
           {/* Welcome Message */}
           <div className="text-gray-600 dark:text-gray-400">
             <p className="mb-3">
-              Welcome to ReplyGuy! Did you know you can earn extra replies and research credits by sharing with friends?
+              Welcome to ReplyGuy! You currently get <strong>10 free replies per month</strong>. 
+              Want more? Share ReplyGuy with friends and get <strong>+10 more replies every month</strong> for each friend who joins!
             </p>
           </div>
           
@@ -70,19 +71,19 @@ export function ReferralWelcomeModal({
             <ul className="space-y-2 text-sm">
               <li className="flex items-start gap-2">
                 <span className="text-purple-600 font-bold">•</span>
-                <span>For each friend who signs up, you get <strong>+10 replies</strong> and <strong>+1 research credit</strong></span>
+                <span>For each friend who signs up, you get <strong>+10 replies per month</strong> and <strong>+1 research credit per month</strong> forever!</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-purple-600 font-bold">•</span>
-                <span>Your friend gets <strong>10 free replies per month</strong> (resets monthly)</span>
+                <span>Your friends also get <strong>10 free replies per month</strong> (both your bonus and their replies reset monthly)</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-purple-600 font-bold">•</span>
                 <span>
                   {isFreeTier ? (
-                    <>You can earn up to <strong>40 bonus replies</strong> (4 referrals)</>
+                    <>You can refer up to <strong>4 friends</strong> for a total of <strong>50 replies per month</strong> (10 base + 40 bonus)</>
                   ) : (
-                    <>As a premium member, you can earn up to <strong>100 bonus replies</strong> (10 referrals)!</>
+                    <>As a premium member, you can refer up to <strong>10 friends</strong> for up to <strong>110 bonus replies per month</strong>!</>
                   )}
                 </span>
               </li>

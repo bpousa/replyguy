@@ -45,6 +45,14 @@ export default function VerifyPage() {
     });
     
     const verifyAndEstablishSession = async () => {
+      // For PKCE token verification, we need to let Supabase handle it automatically
+      if (token && type) {
+        console.log('[verify] PKCE token detected, letting Supabase handle verification...');
+        // The Supabase client should automatically detect and verify the token
+        // We just need to wait for the auth state change
+        return;
+      }
+      
       // Wait a moment for Supabase to process any auth data
       await new Promise(resolve => setTimeout(resolve, 1000));
       
@@ -72,6 +80,7 @@ export default function VerifyPage() {
         return;
       }
       
+      // If no token, check for existing session from regular auth flow
       if (!token || !type) {
         // This might be a redirect from Supabase after email verification
         // Wait a bit for the session to be established
@@ -115,8 +124,48 @@ export default function VerifyPage() {
       // Mark that we're in a valid auth flow
       sessionStorage.setItem('auth_flow_active', 'true');
       
-      // For PKCE tokens, we need to wait for Supabase to process the token
-      // The client SDK should automatically detect and verify it
+      // For PKCE tokens, we need to manually verify the token
+      try {
+        console.log('[verify] Attempting to verify OTP token...');
+        const { data, error } = await supabase.auth.verifyOtp({
+          token_hash: token,
+          type: type as any
+        });
+        
+        if (error) {
+          console.error('[verify] OTP verification error:', error);
+          setStatus('error');
+          setMessage(error.message || 'Verification failed. Please try again.');
+          
+          setTimeout(() => {
+            if (!isMounted) return;
+            router.push('/auth/login?error=verification_failed');
+          }, 2000);
+          return;
+        }
+        
+        if (data?.session) {
+          console.log('[verify] OTP verification successful!', data.user?.email);
+          setStatus('success');
+          setMessage('Email verified successfully!');
+          
+          // Give the auth state change listener a moment to fire
+          setTimeout(() => {
+            if (!isMounted) return;
+            const redirectUrl = plan && plan !== 'free' 
+              ? `/auth/checkout-redirect?plan=${plan}`
+              : next || '/dashboard';
+            
+            console.log('[verify] Redirecting to:', redirectUrl);
+            router.push(redirectUrl);
+          }, 1000);
+          return;
+        }
+      } catch (error) {
+        console.error('[verify] Unexpected verification error:', error);
+      }
+      
+      // If OTP verification didn't work, fall back to waiting for session
       let attempts = 0;
       const maxAttempts = 30; // 15 seconds total
       

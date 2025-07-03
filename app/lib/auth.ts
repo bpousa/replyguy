@@ -68,7 +68,21 @@ export const createBrowserClient = () => {
           autoRefreshToken: true,
           detectSessionInUrl: true,
           flowType: 'pkce',
-          debug: process.env.NODE_ENV === 'development'
+          debug: process.env.NODE_ENV === 'development',
+          storage: {
+            getItem: (key: string) => {
+              if (typeof window === 'undefined') return null;
+              return window.localStorage.getItem(key);
+            },
+            setItem: (key: string, value: string) => {
+              if (typeof window === 'undefined') return;
+              window.localStorage.setItem(key, value);
+            },
+            removeItem: (key: string) => {
+              if (typeof window === 'undefined') return;
+              window.localStorage.removeItem(key);
+            }
+          }
         },
         global: {
           headers: {

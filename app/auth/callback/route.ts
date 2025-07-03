@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
   const token = requestUrl.searchParams.get('token');
+  const token_hash = requestUrl.searchParams.get('token_hash');
   const type = requestUrl.searchParams.get('type');
   const next = requestUrl.searchParams.get('next');
   const plan = requestUrl.searchParams.get('plan');
@@ -19,6 +20,7 @@ export async function GET(request: NextRequest) {
   console.log('[auth-callback] Received callback:', {
     code: !!code,
     token: !!token,
+    token_hash: !!token_hash,
     tokenPrefix: token?.substring(0, 20),
     type,
     next,
@@ -49,7 +51,7 @@ export async function GET(request: NextRequest) {
 
   // If no auth parameters but we're coming from Supabase email verification,
   // redirect to verify page to handle client-side
-  if (!code && !token) {
+  if (!code && !token && !token_hash) {
     console.log('[auth-callback] No auth parameters, redirecting to verify page...');
     const verifyUrl = new URL('/auth/verify', requestUrl.origin);
     if (plan) verifyUrl.searchParams.set('plan', plan);
@@ -78,18 +80,19 @@ export async function GET(request: NextRequest) {
       
       session = data.session;
       user = data.user;
-    } else if (token) {
+    } else if (token || token_hash) {
       // PKCE token verification must happen client-side
       // Handle all token types, not just signup
+      const actualToken = token || token_hash;
       console.log('[auth-callback] PKCE token detected, redirecting to client-side handler...', { 
-        tokenPrefix: token.substring(0, 20), 
+        tokenPrefix: actualToken?.substring(0, 20), 
         type,
         plan 
       });
       
       // Build the verification URL with all necessary parameters
       const verifyUrl = new URL('/auth/verify', requestUrl.origin);
-      verifyUrl.searchParams.set('token', token);
+      if (actualToken) verifyUrl.searchParams.set('token', actualToken);
       if (type) verifyUrl.searchParams.set('type', type);
       if (plan) verifyUrl.searchParams.set('plan', plan);
       if (next) verifyUrl.searchParams.set('next', next);

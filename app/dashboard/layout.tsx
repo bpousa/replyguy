@@ -32,19 +32,47 @@ export default function DashboardLayout({
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        // Check if we're in an active auth flow
+        const authFlowComplete = document.cookie.includes('auth_flow_complete=true');
+        const sessionStorageFlow = sessionStorage.getItem('auth_flow_active');
+        const isAuthFlow = authFlowComplete || sessionStorageFlow === 'true';
+        
         // First check if we have a session
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
-          // Wait a bit in case session is being established
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
-          // Check again
-          const { data: { session: retrySession } } = await supabase.auth.getSession();
-          
-          if (!retrySession) {
-            router.push('/auth/login');
+          // If we're in an active auth flow, be more patient
+          if (isAuthFlow) {
+            console.log('[dashboard] In active auth flow, waiting for session...');
+            
+            // Try multiple times with increasing delays
+            for (let i = 0; i < 5; i++) {
+              await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+              
+              const { data: { session: retrySession } } = await supabase.auth.getSession();
+              
+              if (retrySession) {
+                console.log('[dashboard] Session found after', i + 1, 'retries');
+                setUser(retrySession.user);
+                // Clear the auth flow markers
+                sessionStorage.removeItem('auth_flow_active');
+                return;
+              }
+            }
+            
+            console.error('[dashboard] No session found after all retries');
+            router.push('/auth/login?error=session_timeout');
             return;
+          } else {
+            // Not in auth flow, do a quick retry then redirect
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            const { data: { session: retrySession } } = await supabase.auth.getSession();
+            
+            if (!retrySession) {
+              router.push('/auth/login');
+              return;
+            }
           }
         }
         

@@ -89,6 +89,21 @@ export async function GET(request: NextRequest) {
       if (session && session.user) {
         console.log('[auth-callback] Found existing session after email verification:', session.user.email);
         
+        // CRITICAL: Wait for cookies to fully propagate before redirecting
+        // This prevents race conditions where dashboard loads before cookies are set
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Verify session is still accessible after delay
+        const { data: { session: verifiedSession } } = await supabase.auth.getSession();
+        
+        if (!verifiedSession) {
+          console.error('[auth-callback] Session lost after delay, redirecting to verify page');
+          const verifyUrl = new URL('/auth/verify', requestUrl.origin);
+          verifyUrl.searchParams.set('from', 'session-lost');
+          if (plan) verifyUrl.searchParams.set('plan', plan);
+          return NextResponse.redirect(verifyUrl);
+        }
+        
         // Session exists! This is likely from email verification
         // Determine where to redirect
         let redirectTo = '/dashboard';
@@ -101,8 +116,17 @@ export async function GET(request: NextRequest) {
           redirectTo = `/auth/checkout-redirect?plan=${session.user.user_metadata.selected_plan}`;
         }
         
+        // Add a session marker to indicate successful auth
+        const response = NextResponse.redirect(new URL(redirectTo, requestUrl.origin));
+        response.cookies.set('auth_flow_complete', 'true', {
+          maxAge: 60, // 1 minute
+          httpOnly: false,
+          sameSite: 'lax',
+          path: '/'
+        });
+        
         console.log('[auth-callback] Redirecting authenticated user to:', redirectTo);
-        return NextResponse.redirect(new URL(redirectTo, requestUrl.origin));
+        return response;
       }
       
       // No session found - redirect to verify page to wait for session establishment
@@ -181,21 +205,33 @@ export async function GET(request: NextRequest) {
     });
     
     // The session should now be automatically stored in cookies by Supabase
-    // Let's verify it's accessible
+    // Let's verify it's accessible with multiple retries
     const { data: { session: verifySession } } = await supabase.auth.getSession();
     
     if (!verifySession) {
       console.error('[auth-callback] Session verification failed - session not persisted');
-      // In production, add a small delay to ensure cookies propagate
-      if (process.env.NODE_ENV === 'production') {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        // Try once more
+      
+      // Try multiple times with delays to ensure cookies propagate
+      let sessionFound = false;
+      for (let i = 0; i < 3; i++) {
+        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
         const { data: { session: retrySession } } = await supabase.auth.getSession();
+        
         if (retrySession) {
-          console.log('[auth-callback] Session verified on retry');
-        } else {
-          console.error('[auth-callback] Session still not available after retry');
+          console.log('[auth-callback] Session verified on retry', i + 1);
+          sessionFound = true;
+          session = retrySession;
+          break;
         }
+      }
+      
+      if (!sessionFound) {
+        console.error('[auth-callback] Session still not available after all retries');
+        // Redirect to verify page to continue waiting
+        const verifyUrl = new URL('/auth/verify', requestUrl.origin);
+        verifyUrl.searchParams.set('from', 'session-not-persisted');
+        if (plan) verifyUrl.searchParams.set('plan', plan);
+        return NextResponse.redirect(verifyUrl);
       }
     } else {
       console.log('[auth-callback] Session verified successfully');
@@ -218,8 +254,16 @@ export async function GET(request: NextRequest) {
     
     console.log('[auth-callback] Redirecting to:', redirectTo);
     
-    // Create redirect response - let Supabase handle cookie setting
-    return NextResponse.redirect(new URL(redirectTo, requestUrl.origin));
+    // Create redirect response with auth flow marker
+    const response = NextResponse.redirect(new URL(redirectTo, requestUrl.origin));
+    response.cookies.set('auth_flow_complete', 'true', {
+      maxAge: 60, // 1 minute
+      httpOnly: false,
+      sameSite: 'lax',
+      path: '/'
+    });
+    
+    return response;
     
   } catch (error) {
     console.error('[auth-callback] Unexpected error:', error);

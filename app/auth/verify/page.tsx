@@ -46,6 +46,11 @@ export default function VerifyPage() {
     });
     
     const verifyAndEstablishSession = async () => {
+      // Mark that we're in an active auth flow immediately
+      if (token || type || from === 'email-callback') {
+        sessionStorage.setItem('auth_flow_active', 'true');
+      }
+      
       // For PKCE token verification, explicitly verify the OTP
       if (token && type) {
         console.log('[verify] PKCE token detected, verifying OTP...', {

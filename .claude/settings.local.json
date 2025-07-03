@@ -104,7 +104,8 @@
       "Bash(timeout 30 vercel logs:*)",
       "Bash(npx supabase:*)",
       "Bash(kill:*)",
-      "Bash(su mike -c \"find . -name '*.sql' -type f | grep -E '(migration|schema)' | head -10\")"
+      "Bash(su mike -c \"find . -name '*.sql' -type f | grep -E '(migration|schema)' | head -10\")",
+      "Bash(npx ts-node:*)"
     ],
     "deny": []
   }

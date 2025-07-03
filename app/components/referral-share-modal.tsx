@@ -39,7 +39,7 @@ export function ReferralShareModal({
   const templates = {
     email: [
       {
-        subject: "Get 10 free AI-powered tweet replies with ReplyGuy",
+        subject: "Get 10 free AI-powered tweet replies per month with ReplyGuy",
         body: `Hey!
 
 I've been using ReplyGuy to create better Twitter/X replies with AI, and thought you might like it too.
@@ -48,7 +48,7 @@ Sign up with my link and we both get bonus features:
 ${displayUrl}
 
 You'll get:
-✓ 10 free AI-powered replies per month
+✓ 10 free AI-powered replies per month (resets monthly)
 ✓ 1 research credit to find facts & stats
 ✓ Access to multiple reply styles
 ✓ Daily goal tracking
@@ -64,7 +64,7 @@ Best,
 
 Quick share - I've been using ReplyGuy to help write Twitter/X replies. It uses AI to make responses more engaging and human-like.
 
-If you sign up with my referral link, you get 10 free replies per month:
+If you sign up with my referral link, you get 10 free replies per month (resets monthly):
 ${displayUrl}
 
 Plus you can:
@@ -83,7 +83,7 @@ Cheers,
         platform: 'twitter',
         text: `Just discovered ReplyGuy - an AI tool that helps write better Twitter replies! 🚀
 
-Sign up with my link for 10 free AI-powered replies per month:
+Sign up with my link for 10 free AI-powered replies per month (resets monthly):
 ${displayUrl}
 
 #AI #TwitterTips #SocialMedia`
@@ -94,7 +94,7 @@ ${displayUrl}
 
 This AI-powered tool helps craft thoughtful, engaging replies for Twitter/X in seconds.
 
-If you're looking to save time while maintaining authentic interactions, check it out. Sign up with my referral link for 10 free replies per month:
+If you're looking to save time while maintaining authentic interactions, check it out. Sign up with my referral link for 10 free replies per month (resets monthly):
 
 ${displayUrl}
 
@@ -106,7 +106,7 @@ ${displayUrl}
 
 ReplyGuy helps you write better replies using AI - saves time and makes your responses more engaging.
 
-Sign up with my link and get 10 free replies per month: ${displayUrl}
+Sign up with my link and get 10 free replies per month (resets monthly): ${displayUrl}
 
 Perfect if you want to be more active on social media but struggle with what to say 😊`
       }
@@ -172,7 +172,7 @@ Perfect if you want to be more active on social media but struggle with what to 
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Share ReplyGuy & Get More Free Replies</DialogTitle>
         </DialogHeader>
@@ -182,7 +182,7 @@ Perfect if you want to be more active on social media but struggle with what to 
           {stats && (
             <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
               <h3 className="font-medium mb-2">Your Referral Stats</h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-sm">
                 <div>
                   <span className="text-gray-600 dark:text-gray-400">Total Referrals:</span>
                   <span className="ml-2 font-medium">{stats.totalReferrals}</span>
@@ -210,12 +210,13 @@ Perfect if you want to be more active on social media but struggle with what to 
               <Input 
                 value={displayUrl} 
                 readOnly 
-                className="font-mono text-sm"
+                className="font-mono text-xs sm:text-sm"
               />
               <Button
                 variant="outline"
                 size="icon"
                 onClick={() => copyToClipboard(displayUrl)}
+                className="shrink-0"
               >
                 {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </Button>
@@ -225,7 +226,7 @@ Perfect if you want to be more active on social media but struggle with what to 
           {/* Quick Share Buttons */}
           <div>
             <label className="block text-sm font-medium mb-2">Quick Share</label>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -289,7 +290,7 @@ Perfect if you want to be more active on social media but struggle with what to 
                       )}
                     </Button>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Button
                       size="sm"
                       variant="outline"
@@ -302,6 +303,7 @@ Perfect if you want to be more active on social media but struggle with what to 
                     <Button
                       size="sm"
                       variant="outline"
+                      className="sm:w-auto"
                       onClick={() => {
                         setSelectedTemplate(index);
                         shareViaEmail();
@@ -341,13 +343,13 @@ Perfect if you want to be more active on social media but struggle with what to 
           </div>
           
           {/* How it works */}
-          <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg text-sm">
+          <div className="bg-gray-50 dark:bg-gray-800 p-3 sm:p-4 rounded-lg text-sm">
             <h4 className="font-medium mb-2">How it works:</h4>
             <ul className="space-y-1 text-gray-600 dark:text-gray-400">
               <li>• Share your referral link with friends</li>
               <li>• When they sign up and verify their email, you both get rewards</li>
               <li>• You get: +10 replies and +1 research per referral</li>
-              <li>• They get: 10 free replies and 1 research per month</li>
+              <li>• They get: 10 free replies per month and 1 research credit per month (both reset monthly)</li>
               <li>• Maximum bonus: 40 extra replies + 4 extra research</li>
             </ul>
           </div>

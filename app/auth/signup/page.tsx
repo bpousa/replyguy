@@ -176,7 +176,7 @@ export default function SignupPage() {
               <div className="flex items-center gap-2 text-sm">
                 <Gift className="h-4 w-4 text-purple-600" />
                 <span className="font-medium text-purple-900 dark:text-purple-100">
-                  Referred by a friend! You&apos;ll get bonus features when you sign up.
+                  Referred by a friend! You&apos;ll get 10 free replies per month when you sign up.
                 </span>
               </div>
             </div>

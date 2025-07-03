@@ -7,15 +7,15 @@ The referral system allows all users (both free and paid) to earn bonus replies 
 ## Referral Rewards
 
 ### Free Tier Users
-- **Per referral**: +10 replies, +1 research
+- **Per referral**: +10 replies per month, +1 research credit per month
 - **Maximum referrals**: 4
-- **Maximum bonuses**: 40 replies, 4 research
+- **Maximum bonuses**: 40 replies per month, 4 research credits per month
 - **Total capacity**: 50 replies/month (10 base + 40 bonus), 5 research/month (1 base + 4 bonus)
 
 ### Paid Tier Users
-- **Per referral**: +10 replies, +1 research  
+- **Per referral**: +10 replies per month, +1 research credit per month  
 - **Maximum referrals**: 10
-- **Maximum bonuses**: 100 replies, 10 research
+- **Maximum bonuses**: 100 replies per month, 10 research credits per month
 - **Example (Pro tier)**: 600 replies/month (500 base + 100 bonus)
 
 ## Key Features

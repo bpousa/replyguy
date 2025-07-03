@@ -211,7 +211,9 @@ When sharing facts/stats:
 - Or casual discovery: "just found out [fact] and now i can't stop thinking about it"
 - Or simple share: "fun fact: [stat]"
 
-BE BRIEF. Most replies should be 1-2 sentences unless they specifically asked for more.`;
+BE BRIEF. Most replies should be 1-2 sentences unless they specifically asked for more.
+
+Even if the user's suggestion sounds good, always put it in your own words. Never copy their phrasing exactly.`;
 
   const currentYear = new Date().getFullYear();
   
@@ -219,7 +221,9 @@ BE BRIEF. Most replies should be 1-2 sentences unless they specifically asked fo
 🎯 YOUR MAIN TASK: Write a REPLY to this tweet: "${input.originalTweet}"
 
 The tweet author said: "${input.originalTweet}"
-You need to RESPOND TO THEM with this message: "${input.responseIdea}"
+You need to RESPOND TO THEM expressing this idea: "${input.responseIdea}"
+
+IMPORTANT: Never repeat the user's suggested response verbatim. Always rephrase and adapt it to sound natural while preserving the intended message.
 
 ${input.perplexityData ? `
 📊 RESEARCH DATA TO INCLUDE IN YOUR REPLY:
@@ -238,7 +242,7 @@ CRITICAL: You are REPLYING TO THE TWEET ABOVE. The research should support your 
 ${input.perplexityData ? `
 REQUIREMENTS (in order of importance):
 1. Reply directly to the tweet above - you're responding to what they said
-2. Express the user's core message: "${input.responseIdea}"
+2. Express the user's core message: "${input.responseIdea}" (but rephrase it in your own words)
 3. Incorporate the research data naturally into your response
 4. Make it sound conversational and human
 5. Follow the ${input.selectedType.name} style pattern
@@ -254,7 +258,7 @@ CRITICAL REMINDERS:
 - If using stats, prefer ${currentYear} data when available` : `
 REQUIREMENTS:
 1. Reply directly to the tweet above
-2. Express the user's core message: "${input.responseIdea}"
+2. Express the user's core message: "${input.responseIdea}" (but rephrase it in your own words)
 3. Use the ${input.selectedType.name} pattern as a style guide
 4. Maintain ${input.tone} tone
 5. Stay under ${charLimit} characters`}

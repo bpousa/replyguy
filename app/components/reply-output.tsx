@@ -297,10 +297,10 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
         
         {/* Meme generation failure notice */}
         {reply.debugInfo?.memeRequested && !reply.memeUrl && reply.debugInfo?.memeSkipReason && (
-          <Card className="p-4 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
-            <div className="flex items-start gap-3">
+          <Card className="p-4 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 overflow-hidden">
+            <div className="flex items-start gap-3 min-w-0">
               <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
                   Meme generation unavailable
                 </p>
@@ -308,7 +308,7 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
                   The meme couldn&apos;t be generated with the current text. Try a different response or add custom meme text for better results.
                 </p>
                 {debugMode && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 font-mono">
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 font-mono break-all">
                     Debug: {reply.debugInfo.memeSkipReason}
                   </p>
                 )}
@@ -327,15 +327,15 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
           return null;
         })()}
         {reply.citations && reply.citations.length > 0 && (
-          <Card className="p-4 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
+          <Card className="p-4 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 overflow-hidden">
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <Link className="w-4 h-4 text-amber-700 dark:text-amber-300" />
+                <Link className="w-4 h-4 text-amber-700 dark:text-amber-300 flex-shrink-0" />
                 <h3 className="font-medium text-sm text-amber-900 dark:text-amber-100">
                   Sources
                 </h3>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 overflow-x-auto">
                 {reply.citations
                   .filter(citation => citation && citation.url) // Filter out invalid citations
                   .map((citation, index) => {
@@ -370,12 +370,12 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
                       rel="noopener noreferrer"
                       className="block p-3 rounded-lg bg-amber-100/50 dark:bg-amber-800/20 hover:bg-amber-100 dark:hover:bg-amber-800/30 transition-colors"
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2 min-w-0">
+                        <div className="flex-1 min-w-0 overflow-hidden">
                           <p className="text-sm font-medium text-amber-900 dark:text-amber-100 truncate">
                             {displayTitle || 'Source'}
                           </p>
-                          <p className="text-xs text-amber-700 dark:text-amber-300 truncate mt-1">
+                          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1 break-all">
                             {citation.url}
                           </p>
                         </div>
@@ -418,11 +418,11 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
 
         {/* Perplexity Data - Only show in debug mode */}
         {debugMode && reply.perplexityData && (
-          <Card className="p-4 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+          <Card className="p-4 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 overflow-hidden">
             <h3 className="font-medium text-sm mb-2 text-blue-900 dark:text-blue-100">
               Research Data
             </h3>
-            <p className="text-sm text-blue-700 dark:text-blue-200">
+            <p className="text-sm text-blue-700 dark:text-blue-200 break-words">
               {reply.perplexityData}
             </p>
           </Card>

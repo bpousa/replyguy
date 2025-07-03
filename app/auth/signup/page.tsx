@@ -67,11 +67,13 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
+      // Use the configured app URL for email redirects
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback${planId ? `?plan=${planId}` : ''}`,
+          emailRedirectTo: `${appUrl}/auth/callback${planId ? `?plan=${planId}` : ''}`,
           data: {
             selected_plan: planId || 'free',
             referral_code: referralCode || ''

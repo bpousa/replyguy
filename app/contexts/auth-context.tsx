@@ -60,9 +60,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // If this is the initial check and we're in a browser, try a few more times
         // This helps with the delay after email verification
-        if (retryCount < 2 && typeof window !== 'undefined') {
-          console.log('[auth-context] Retrying session check in 1 second...');
-          setTimeout(() => checkSession(retryCount + 1), 1000);
+        if (retryCount < 5 && typeof window !== 'undefined') {
+          // Check if we're in an auth flow (e.g., coming from email verification)
+          const isInAuthFlow = sessionStorage.getItem('auth_flow_active') === 'true' ||
+                              window.location.pathname.includes('/auth/verify') ||
+                              window.location.pathname.includes('/auth/callback');
+          
+          if (isInAuthFlow) {
+            console.log('[auth-context] In auth flow, retrying session check in 1 second...');
+            setTimeout(() => checkSession(retryCount + 1), 1000);
+          } else {
+            setUser(null);
+            setStatus('unauthenticated');
+            setError(null);
+          }
         } else {
           setUser(null);
           setStatus('unauthenticated');

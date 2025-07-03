@@ -39,9 +39,12 @@ export default function SignupPage() {
           // In incognito, quota is often severely limited
           if (quota && quota < 120 * 1024 * 1024) { // Less than 120MB suggests incognito
             console.warn('[signup] Possible incognito mode detected - limited storage quota');
-            toast.warning(
+            toast(
               'You may be in private/incognito mode. This can cause issues with email confirmation. Consider using normal browsing mode.',
-              { duration: 8000 }
+              { 
+                duration: 8000,
+                icon: '⚠️'
+              }
             );
           }
         }

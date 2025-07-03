@@ -5,6 +5,11 @@ import { cookies } from 'next/headers';
 // Singleton instance
 let browserClient: SupabaseClient | null = null;
 
+// Force the browser client to re-initialize (useful after email confirmation)
+export const resetBrowserClient = () => {
+  browserClient = null;
+};
+
 // Client-side Supabase client with proper cookie handling
 export const createBrowserClient = () => {
   if (!browserClient) {

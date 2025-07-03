@@ -20,6 +20,8 @@ export default function HomePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createBrowserClient();
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  
   const [generatedReply, setGeneratedReply] = useState<GeneratedReply | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [dailyCount, setDailyCount] = useState(0);

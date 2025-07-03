@@ -4,8 +4,10 @@ import type { NextRequest } from 'next/server';
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   
-  // Log middleware hit for debugging
+  // Log middleware hit for debugging with more details
   console.log(`[middleware] Hit for path: ${pathname}`);
+  console.log(`[middleware] Full URL: ${request.url}`);
+  console.log(`[middleware] Referrer: ${request.headers.get('referer')}`);
   
   // Check for auth cookie on API routes (except auth-related ones)
   if (pathname.startsWith('/api/') && 

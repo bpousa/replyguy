@@ -74,7 +74,7 @@ export function ReferralWelcomeModal({
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-purple-600 font-bold">•</span>
-                <span>Your friend gets <strong>10 free replies</strong> per month to start</span>
+                <span>Your friend gets <strong>10 free replies per month</strong> (resets monthly)</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-purple-600 font-bold">•</span>

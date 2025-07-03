@@ -55,7 +55,7 @@ export function Hero() {
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center text-sm text-gray-600">
             <div className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-green-600" />
-              <span>10 free replies monthly</span>
+              <span>10 free replies per month</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-green-600" />

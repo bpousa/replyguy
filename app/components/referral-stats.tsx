@@ -92,7 +92,7 @@ export function ReferralStats({ isFreeTier }: ReferralStatsProps) {
               Invite Friends, Get More Replies
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Earn +10 replies and +1 research for each friend who signs up
+              Earn +10 replies per month and +1 research credit per month for each friend who signs up
               {isPaidTier && <span className="text-purple-600 font-medium"> • Premium members can refer up to 10 friends!</span>}
             </p>
           </div>

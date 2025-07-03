@@ -92,6 +92,24 @@ export async function POST(req: NextRequest) {
       validated.responseType,
       validated.tone
     );
+    
+    // Log classification input and filtered results
+    console.log(`[classify] Processing request - ResponseType: ${validated.responseType}, Tone: ${validated.tone}`);
+    console.log(`[classify] Found ${relevantTypes.length} relevant reply types`);
+    
+    // If no relevant types found, use fallbacks immediately
+    if (relevantTypes.length === 0) {
+      console.warn(`[classify] No relevant types found for responseType: ${validated.responseType}, tone: ${validated.tone}. Using fallbacks.`);
+      return NextResponse.json({
+        data: {
+          selectedTypes: FALLBACK_TYPES,
+          tokensUsed: 0,
+          cost: 0,
+          fallback: true,
+          message: 'Using default reply types due to no matches found',
+        },
+      });
+    }
 
     // Build classification prompt
     const prompt = buildClassificationPrompt(validated, relevantTypes);
@@ -193,14 +211,39 @@ function filterReplyTypes(responseType: string, tone: string): ReplyType[] {
     sarcastic: ['Humor & Wit', 'Opinion & Challenge', 'Meta & Platform-Specific'],
     enthusiastic: ['Praise & Support', 'Supportive Community', 'Creative & Interactive'],
     analytical: ['Analytical & Thoughtful', 'Value & Information', 'Opinion & Challenge'],
+    informative: ['Value & Information', 'Analytical & Thoughtful', 'Professional & Networking'],
+    humorous: ['Humor & Wit', 'Creative & Interactive', 'Meta & Platform-Specific'],
+    supportive: ['Supportive Community', 'Praise & Support', 'Emotional & Empathetic'],
+    witty: ['Humor & Wit', 'Opinion & Challenge', 'Creative & Interactive'],
+    friendly: ['Agreement & Relatability', 'Supportive Community', 'Conversation Starter'],
+    formal: ['Professional & Networking', 'Analytical & Thoughtful', 'Value & Information'],
   };
 
-  const toneCats = toneCategories[tone.toLowerCase()] || [];
+  const normalizedTone = tone.toLowerCase();
+  let toneCats = toneCategories[normalizedTone] || [];
+  
+  // Log if tone is not found in mapping
+  if (!toneCategories[normalizedTone] && tone) {
+    console.warn(`[classify] Unknown tone: "${tone}". Using default categories. Known tones: ${Object.keys(toneCategories).join(', ')}`);
+    // Use a sensible default for unknown tones
+    toneCats = ['Value & Information', 'Analytical & Thoughtful'];
+  }
+  
   const allRelevantCategories = [...new Set([...relevantCategories, ...toneCats])];
   
-  return replyTypesData
-    .filter((type: any) => allRelevantCategories.includes(type.category))
-    .map((type: any) => ({
+  // Log category filtering details
+  if (allRelevantCategories.length === 0) {
+    console.error(`[classify] No categories found for responseType: ${responseType}, tone: ${tone}`);
+  }
+  
+  const filteredTypes = replyTypesData
+    .filter((type: any) => allRelevantCategories.includes(type.category));
+    
+  if (filteredTypes.length === 0) {
+    console.error(`[classify] No reply types matched categories: ${allRelevantCategories.join(', ')}`);
+  }
+  
+  return filteredTypes.map((type: any) => ({
       id: type.reply_name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, ''),
       name: type.reply_name,
       category: type.category,

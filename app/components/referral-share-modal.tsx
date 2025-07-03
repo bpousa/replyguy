@@ -47,7 +47,7 @@ I've been using ReplyGuy to create better Twitter/X replies with AI, and thought
 Sign up with my link and we both get bonus features:
 ${displayUrl}
 
-You'll get:
+You&apos;ll get:
 ✓ 10 free AI-powered replies every month (resets monthly)
 ✓ 1 research credit every month to find facts & stats
 ✓ Access to multiple reply styles
@@ -55,7 +55,7 @@ You'll get:
 
 Plus, when you join with my link, I get +10 more replies per month too!
 
-It's helped me save time and write more engaging replies. Give it a try!
+It&apos;s helped me save time and write more engaging replies. Give it a try!
 
 Best,
 [Your name]`
@@ -64,7 +64,7 @@ Best,
         subject: "Found this AI tool for better Twitter replies",
         body: `Hi there,
 
-Quick share - I've been using ReplyGuy to help write Twitter/X replies. It uses AI to make responses more engaging and human-like.
+Quick share - I&apos;ve been using ReplyGuy to help write Twitter/X replies. It uses AI to make responses more engaging and human-like.
 
 If you sign up with my referral link, you get 10 free replies every month (resets monthly), and I get +10 more replies per month too:
 ${displayUrl}
@@ -92,11 +92,11 @@ ${displayUrl}
       },
       {
         platform: 'linkedin',
-        text: `I've been using ReplyGuy to enhance my social media engagement, and it's been a game-changer.
+        text: `I&apos;ve been using ReplyGuy to enhance my social media engagement, and it&apos;s been a game-changer.
 
 This AI-powered tool helps craft thoughtful, engaging replies for Twitter/X in seconds.
 
-If you're looking to save time while maintaining authentic interactions, check it out. Sign up with my referral link for 10 free replies per month (resets monthly):
+If you&apos;re looking to save time while maintaining authentic interactions, check it out. Sign up with my referral link for 10 free replies per month (resets monthly):
 
 ${displayUrl}
 

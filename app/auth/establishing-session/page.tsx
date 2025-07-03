@@ -176,7 +176,7 @@ export default function EstablishingSessionPage() {
         </h2>
         <p className="text-gray-600 mb-2">{status}</p>
         <p className="text-sm text-gray-500">
-          This may take a few seconds. Please don't close this window.
+          This may take a few seconds. Please don&apos;t close this window.
         </p>
       </div>
     </div>

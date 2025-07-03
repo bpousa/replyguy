@@ -21,6 +21,33 @@ export default function LoginPage() {
   const [resendTimer, setResendTimer] = useState(60);
 
   useEffect(() => {
+    // Check for incognito mode / private browsing
+    const checkIncognito = async () => {
+      try {
+        // Test if we can persist data
+        const testKey = 'replyguy_incognito_test';
+        localStorage.setItem(testKey, 'test');
+        localStorage.removeItem(testKey);
+        
+        // Check if FileSystem API quota is restricted (common in incognito)
+        if ('storage' in navigator && 'estimate' in navigator.storage) {
+          const { quota, usage } = await navigator.storage.estimate();
+          // In incognito, quota is often severely limited
+          if (quota && quota < 120 * 1024 * 1024) { // Less than 120MB suggests incognito
+            console.warn('[login] Possible incognito mode detected - limited storage quota');
+            toast.warning(
+              'You may be in private/incognito mode. This can cause issues with email confirmation. Consider using normal browsing mode.',
+              { duration: 8000 }
+            );
+          }
+        }
+      } catch (err) {
+        console.warn('[login] Storage test failed - possible incognito mode');
+      }
+    };
+    
+    checkIncognito();
+    
     // Check for error in URL params
     const params = new URLSearchParams(window.location.search);
     const errorParam = params.get('error');

@@ -102,4 +102,20 @@
       transform: translateY(10px);
     }
   }
+  
+  /* Prevent layout shifts from tooltips */
+  [data-radix-popper-content-wrapper] {
+    pointer-events: none !important;
+  }
+  
+  [data-radix-popper-content-wrapper] > * {
+    pointer-events: auto !important;
+  }
+  
+  /* Ensure tooltips work on mobile */
+  @media (max-width: 768px) {
+    [role="tooltip"] {
+      max-width: calc(100vw - 2rem) !important;
+    }
+  }
 }

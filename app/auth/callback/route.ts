@@ -50,10 +50,18 @@ export async function GET(request: NextRequest) {
   }
 
   // Handle Supabase post-email-verification redirects
-  // When Supabase verifies an email, it redirects back without any auth parameters
-  // but the session should already be established
+  // When Supabase verifies an email, it might redirect back with different parameters
+  // or the session might already be established
   if (!code && !token && !token_hash) {
     console.log('[auth-callback] No auth parameters found, checking for existing session...');
+    
+    // Special handling: If we have error=access_denied, it means the token was invalid
+    if (error === 'access_denied') {
+      console.error('[auth-callback] Access denied - token likely expired or invalid');
+      return NextResponse.redirect(
+        new URL(`/auth/login?error=verification_expired&message=${encodeURIComponent('Your confirmation link has expired. Please sign up again.')}`, requestUrl.origin)
+      );
+    }
     
     // Check for hash fragment parameters (Supabase might pass session info there)
     const hashParams = requestUrl.hash ? new URLSearchParams(requestUrl.hash.substring(1)) : null;
@@ -73,6 +81,10 @@ export async function GET(request: NextRequest) {
       if (sessionError) {
         console.error('[auth-callback] Error getting session:', sessionError);
       }
+      
+      // Also try to get user to see if there's partial data
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      console.log('[auth-callback] User check:', { user: !!user, userError });
       
       if (session && session.user) {
         console.log('[auth-callback] Found existing session after email verification:', session.user.email);

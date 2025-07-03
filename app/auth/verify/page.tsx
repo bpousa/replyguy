@@ -48,19 +48,32 @@ export default function VerifyPage() {
     const verifyAndEstablishSession = async () => {
       // For PKCE token verification, explicitly verify the OTP
       if (token && type) {
-        console.log('[verify] PKCE token detected, verifying OTP...');
+        console.log('[verify] PKCE token detected, verifying OTP...', {
+          tokenLength: token.length,
+          tokenPrefix: token.substring(0, 20),
+          type
+        });
         
         try {
           // Explicitly verify the OTP token
+          // For email confirmation, the type should be 'email' or 'signup'
+          const otpType = type === 'signup' ? 'signup' : type === 'email' ? 'email' : type;
+          console.log('[verify] Attempting OTP verification with type:', otpType);
+          
           const { data, error } = await supabase.auth.verifyOtp({
-            token_hash: token,
-            type: type as any
+            token,
+            type: otpType as any
           });
           
           if (error) {
-            console.error('[verify] OTP verification error:', error);
+            console.error('[verify] OTP verification error:', {
+              error,
+              message: error.message,
+              status: error.status,
+              code: error.code
+            });
             setStatus('error');
-            setMessage('Verification failed. The link may have expired.');
+            setMessage(error.message || 'Verification failed. The link may have expired.');
             setTimeout(() => {
               if (isMounted) router.push('/auth/login?error=verification_failed');
             }, 2000);

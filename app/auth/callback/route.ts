@@ -81,11 +81,11 @@ export async function GET(request: NextRequest) {
         // Determine where to redirect
         let redirectTo = '/dashboard';
         
-        if (plan) {
+        if (plan && plan !== 'free') {
           redirectTo = `/auth/checkout-redirect?plan=${plan}`;
         } else if (next) {
           redirectTo = next;
-        } else if (session.user.user_metadata?.selected_plan) {
+        } else if (session.user.user_metadata?.selected_plan && session.user.user_metadata.selected_plan !== 'free') {
           redirectTo = `/auth/checkout-redirect?plan=${session.user.user_metadata.selected_plan}`;
         }
         

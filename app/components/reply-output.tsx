@@ -27,6 +27,14 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
   const searchParams = useSearchParams();
   const debugMode = searchParams.get('debug') === 'true';
 
+  // Reset feedback state when new reply comes in
+  useEffect(() => {
+    setFeedbackSent(false);
+    setShowFeedback(false);
+    setShowPhraseReport(false);
+    setSelectedText('');
+  }, [reply]);
+
   const handleCopy = async () => {
     if (!reply) return;
     
@@ -129,26 +137,29 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
   }
 
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key="reply"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
-        transition={{ duration: 0.3 }}
-        className="space-y-4"
-      >
+    <div className="w-full overflow-x-hidden">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key="reply"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.3 }}
+          className="space-y-4 max-w-full"
+        >
         {/* Main Reply */}
         <Card className="p-4 sm:p-6 relative overflow-hidden">
           <div className="pr-10 sm:pr-12">
             <p 
-              className="text-base sm:text-lg leading-relaxed break-words select-text whitespace-pre-wrap"
+              className="text-base sm:text-lg leading-relaxed break-words select-text whitespace-pre-wrap selection:bg-purple-200 dark:selection:bg-purple-800 selection:text-purple-900 dark:selection:text-purple-100"
               onMouseUp={handleTextSelection}
               onTouchEnd={handleTextSelection}
               style={{ 
                 wordBreak: 'break-word',
                 overflowWrap: 'break-word',
-                hyphens: 'auto'
+                hyphens: 'auto',
+                WebkitUserSelect: 'text',
+                userSelect: 'text'
               }}
             >
               {reply.reply}
@@ -234,7 +245,7 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
               )}
             </div>
             <p className="text-xs text-gray-400 dark:text-gray-500 px-2 italic">
-              Tip: Select any AI-sounding phrase to report it specifically
+              Tip: Drag to highlight any AI-sounding phrases above to report them specifically
             </p>
           </div>
         )}
@@ -335,7 +346,7 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
                   Sources
                 </h3>
               </div>
-              <div className="space-y-2 overflow-x-auto">
+              <div className="space-y-2 overflow-x-auto max-w-full">
                 {reply.citations
                   .filter(citation => citation && citation.url) // Filter out invalid citations
                   .map((citation, index) => {
@@ -437,6 +448,7 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
         </div>
       </motion.div>
     </AnimatePresence>
+    </div>
   );
 }
 

@@ -49,14 +49,68 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // If no auth parameters but we're coming from Supabase email verification,
-  // redirect to verify page to handle client-side
+  // Handle Supabase post-email-verification redirects
+  // When Supabase verifies an email, it redirects back without any auth parameters
+  // but the session should already be established
   if (!code && !token && !token_hash) {
-    console.log('[auth-callback] No auth parameters, redirecting to verify page...');
-    const verifyUrl = new URL('/auth/verify', requestUrl.origin);
-    if (plan) verifyUrl.searchParams.set('plan', plan);
-    if (next) verifyUrl.searchParams.set('next', next);
-    return NextResponse.redirect(verifyUrl);
+    console.log('[auth-callback] No auth parameters found, checking for existing session...');
+    
+    // Check for hash fragment parameters (Supabase might pass session info there)
+    const hashParams = requestUrl.hash ? new URLSearchParams(requestUrl.hash.substring(1)) : null;
+    console.log('[auth-callback] Hash fragment:', requestUrl.hash);
+    console.log('[auth-callback] Referrer:', request.headers.get('referer'));
+    
+    try {
+      const cookieStore = cookies();
+      const supabase = createServerClient(cookieStore);
+      
+      // Log all cookies to debug
+      console.log('[auth-callback] Available cookies:', cookieStore.getAll().map(c => c.name));
+      
+      // Check if we have a session (this happens after email verification)
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('[auth-callback] Error getting session:', sessionError);
+      }
+      
+      if (session && session.user) {
+        console.log('[auth-callback] Found existing session after email verification:', session.user.email);
+        
+        // Session exists! This is likely from email verification
+        // Determine where to redirect
+        let redirectTo = '/dashboard';
+        
+        if (plan) {
+          redirectTo = `/auth/checkout-redirect?plan=${plan}`;
+        } else if (next) {
+          redirectTo = next;
+        } else if (session.user.user_metadata?.selected_plan) {
+          redirectTo = `/auth/checkout-redirect?plan=${session.user.user_metadata.selected_plan}`;
+        }
+        
+        console.log('[auth-callback] Redirecting authenticated user to:', redirectTo);
+        return NextResponse.redirect(new URL(redirectTo, requestUrl.origin));
+      }
+      
+      // No session found - redirect to verify page to wait for session establishment
+      console.log('[auth-callback] No session found, redirecting to verify page...');
+      const verifyUrl = new URL('/auth/verify', requestUrl.origin);
+      if (plan) verifyUrl.searchParams.set('plan', plan);
+      if (next) verifyUrl.searchParams.set('next', next);
+      
+      // Add a marker to indicate this is from email verification
+      verifyUrl.searchParams.set('from', 'email-callback');
+      
+      return NextResponse.redirect(verifyUrl);
+    } catch (error) {
+      console.error('[auth-callback] Error checking session:', error);
+      // Fall back to verify page
+      const verifyUrl = new URL('/auth/verify', requestUrl.origin);
+      if (plan) verifyUrl.searchParams.set('plan', plan);
+      if (next) verifyUrl.searchParams.set('next', next);
+      return NextResponse.redirect(verifyUrl);
+    }
   }
 
   try {

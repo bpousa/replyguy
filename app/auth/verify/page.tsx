@@ -18,6 +18,7 @@ export default function VerifyPage() {
   const type = searchParams.get('type');
   const plan = searchParams.get('plan');
   const next = searchParams.get('next');
+  const from = searchParams.get('from');
 
   useEffect(() => {
     let isMounted = true;
@@ -83,11 +84,13 @@ export default function VerifyPage() {
       // If no token, check for existing session from regular auth flow
       if (!token || !type) {
         // This might be a redirect from Supabase after email verification
-        // Wait a bit for the session to be established
-        console.log('[verify] No token in URL, checking for session establishment...');
+        // If we're coming from email-callback, be more aggressive about checking
+        const isFromEmailCallback = from === 'email-callback';
+        console.log('[verify] No token in URL, checking for session establishment...', { from, isFromEmailCallback });
         
         let attempts = 0;
-        const maxAttempts = 10;
+        const maxAttempts = isFromEmailCallback ? 20 : 10; // More attempts if from email
+        const checkInterval = isFromEmailCallback ? 250 : 500; // Faster checks if from email
         
         const checkForSession = setInterval(async () => {
           attempts++;
@@ -98,23 +101,28 @@ export default function VerifyPage() {
             console.log('[verify] Session established after Supabase redirect');
             setStatus('success');
             setMessage('Email verified successfully!');
+            // Mark auth flow as complete
+            sessionStorage.removeItem('auth_flow_active');
             setTimeout(() => {
               if (isMounted) {
                 const redirectUrl = plan && plan !== 'free' 
                   ? `/auth/checkout-redirect?plan=${plan}`
-                  : '/dashboard';
+                  : next || '/dashboard';
                 router.push(redirectUrl);
               }
             }, 1000);
           } else if (attempts >= maxAttempts) {
             clearInterval(checkForSession);
+            console.error('[verify] Failed to find session after', attempts, 'attempts');
             setStatus('error');
-            setMessage('Verification failed. Please try again.');
+            setMessage(isFromEmailCallback 
+              ? 'Email verification may have expired. Please try signing up again.'
+              : 'Verification failed. Please try again.');
             setTimeout(() => {
-              if (isMounted) router.push('/auth/login');
+              if (isMounted) router.push('/auth/login?error=verification_failed');
             }, 2000);
           }
-        }, 500);
+        }, checkInterval);
         
         return;
       }

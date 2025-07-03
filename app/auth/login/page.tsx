@@ -25,9 +25,10 @@ export default function LoginPage() {
     const params = new URLSearchParams(window.location.search);
     const errorParam = params.get('error');
     const fromParam = params.get('from');
+    const messageParam = params.get('message');
     
     if (errorParam === 'confirmation_failed') {
-      toast.error('Email confirmation failed. Please try again.');
+      toast.error(messageParam || 'Email confirmation failed. Please try again.');
     } else if (errorParam === 'session_required') {
       if (fromParam === 'checkout') {
         toast.error('Please sign in to complete your purchase.');
@@ -36,6 +37,8 @@ export default function LoginPage() {
       }
     } else if (errorParam === 'session_not_found') {
       toast.error('Session expired. Please sign in again.');
+    } else if (errorParam === 'verification_timeout') {
+      toast.error('Email verification timed out. Please try logging in.');
     }
   }, []);
 

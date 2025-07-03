@@ -14,7 +14,7 @@ import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { AlertCircle, Sparkles, RefreshCw, Lightbulb, Info } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { DetailedUpgradeModal } from './upgrade-modal';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { MobileTooltip, TooltipProvider } from './ui/mobile-friendly-tooltip';
 
 interface ReplyFormProps {
   onSubmit: (input: UserInput) => Promise<void>;
@@ -353,14 +353,15 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Label htmlFor="tone">Tone</Label>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Info className="w-4 h-4 text-gray-400 cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <p>Sets the emotional tone of your reply. Professional for work discussions, casual for friends, humorous for entertainment, etc.</p>
-              </TooltipContent>
-            </Tooltip>
+            <MobileTooltip
+              content="Sets the emotional tone of your reply. Professional for work discussions, casual for friends, humorous for entertainment, etc."
+              side="top"
+              className="max-w-xs"
+            >
+              <button type="button" className="inline-flex items-center justify-center focus:outline-none">
+                <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 transition-colors" />
+              </button>
+            </MobileTooltip>
           </div>
           <Select value={tone} onValueChange={(value) => setTone(value as Tone)}>
             <SelectTrigger id="tone">
@@ -385,14 +386,15 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Label htmlFor="reply-length">Reply Length</Label>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Info className="w-4 h-4 text-gray-400 cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <p>Controls how detailed your reply will be. Short for quick responses, long for in-depth discussions. Each length has different character limits.</p>
-              </TooltipContent>
-            </Tooltip>
+            <MobileTooltip
+              content="Controls how detailed your reply will be. Short for quick responses, long for in-depth discussions. Each length has different character limits."
+              side="top"
+              className="max-w-xs"
+            >
+              <button type="button" className="inline-flex items-center justify-center focus:outline-none">
+                <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 transition-colors" />
+              </button>
+            </MobileTooltip>
           </div>
           <Select value={replyLength} onValueChange={(value) => setReplyLength(value as ReplyLength)}>
             <SelectTrigger id="reply-length">
@@ -419,14 +421,15 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
             <Label htmlFor="research" className="text-base font-medium">
               Include Research
             </Label>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Info className="w-4 h-4 text-gray-400 cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">
-                <p>Adds real-time data and facts to your reply using Perplexity AI. Great for backing up claims with current statistics or recent events.</p>
-              </TooltipContent>
-            </Tooltip>
+            <MobileTooltip
+              content="Adds real-time data and facts to your reply using Perplexity AI. Great for backing up claims with current statistics or recent events."
+              side="top"
+              className="max-w-xs"
+            >
+              <button type="button" className="inline-flex items-center justify-center focus:outline-none">
+                <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 transition-colors" />
+              </button>
+            </MobileTooltip>
           </div>
           <p className="text-sm text-gray-500">
             Use Perplexity to find relevant facts and statistics
@@ -497,14 +500,15 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
               <Label htmlFor="style-matching" className="text-base font-medium">
                 Match Tweet Style
               </Label>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Info className="w-4 h-4 text-gray-400 cursor-help" />
-                </TooltipTrigger>
-                <TooltipContent className="max-w-xs">
-                  <p>Analyzes the original tweet&apos;s writing style (formal/casual, emoji usage, punctuation) and adapts your reply to match. Creates more natural conversations.</p>
-                </TooltipContent>
-              </Tooltip>
+              <MobileTooltip
+                content="Analyzes the original tweet's writing style (formal/casual, emoji usage, punctuation) and adapts your reply to match. Creates more natural conversations."
+                side="top"
+                className="max-w-xs"
+              >
+                <button type="button" className="inline-flex items-center justify-center focus:outline-none">
+                  <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 transition-colors" />
+                </button>
+              </MobileTooltip>
             </div>
             <p className="text-sm text-gray-500">
               Adapt writing style to match the original tweet (50% influence)
@@ -549,14 +553,15 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
                 <Label htmlFor="include-meme" className="text-base font-medium">
                   Include Meme
                 </Label>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="w-4 h-4 text-gray-400 cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <p>Generates a contextually relevant meme using AI. The meme will match your reply&apos;s tone and message. You can provide specific text or let AI choose.</p>
-                  </TooltipContent>
-                </Tooltip>
+                <MobileTooltip
+                  content="Generates a contextually relevant meme using AI. The meme will match your reply's tone and message. You can provide specific text or let AI choose."
+                  side="top"
+                  className="max-w-xs"
+                >
+                  <button type="button" className="inline-flex items-center justify-center focus:outline-none">
+                    <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 transition-colors" />
+                  </button>
+                </MobileTooltip>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 {userPlan.memes_used}/{userPlan.meme_limit} memes used this month

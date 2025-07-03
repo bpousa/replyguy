@@ -71,7 +71,7 @@ export default function SignupPage() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/verify${planId ? `?plan=${planId}` : ''}`,
+          emailRedirectTo: `${window.location.origin}/auth/callback${planId ? `?plan=${planId}` : ''}`,
           data: {
             selected_plan: planId || 'free',
             referral_code: referralCode || ''

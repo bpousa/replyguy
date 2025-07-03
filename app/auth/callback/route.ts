@@ -33,6 +33,15 @@ export async function GET(request: NextRequest) {
   // Handle Supabase auth errors
   if (error) {
     console.error('[auth-callback] Auth error:', error, error_description);
+    
+    // Special handling for email confirmation errors
+    if (error === 'server_error' && error_description?.includes('Error confirming user')) {
+      console.error('[auth-callback] Email confirmation failed - likely due to expired or invalid token');
+      return NextResponse.redirect(
+        new URL(`/auth/login?error=confirmation_failed&message=${encodeURIComponent('Email confirmation failed. Please try signing up again or contact support.')}`, requestUrl.origin)
+      );
+    }
+    
     return NextResponse.redirect(
       new URL(`/auth/error?message=${encodeURIComponent(error_description || error)}`, requestUrl.origin)
     );

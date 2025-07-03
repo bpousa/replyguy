@@ -78,7 +78,8 @@ export default function DashboardLayout({
             }
             
             console.error('[dashboard] No session found after all retries');
-            router.push('/auth/login?error=session_timeout');
+            // Instead of going to login, go to establishing-session to try harder
+            router.push('/auth/establishing-session?from=dashboard-timeout');
             return;
           } else {
             // Not in auth flow, do a quick retry then redirect

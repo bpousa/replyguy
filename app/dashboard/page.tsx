@@ -64,31 +64,12 @@ export default function HomePage() {
   useEffect(() => {
     const loadUserData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        // The layout will handle redirecting if no user
+        return;
+      }
       
       setUser(user);
-      
-      // Check if plan was passed in URL (from email confirmation)
-      const planFromUrl = searchParams.get('plan');
-      const selectedPlan = planFromUrl || user.user_metadata?.selected_plan;
-      
-      // Check if user has a selected plan that requires payment
-      if (selectedPlan && selectedPlan !== 'free') {
-        // Check if they already have an active subscription
-        const { data: existingSub } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('status', 'active')
-          .maybeSingle();
-        
-        // If no active subscription, redirect to checkout
-        if (!existingSub) {
-          console.log('[dashboard] User selected paid plan but no active subscription, redirecting to checkout');
-          window.location.href = `/auth/checkout-redirect?plan=${selectedPlan}`;
-          return;
-        }
-      }
       
       // Get user's settings
       const { data: userData } = await supabase

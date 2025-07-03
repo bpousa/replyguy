@@ -9,6 +9,11 @@ export async function middleware(request: NextRequest) {
   console.log(`[middleware] Full URL: ${request.url}`);
   console.log(`[middleware] Referrer: ${request.headers.get('referer')}`);
   
+  // Allow auth pages without cookies
+  if (pathname.startsWith('/auth/')) {
+    return NextResponse.next();
+  }
+  
   // Check for auth cookie on API routes (except auth-related ones)
   if (pathname.startsWith('/api/') && 
       !pathname.startsWith('/api/auth/') && 

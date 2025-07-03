@@ -11,9 +11,10 @@ import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Switch } from './ui/switch';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
-import { AlertCircle, Sparkles, RefreshCw, Lightbulb } from 'lucide-react';
+import { AlertCircle, Sparkles, RefreshCw, Lightbulb, Info } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { DetailedUpgradeModal } from './upgrade-modal';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 interface ReplyFormProps {
   onSubmit: (input: UserInput) => Promise<void>;
@@ -233,8 +234,9 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
   };
 
   return (
-    <>
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <TooltipProvider>
+      <>
+      <form onSubmit={handleSubmit} className="space-y-6">
       {/* Tweet/X Post Input */}
       <div className="space-y-2">
         <Label htmlFor="tweet">Tweet/X Post</Label>
@@ -349,7 +351,17 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
 
         {/* Tone */}
         <div className="space-y-2">
-          <Label htmlFor="tone">Tone</Label>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="tone">Tone</Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="w-4 h-4 text-gray-400 cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p>Sets the emotional tone of your reply. Professional for work discussions, casual for friends, humorous for entertainment, etc.</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
           <Select value={tone} onValueChange={(value) => setTone(value as Tone)}>
             <SelectTrigger id="tone">
               <SelectValue />
@@ -371,7 +383,17 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
       {/* Reply Length - Only show if plan supports it */}
       {userPlan.enable_long_replies && availableReplyLengths.length > 1 && (
         <div className="space-y-2">
-          <Label htmlFor="reply-length">Reply Length</Label>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="reply-length">Reply Length</Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="w-4 h-4 text-gray-400 cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p>Controls how detailed your reply will be. Short for quick responses, long for in-depth discussions. Each length has different character limits.</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
           <Select value={replyLength} onValueChange={(value) => setReplyLength(value as ReplyLength)}>
             <SelectTrigger id="reply-length">
               <SelectValue />
@@ -393,9 +415,19 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
       {/* Research Toggle */}
       <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
         <div className="space-y-1">
-          <Label htmlFor="research" className="text-base font-medium">
-            Include Research
-          </Label>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="research" className="text-base font-medium">
+              Include Research
+            </Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="w-4 h-4 text-gray-400 cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p>Adds real-time data and facts to your reply using Perplexity AI. Great for backing up claims with current statistics or recent events.</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
           <p className="text-sm text-gray-500">
             Use Perplexity to find relevant facts and statistics
           </p>
@@ -461,9 +493,19 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
       {userPlan.enable_style_matching && (
         <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <div className="space-y-1">
-            <Label htmlFor="style-matching" className="text-base font-medium">
-              Match Tweet Style
-            </Label>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="style-matching" className="text-base font-medium">
+                Match Tweet Style
+              </Label>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p>Analyzes the original tweet's writing style (formal/casual, emoji usage, punctuation) and adapts your reply to match. Creates more natural conversations.</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <p className="text-sm text-gray-500">
               Adapt writing style to match the original tweet (50% influence)
             </p>
@@ -503,9 +545,19 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
         <div className="space-y-3">
           <div className="flex items-center justify-between p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
             <div className="space-y-1">
-              <Label htmlFor="include-meme" className="text-base font-medium">
-                Include Meme
-              </Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="include-meme" className="text-base font-medium">
+                  Include Meme
+                </Label>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="w-4 h-4 text-gray-400 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>Generates a contextually relevant meme using AI. The meme will match your reply's tone and message. You can provide specific text or let AI choose.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 {userPlan.memes_used}/{userPlan.meme_limit} memes used this month
               </p>
@@ -639,5 +691,6 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
       }
     />
     </>
+    </TooltipProvider>
   );
 }

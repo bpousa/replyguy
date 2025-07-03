@@ -131,16 +131,14 @@ export async function GET(request: NextRequest) {
         return response;
       }
       
-      // No session found - redirect to verify page to wait for session establishment
-      console.log('[auth-callback] No session found, redirecting to verify page...');
-      const verifyUrl = new URL('/auth/verify', requestUrl.origin);
-      if (plan) verifyUrl.searchParams.set('plan', plan);
-      if (next) verifyUrl.searchParams.set('next', next);
+      // No session found - redirect to establishing-session page
+      console.log('[auth-callback] No session found, redirecting to establishing-session page...');
+      const establishUrl = new URL('/auth/establishing-session', requestUrl.origin);
+      if (plan) establishUrl.searchParams.set('plan', plan);
+      if (next) establishUrl.searchParams.set('next', next);
+      establishUrl.searchParams.set('from', 'email-callback');
       
-      // Add a marker to indicate this is from email verification
-      verifyUrl.searchParams.set('from', 'email-callback');
-      
-      return NextResponse.redirect(verifyUrl);
+      return NextResponse.redirect(establishUrl);
     } catch (error) {
       console.error('[auth-callback] Error checking session:', error);
       // Fall back to verify page
@@ -182,15 +180,14 @@ export async function GET(request: NextRequest) {
         plan 
       });
       
-      // Build the verification URL with all necessary parameters
-      const verifyUrl = new URL('/auth/verify', requestUrl.origin);
-      if (actualToken) verifyUrl.searchParams.set('token', actualToken);
-      if (type) verifyUrl.searchParams.set('type', type || 'signup'); // Default to signup if no type
-      if (plan) verifyUrl.searchParams.set('plan', plan);
-      if (next) verifyUrl.searchParams.set('next', next);
+      // Redirect to establishing-session page to handle PKCE tokens
+      const establishUrl = new URL('/auth/establishing-session', requestUrl.origin);
+      establishUrl.searchParams.set('from', 'pkce-token');
+      if (plan) establishUrl.searchParams.set('plan', plan);
+      if (next) establishUrl.searchParams.set('next', next);
       
-      // Redirect to client-side verification page
-      return NextResponse.redirect(verifyUrl);
+      // The establishing-session page will handle the PKCE token verification
+      return NextResponse.redirect(establishUrl);
     }
     
     if (!session) {

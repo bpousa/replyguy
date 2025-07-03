@@ -54,6 +54,8 @@ export async function GET(request: NextRequest) {
   // or the session might already be established
   if (!code && !token && !token_hash) {
     console.log('[auth-callback] No auth parameters found, checking for existing session...');
+    console.log('[auth-callback] Full URL:', request.url);
+    console.log('[auth-callback] Referrer:', request.headers.get('referer'));
     
     // Special handling: If we have error=access_denied, it means the token was invalid
     if (error === 'access_denied') {

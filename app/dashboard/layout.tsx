@@ -35,7 +35,16 @@ export default function DashboardLayout({
         // Check if we're in an active auth flow
         const authFlowComplete = document.cookie.includes('auth_flow_complete=true');
         const sessionStorageFlow = sessionStorage.getItem('auth_flow_active');
-        const isAuthFlow = authFlowComplete || sessionStorageFlow === 'true';
+        
+        // Check if Supabase redirected here with session info in URL
+        const urlHash = window.location.hash;
+        const hasSupabaseSession = urlHash.includes('access_token') || urlHash.includes('refresh_token');
+        
+        const isAuthFlow = authFlowComplete || sessionStorageFlow === 'true' || hasSupabaseSession;
+        
+        if (hasSupabaseSession) {
+          console.log('[dashboard] Detected Supabase session in URL hash');
+        }
         
         // First check if we have a session
         const { data: { session } } = await supabase.auth.getSession();

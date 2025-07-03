@@ -79,8 +79,24 @@ export async function middleware(request: NextRequest) {
       return cookie.name.includes('sb-') && cookie.name.includes('-auth-token');
     });
     
+    // Check if this might be a redirect from email confirmation
+    // Supabase might include session info in URL hash or as a referrer
+    const referrer = request.headers.get('referer');
+    const isFromSupabase = referrer && referrer.includes('supabase.co');
+    const hasHashFragment = request.url.includes('#');
+    
     if (!hasAuthCookie) {
       console.log(`[middleware] No auth cookie for protected page: ${pathname}`);
+      console.log(`[middleware] Referrer: ${referrer}`);
+      console.log(`[middleware] Has hash fragment: ${hasHashFragment}`);
+      
+      // If coming from Supabase, allow the request to proceed
+      // The client-side code will handle session establishment
+      if (isFromSupabase || hasHashFragment) {
+        console.log(`[middleware] Allowing request from Supabase email confirmation`);
+        return NextResponse.next();
+      }
+      
       const signInUrl = new URL('/auth/login', request.url);
       signInUrl.searchParams.set('next', pathname);
       return NextResponse.redirect(signInUrl);

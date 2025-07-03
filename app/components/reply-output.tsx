@@ -338,7 +338,7 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
           return null;
         })()}
         {reply.citations && reply.citations.length > 0 && (
-          <Card className="p-4 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 overflow-hidden">
+          <Card className="p-4 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <Link className="w-4 h-4 text-amber-700 dark:text-amber-300 flex-shrink-0" />
@@ -346,7 +346,7 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
                   Sources
                 </h3>
               </div>
-              <div className="space-y-2 overflow-x-auto max-w-full">
+              <div className="space-y-2 -mx-2 px-2 overflow-x-auto max-w-full">
                 {reply.citations
                   .filter(citation => citation && citation.url) // Filter out invalid citations
                   .map((citation, index) => {
@@ -382,11 +382,11 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
                       className="block p-3 rounded-lg bg-amber-100/50 dark:bg-amber-800/20 hover:bg-amber-100 dark:hover:bg-amber-800/30 transition-colors"
                     >
                       <div className="flex items-start justify-between gap-2 min-w-0">
-                        <div className="flex-1 min-w-0 overflow-hidden">
+                        <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-amber-900 dark:text-amber-100 truncate">
                             {displayTitle || 'Source'}
                           </p>
-                          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1 break-all">
+                          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1 break-words overflow-hidden">
                             {citation.url}
                           </p>
                         </div>

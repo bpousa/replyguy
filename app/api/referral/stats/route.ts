@@ -17,11 +17,20 @@ export async function GET(req: NextRequest) {
       );
     }
     
-    // Get user's referral code and subscription info
+    // Get user's referral code, bonuses, and subscription info
     const { data: userData, error: userError } = await supabase
       .from('users')
-      .select('referral_code, subscription_tier')
+      .select(`
+        referral_code,
+        bonus_replies,
+        bonus_research,
+        subscriptions!inner (
+          plan_id,
+          status
+        )
+      `)
       .eq('id', user.id)
+      .eq('subscriptions.status', 'active')
       .single();
       
     if (userError) {
@@ -32,12 +41,7 @@ export async function GET(req: NextRequest) {
       );
     }
     
-    // Get referral bonuses
-    const { data: bonuses, error: bonusError } = await supabase
-      .from('referral_bonuses')
-      .select('bonus_replies, bonus_research, total_referrals')
-      .eq('user_id', user.id)
-      .single();
+    const subscription_tier = userData.subscriptions?.[0]?.plan_id || 'free';
     
     // Get list of successful referrals
     const { data: referrals, error: referralError } = await supabase
@@ -71,16 +75,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       referralCode: userData.referral_code,
       referralUrl: userData.referral_code ? `${appUrl}/auth/signup?ref=${userData.referral_code}` : null,
-      isFreeTier: userData.subscription_tier === 'free' || !userData.subscription_tier,
-      isPaidTier: isPaidTier(userData.subscription_tier),
+      isFreeTier: subscription_tier === 'free',
+      isPaidTier: isPaidTier(subscription_tier),
       stats: {
-        totalReferrals: bonuses?.total_referrals || 0,
+        totalReferrals: completedReferrals.length,
         completedReferrals: completedReferrals.length,
         pendingReferrals: pendingReferrals.length,
-        bonusReplies: bonuses?.bonus_replies || 0,
-        bonusResearch: bonuses?.bonus_research || 0,
-        maxBonusReplies: isPaidTier(userData.subscription_tier) ? 100 : 40, // Higher cap for paid users
-        maxBonusResearch: isPaidTier(userData.subscription_tier) ? 10 : 4  // Higher cap for paid users
+        bonusReplies: userData.bonus_replies || 0,
+        bonusResearch: userData.bonus_research || 0,
+        maxBonusReplies: isPaidTier(subscription_tier) ? 100 : 40, // Higher cap for paid users
+        maxBonusResearch: isPaidTier(subscription_tier) ? 10 : 4  // Higher cap for paid users
       },
       referrals: referrals || []
     });

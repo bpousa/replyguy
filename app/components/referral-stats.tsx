@@ -89,11 +89,16 @@ export function ReferralStats({ isFreeTier }: ReferralStatsProps) {
           <div>
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <Gift className="h-5 w-5 text-purple-600" />
-              Invite Friends, Get More Replies
+              Get More Free Replies Every Month!
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Earn +10 replies per month and +1 research credit per month for each friend who signs up
-              {isPaidTier && <span className="text-purple-600 font-medium"> • Premium members can refer up to 10 friends!</span>}
+              You currently get <span className="font-semibold text-gray-900 dark:text-gray-100">10 free replies per month</span>. 
+              For each friend who joins (free or paid), you get <span className="font-semibold text-green-600">+10 more replies every month</span>!
+              {isPaidTier ? (
+                <span className="block text-purple-600 font-medium mt-1">Premium perk: You can refer up to 10 friends (100 bonus replies/month)!</span>
+              ) : (
+                <span className="block text-gray-500 dark:text-gray-400 text-xs mt-1">Free users can refer up to 4 friends for 40 bonus replies/month</span>
+              )}
             </p>
           </div>
           <Button
@@ -104,6 +109,21 @@ export function ReferralStats({ isFreeTier }: ReferralStatsProps) {
             <Share2 className="h-4 w-4 mr-2" />
             Share
           </Button>
+        </div>
+        
+        {/* Current Status Box */}
+        <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg mb-4 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <span className="text-gray-700 dark:text-gray-300">Your monthly replies: </span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100">
+                {10 + (stats?.bonusReplies || 0)} total
+              </span>
+              <span className="text-gray-600 dark:text-gray-400 text-xs block">
+                (10 base + {stats?.bonusReplies || 0} from referrals)
+              </span>
+            </div>
+          </div>
         </div>
         
         {/* Stats Grid */}
@@ -122,7 +142,7 @@ export function ReferralStats({ isFreeTier }: ReferralStatsProps) {
               {stats?.bonusReplies || 0}
             </div>
             <div className="text-xs text-gray-600 dark:text-gray-400">
-              Bonus Replies
+              Extra Replies/Month
             </div>
           </div>
           
@@ -140,7 +160,7 @@ export function ReferralStats({ isFreeTier }: ReferralStatsProps) {
               {remainingReplies}
             </div>
             <div className="text-xs text-gray-600 dark:text-gray-400">
-              Can Earn
+              More Available
             </div>
           </div>
         </div>
@@ -184,10 +204,10 @@ export function ReferralStats({ isFreeTier }: ReferralStatsProps) {
             <div className="flex items-center gap-3">
               <TrendingUp className="h-5 w-5 text-purple-600 flex-shrink-0" />
               <div className="flex-1">
-                <p className="text-sm font-medium">You can earn {remainingReplies} more replies!</p>
+                <p className="text-sm font-medium">You can earn {remainingReplies} more replies per month!</p>
                 <p className="text-xs text-gray-600 dark:text-gray-400">
-                  Invite {Math.ceil(remainingReplies / 10)} more friends to maximize your bonus
-                  {isPaidTier && <span className="block text-purple-600 font-medium mt-1">Premium perk: You get 2.5x more referral capacity!</span>}
+                  Share with {Math.ceil(remainingReplies / 10)} more {Math.ceil(remainingReplies / 10) === 1 ? 'friend' : 'friends'} to get up to {isFreeTier ? '50' : '110'} replies every month
+                  {isPaidTier && <span className="block text-purple-600 font-medium mt-1">Premium perk: 10 friend limit vs 4 for free users!</span>}
                 </p>
               </div>
               <Button
@@ -206,7 +226,7 @@ export function ReferralStats({ isFreeTier }: ReferralStatsProps) {
               <div>
                 <p className="text-sm font-medium">🎉 Amazing! You&apos;ve maxed out your referral bonuses!</p>
                 <p className="text-xs text-gray-600 dark:text-gray-400">
-                  You&apos;re getting 50 replies per month (10 base + 40 bonus)
+                  You now get {isFreeTier ? '50' : '110'} replies every month ({isFreeTier ? '10 base + 40 bonus' : '10 base + 100 bonus'})
                 </p>
               </div>
             </div>

@@ -109,20 +109,23 @@ export async function POST(req: NextRequest) {
 
     // Call Claude 3.5 Sonnet for final generation
     // Calculate appropriate max_tokens based on character limit
-    // More accurate estimation: 1 token ≈ 3-4 characters for English text
-    // Adding buffer to ensure we can reach character limits
+    // More conservative estimation: 1 token ≈ 2 characters for safety
+    // Adding extra buffer when research is included
     let maxTokens;
+    const hasResearch = needsResearch && researchData;
+    const researchBuffer = hasResearch ? 1.2 : 1.0; // 20% extra for research complexity
+    
     if (charLimit >= 2000) {
-      maxTokens = 800; // Extra-long replies (2000 chars / 2.5 chars per token)
+      maxTokens = Math.ceil(1000 * researchBuffer); // 2000 chars / 2 chars per token
     } else if (charLimit >= 1000) {
-      maxTokens = 400; // Long replies (1000 chars / 2.5 chars per token)
+      maxTokens = Math.ceil(600 * researchBuffer); // 1000 chars / 2 chars per token + buffer
     } else if (charLimit >= 560) {
-      maxTokens = 225; // Medium replies (560 chars / 2.5 chars per token)
+      maxTokens = Math.ceil(300 * researchBuffer); // 560 chars / 2 chars per token + buffer
     } else {
-      maxTokens = 120; // Short replies (280 chars / 2.3 chars per token)
+      maxTokens = Math.ceil(150 * researchBuffer); // 280 chars / 2 chars per token + buffer
     }
     
-    console.log(`\n🔢 Token calculation: charLimit=${charLimit}, maxTokens=${maxTokens}`);
+    console.log(`\n🔢 Token calculation: charLimit=${charLimit}, maxTokens=${maxTokens}, hasResearch=${hasResearch}`);
     
     const message = await anthropic.messages.create({
       model: 'claude-3-5-sonnet-20241022',

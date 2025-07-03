@@ -192,16 +192,17 @@ export async function GET(request: NextRequest) {
     // Determine where to redirect
     let redirectTo = '/dashboard'; // Default destination
     
-    if (plan) {
-      // User selected a plan during signup
+    if (plan && plan !== 'free') {
+      // User selected a paid plan during signup
       redirectTo = `/auth/checkout-redirect?plan=${plan}`;
     } else if (next) {
       // Explicit next destination
       redirectTo = next;
-    } else if (user?.user_metadata?.selected_plan) {
-      // Plan was stored in user metadata during signup
+    } else if (user?.user_metadata?.selected_plan && user.user_metadata.selected_plan !== 'free') {
+      // Paid plan was stored in user metadata during signup
       redirectTo = `/auth/checkout-redirect?plan=${user.user_metadata.selected_plan}`;
     }
+    // Free plans go straight to dashboard
     
     console.log('[auth-callback] Redirecting to:', redirectTo);
     

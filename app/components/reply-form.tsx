@@ -502,7 +502,7 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
                   <Info className="w-4 h-4 text-gray-400 cursor-help" />
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs">
-                  <p>Analyzes the original tweet's writing style (formal/casual, emoji usage, punctuation) and adapts your reply to match. Creates more natural conversations.</p>
+                  <p>Analyzes the original tweet&apos;s writing style (formal/casual, emoji usage, punctuation) and adapts your reply to match. Creates more natural conversations.</p>
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -554,7 +554,7 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
                     <Info className="w-4 h-4 text-gray-400 cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    <p>Generates a contextually relevant meme using AI. The meme will match your reply's tone and message. You can provide specific text or let AI choose.</p>
+                    <p>Generates a contextually relevant meme using AI. The meme will match your reply&apos;s tone and message. You can provide specific text or let AI choose.</p>
                   </TooltipContent>
                 </Tooltip>
               </div>

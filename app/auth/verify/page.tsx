@@ -55,42 +55,40 @@ export default function VerifyPage() {
         });
         
         try {
-          // Explicitly verify the OTP token
-          // For email confirmation, the type should be 'email' or 'signup'
-          const otpType = type === 'signup' ? 'signup' : type === 'email' ? 'email' : type;
-          console.log('[verify] Attempting OTP verification with type:', otpType);
+          // For PKCE tokens, we should not use verifyOtp
+          // Instead, let Supabase handle it automatically via the URL
+          console.log('[verify] PKCE token in URL, waiting for Supabase to process...');
           
-          const { data, error } = await supabase.auth.verifyOtp({
-            token,
-            type: otpType as any
-          });
+          // The token should be automatically processed by Supabase client
+          // Wait a moment for it to process
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Check if session was established
+          const { data: { session }, error } = await supabase.auth.getSession();
           
           if (error) {
-            console.error('[verify] OTP verification error:', {
-              error,
-              message: error.message,
-              status: error.status,
-              code: error.code
-            });
-            setStatus('error');
-            setMessage(error.message || 'Verification failed. The link may have expired.');
-            setTimeout(() => {
-              if (isMounted) router.push('/auth/login?error=verification_failed');
-            }, 2000);
+            throw error;
+          }
+          
+          if (session) {
+            console.log('[verify] Session established after PKCE processing:', session.user?.email);
+            // Let the auth state listener handle the redirect
             return;
           }
           
-          if (data.session) {
-            console.log('[verify] OTP verified successfully, session established:', data.user?.email);
-            // Session is established, the auth state change listener will handle redirect
-            return;
-          }
+          // If no session yet, continue to wait below
+          console.log('[verify] No session yet after PKCE processing, will continue checking...');
         } catch (err) {
-          console.error('[verify] Unexpected error during OTP verification:', err);
+          console.error('[verify] Error during PKCE processing:', err);
+          setStatus('error');
+          setMessage('Verification failed. Please try again.');
+          setTimeout(() => {
+            if (isMounted) router.push('/auth/login?error=verification_failed');
+          }, 2000);
+          return;
         }
         
-        // If OTP verification didn't work, continue to wait for session
-        console.log('[verify] OTP verification completed, waiting for session...');
+        // Continue to polling logic below
         return;
       }
       

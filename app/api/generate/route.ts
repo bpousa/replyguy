@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
     // More conservative estimation: 1 token ≈ 2 characters for safety
     // Adding extra buffer when research is included
     let maxTokens;
-    const hasResearch = needsResearch && researchData;
+    const hasResearch = !!validated.perplexityData;
     const researchBuffer = hasResearch ? 1.2 : 1.0; // 20% extra for research complexity
     
     if (charLimit >= 2000) {

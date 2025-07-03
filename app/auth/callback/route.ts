@@ -55,6 +55,7 @@ export async function GET(request: NextRequest) {
       
       session = data.session;
       user = data.user;
+    }
     
     if (!session) {
       console.error('[auth-callback] No session created or found');

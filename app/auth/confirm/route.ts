@@ -1,4 +1,4 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@/app/lib/auth';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
@@ -14,7 +14,8 @@ export async function GET(request: Request) {
     );
   }
 
-  const supabase = createRouteHandlerClient({ cookies });
+  const cookieStore = cookies();
+  const supabase = createServerClient(cookieStore);
 
   try {
     // Handle email confirmation

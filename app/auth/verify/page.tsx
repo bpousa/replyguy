@@ -60,41 +60,60 @@ export default function VerifyPage() {
         });
         
         try {
-          // For PKCE tokens, we should not use verifyOtp
-          // Instead, let Supabase handle it automatically via the URL
-          console.log('[verify] PKCE token in URL, waiting for Supabase to process...');
+          // Verify the OTP token with Supabase
+          console.log('[verify] Verifying OTP token with Supabase...');
+          // For PKCE tokens from email, use 'token_hash'
+          const { data, error: verifyError } = await supabase.auth.verifyOtp({
+            token_hash: token,
+            type: type as 'signup' | 'recovery' | 'invite' | 'magiclink' | 'email_change' | 'email'
+          });
           
-          // The token should be automatically processed by Supabase client
-          // Wait a moment for it to process
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          // Check if session was established
-          const { data: { session }, error } = await supabase.auth.getSession();
-          
-          if (error) {
-            throw error;
+          if (verifyError) {
+            console.error('[verify] OTP verification error:', verifyError);
+            throw verifyError;
           }
           
-          if (session) {
-            console.log('[verify] Session established after PKCE processing:', session.user?.email);
-            // Let the auth state listener handle the redirect
-            return;
+          if (data?.user) {
+            console.log('[verify] OTP verified successfully, user:', data.user.email);
+            
+            // Check if we now have a session
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            
+            if (sessionError) {
+              console.error('[verify] Error getting session after OTP verification:', sessionError);
+              throw sessionError;
+            }
+            
+            if (session) {
+              console.log('[verify] Session established after OTP verification:', session.user?.email);
+              // Let the auth state listener handle the redirect
+              return;
+            } else {
+              console.log('[verify] No session immediately after OTP verification, will continue checking...');
+              // Continue to the polling logic below
+            }
+          } else {
+            console.error('[verify] OTP verification succeeded but no user data returned');
+            throw new Error('Verification succeeded but no user data returned');
           }
-          
-          // If no session yet, continue to wait below
-          console.log('[verify] No session yet after PKCE processing, will continue checking...');
-        } catch (err) {
-          console.error('[verify] Error during PKCE processing:', err);
+        } catch (err: any) {
+          console.error('[verify] Error during OTP verification:', err);
           setStatus('error');
-          setMessage('Verification failed. Please try again.');
+          
+          // Provide specific error messages based on the error
+          let errorMessage = 'Verification failed. Please try again.';
+          if (err.message?.includes('expired') || err.code === 'otp_expired') {
+            errorMessage = 'This confirmation link has expired. Please sign up again.';
+          } else if (err.message?.includes('invalid') || err.code === 'invalid_request') {
+            errorMessage = 'This confirmation link is invalid. Please sign up again.';
+          }
+          
+          setMessage(errorMessage);
           setTimeout(() => {
             if (isMounted) router.push('/auth/login?error=verification_failed');
-          }, 2000);
+          }, 3000);
           return;
         }
-        
-        // Continue to polling logic below
-        return;
       }
       
       // Wait a moment for Supabase to process any auth data
@@ -124,157 +143,59 @@ export default function VerifyPage() {
         return;
       }
       
-      // If no token, check for existing session from regular auth flow
-      if (!token || !type) {
-        // This might be a redirect from Supabase after email verification
-        // If we're coming from email-callback, be more aggressive about checking
-        const isFromEmailCallback = from === 'email-callback';
-        console.log('[verify] No token in URL, checking for session establishment...', { from, isFromEmailCallback });
-        
-        let attempts = 0;
-        const maxAttempts = isFromEmailCallback ? 20 : 10; // More attempts if from email
-        const checkInterval = isFromEmailCallback ? 250 : 500; // Faster checks if from email
-        
-        const checkForSession = setInterval(async () => {
-          attempts++;
-          const { data: { session } } = await supabase.auth.getSession();
-          
-          if (session) {
-            clearInterval(checkForSession);
-            console.log('[verify] Session established after Supabase redirect');
-            setStatus('success');
-            setMessage('Email verified successfully!');
-            // Mark auth flow as complete
-            sessionStorage.removeItem('auth_flow_active');
-            setTimeout(() => {
-              if (isMounted) {
-                const redirectUrl = plan && plan !== 'free' 
-                  ? `/auth/checkout-redirect?plan=${plan}`
-                  : next || '/dashboard';
-                router.push(redirectUrl);
-              }
-            }, 1000);
-          } else if (attempts >= maxAttempts) {
-            clearInterval(checkForSession);
-            console.error('[verify] Failed to find session after', attempts, 'attempts');
-            setStatus('error');
-            setMessage(isFromEmailCallback 
-              ? 'Email verification may have expired. Please try signing up again.'
-              : 'Verification failed. Please try again.');
-            setTimeout(() => {
-              if (isMounted) router.push('/auth/login?error=verification_failed');
-            }, 2000);
-          }
-        }, checkInterval);
-        
-        return;
-      }
-
-      // This code path should not be reached anymore since we handle PKCE tokens above
-      console.error('[verify] Unexpected: PKCE token present but not handled above');
+      // Continue with session checking whether we came from token verification or not
+      console.log('[verify] Starting session check...', { hasToken: !!token, from });
       
-      // Mark that we're in a valid auth flow
-      sessionStorage.setItem('auth_flow_active', 'true');
+      // This handles both token verification follow-up and regular session establishment
+      // If we're coming from email-callback or just verified a token, be more aggressive about checking
+      const isFromEmailCallback = from === 'email-callback';
+      const isAfterTokenVerification = !!token && !!type;
+      const needsAggressiveChecking = isFromEmailCallback || isAfterTokenVerification;
+      
       let attempts = 0;
-      const maxAttempts = 30; // 15 seconds total
+      const maxAttempts = needsAggressiveChecking ? 30 : 10; // More attempts if we expect a session
+      const checkInterval = needsAggressiveChecking ? 250 : 500; // Faster checks if we expect a session
       
-      const checkSession = async (): Promise<boolean> => {
+      const checkForSession = setInterval(async () => {
         attempts++;
-        console.log(`[verify] Checking for session (attempt ${attempts}/${maxAttempts})...`);
+        const { data: { session } } = await supabase.auth.getSession();
         
-        try {
-          // Get current session
-          const { data: { session }, error } = await supabase.auth.getSession();
-          
-          if (error) {
-            console.error('[verify] Session check error:', error);
-            return false;
-          }
-          
-          if (session) {
-            console.log('[verify] Session established successfully!', session.user.email);
-            return true;
-          }
-          
-          // On early attempts, try to refresh
-          if (attempts <= 3) {
-            console.log('[verify] No session yet, attempting refresh...');
-            const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
-            
-            if (refreshError) {
-              console.log('[verify] Refresh error:', refreshError.message);
-            } else if (refreshedSession) {
-              console.log('[verify] Session obtained via refresh!');
-              return true;
-            }
-          }
-          
-          return false;
-        } catch (error) {
-          console.error('[verify] Unexpected error:', error);
-          return false;
-        }
-      };
-      
-      // Initial check
-      const hasSession = await checkSession();
-      
-      if (hasSession) {
-        if (!isMounted) return;
-        setStatus('success');
-        setMessage('Email verified successfully!');
-        
-        setTimeout(() => {
-          if (!isMounted) return;
-          const redirectUrl = plan && plan !== 'free' 
-            ? `/auth/checkout-redirect?plan=${plan}`
-            : next || '/dashboard';
-          
-          console.log('[verify] Redirecting to:', redirectUrl);
-          router.push(redirectUrl);
-        }, 1000);
-        
-        return;
-      }
-      
-      // Set up interval to keep checking
-      checkIntervalRef.current = setInterval(async () => {
-        if (attempts >= maxAttempts) {
-          if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
-          if (!isMounted) return;
-          
-          console.error('[verify] Failed to establish session after all attempts');
-          setStatus('error');
-          setMessage('Verification timed out. Please try logging in.');
-          
-          setTimeout(() => {
-            if (!isMounted) return;
-            router.push('/auth/login?error=verification_timeout');
-          }, 2000);
-          
-          return;
-        }
-        
-        const hasSession = await checkSession();
-        
-        if (hasSession) {
-          if (checkIntervalRef.current) clearInterval(checkIntervalRef.current);
-          if (!isMounted) return;
-          
+        if (session) {
+          clearInterval(checkForSession);
+          console.log('[verify] Session established!', { attempts, email: session.user?.email });
           setStatus('success');
           setMessage('Email verified successfully!');
-          
+          // Mark auth flow as complete
+          sessionStorage.removeItem('auth_flow_active');
           setTimeout(() => {
-            if (!isMounted) return;
-            const redirectUrl = plan && plan !== 'free' 
-              ? `/auth/checkout-redirect?plan=${plan}`
-              : next || '/dashboard';
-            
-            console.log('[verify] Redirecting to:', redirectUrl);
-            router.push(redirectUrl);
+            if (isMounted) {
+              const redirectUrl = plan && plan !== 'free' 
+                ? `/auth/checkout-redirect?plan=${plan}`
+                : next || '/dashboard';
+              router.push(redirectUrl);
+            }
           }, 1000);
+        } else if (attempts >= maxAttempts) {
+          clearInterval(checkForSession);
+          console.error('[verify] Failed to find session after', attempts, 'attempts');
+          setStatus('error');
+          
+          let errorMessage = 'Verification failed. Please try again.';
+          if (isFromEmailCallback) {
+            errorMessage = 'Email verification may have expired. Please try signing up again.';
+          } else if (isAfterTokenVerification) {
+            errorMessage = 'Email verified but session could not be established. Please try logging in.';
+          }
+          
+          setMessage(errorMessage);
+          setTimeout(() => {
+            if (isMounted) router.push('/auth/login?error=verification_failed');
+          }, 2000);
+        } else if (attempts % 5 === 0) {
+          console.log(`[verify] Still checking for session... (attempt ${attempts}/${maxAttempts})`);
         }
-      }, 500);
+      }, checkInterval);
+
     };
     
     verifyAndEstablishSession();

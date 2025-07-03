@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   const code = requestUrl.searchParams.get('code');
   const token = requestUrl.searchParams.get('token');
   const token_hash = requestUrl.searchParams.get('token_hash');
-  const type = requestUrl.searchParams.get('type');
+  const type = requestUrl.searchParams.get('type') || 'signup'; // Default to signup if not specified
   const next = requestUrl.searchParams.get('next');
   const plan = requestUrl.searchParams.get('plan');
   const error = requestUrl.searchParams.get('error');
@@ -183,7 +183,7 @@ export async function GET(request: NextRequest) {
       // Build the verification URL with all necessary parameters
       const verifyUrl = new URL('/auth/verify', requestUrl.origin);
       if (actualToken) verifyUrl.searchParams.set('token', actualToken);
-      if (type) verifyUrl.searchParams.set('type', type);
+      if (type) verifyUrl.searchParams.set('type', type || 'signup'); // Default to signup if no type
       if (plan) verifyUrl.searchParams.set('plan', plan);
       if (next) verifyUrl.searchParams.set('next', next);
       

@@ -46,11 +46,38 @@ export default function VerifyPage() {
     });
     
     const verifyAndEstablishSession = async () => {
-      // For PKCE token verification, we need to let Supabase handle it automatically
+      // For PKCE token verification, explicitly verify the OTP
       if (token && type) {
-        console.log('[verify] PKCE token detected, letting Supabase handle verification...');
-        // The Supabase client should automatically detect and verify the token
-        // We just need to wait for the auth state change
+        console.log('[verify] PKCE token detected, verifying OTP...');
+        
+        try {
+          // Explicitly verify the OTP token
+          const { data, error } = await supabase.auth.verifyOtp({
+            token_hash: token,
+            type: type as any
+          });
+          
+          if (error) {
+            console.error('[verify] OTP verification error:', error);
+            setStatus('error');
+            setMessage('Verification failed. The link may have expired.');
+            setTimeout(() => {
+              if (isMounted) router.push('/auth/login?error=verification_failed');
+            }, 2000);
+            return;
+          }
+          
+          if (data.session) {
+            console.log('[verify] OTP verified successfully, session established:', data.user?.email);
+            // Session is established, the auth state change listener will handle redirect
+            return;
+          }
+        } catch (err) {
+          console.error('[verify] Unexpected error during OTP verification:', err);
+        }
+        
+        // If OTP verification didn't work, continue to wait for session
+        console.log('[verify] OTP verification completed, waiting for session...');
         return;
       }
       
@@ -127,19 +154,11 @@ export default function VerifyPage() {
         return;
       }
 
-      console.log('[verify] Starting PKCE token verification...', { token: token.substring(0, 20), type });
+      // This code path should not be reached anymore since we handle PKCE tokens above
+      console.error('[verify] Unexpected: PKCE token present but not handled above');
       
       // Mark that we're in a valid auth flow
       sessionStorage.setItem('auth_flow_active', 'true');
-      
-      // For PKCE tokens, Supabase should handle this automatically
-      // Just wait for the session to be established
-      console.log('[verify] PKCE token detected, waiting for Supabase to establish session...');
-      
-      // The detectSessionInUrl should handle this automatically
-      // Let's just wait for the session to appear
-      
-      // If OTP verification didn't work, fall back to waiting for session
       let attempts = 0;
       const maxAttempts = 30; // 15 seconds total
       

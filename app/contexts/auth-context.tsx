@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState, useRef } from 'r
 import { createBrowserClient } from '@/app/lib/auth';
 import { migrateAuthFromLocalStorage, debugAuthCookies } from '@/app/lib/auth-migration';
 import { clearStaleAuthData } from '@/app/lib/auth-utils';
+import { toMs, debugTimestamp } from '@/app/lib/utils/time';
 import { User } from '@supabase/supabase-js';
 
 interface AuthContextValue {
@@ -42,11 +43,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       if (session) {
-        // Check if session is expired - add 5 minute grace period
-        const expiresAt = new Date(session.expires_at || 0).getTime();
-        const now = new Date().getTime();
-        const fiveMinutes = 5 * 60 * 1000;
-        const isExpired = expiresAt < (now + fiveMinutes);
+        // Check if session is expired - add grace period
+        const expiresAt = toMs(session.expires_at);
+        const now = Date.now();
+        
+        // Calculate grace period based on token lifetime
+        // Use 5 minutes or half the remaining time, whichever is smaller
+        const timeUntilExpiry = expiresAt - now;
+        const gracePeriod = Math.min(5 * 60 * 1000, timeUntilExpiry / 2);
+        const isExpired = expiresAt < (now + gracePeriod);
+        
+        // Debug logging for expires_at conversion
+        debugTimestamp('auth-context session.expires_at', session.expires_at, expiresAt);
         
         setIsSessionExpired(isExpired);
         

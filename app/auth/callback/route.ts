@@ -94,17 +94,17 @@ export async function GET(request: NextRequest) {
     // Determine where to redirect
     let redirectTo = '/dashboard'; // Default destination
     
-    if (plan) {
-      // User selected a plan during signup
+    if (plan && plan !== 'free') {
+      // User selected a paid plan during signup
       redirectTo = `/auth/checkout-redirect?plan=${plan}`;
     } else if (next) {
       // Explicit next destination
       redirectTo = next;
-    } else if (user?.user_metadata?.selected_plan) {
-      // Plan was stored in user metadata during signup
+    } else if (user?.user_metadata?.selected_plan && user.user_metadata.selected_plan !== 'free') {
+      // Paid plan was stored in user metadata during signup
       redirectTo = `/auth/checkout-redirect?plan=${user.user_metadata.selected_plan}`;
     } else if (session.user.user_metadata?.selected_plan && session.user.user_metadata.selected_plan !== 'free') {
-      // Check metadata for plan even without user object
+      // Check metadata for paid plan even without user object
       redirectTo = `/auth/checkout-redirect?plan=${session.user.user_metadata.selected_plan}`;
     }
     

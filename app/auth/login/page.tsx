@@ -125,6 +125,21 @@ export default function LoginPage() {
           
           if (session) {
             sessionVerified = true;
+            
+            // Ensure user exists in database
+            try {
+              const response = await fetch('/auth/ensure-user', {
+                credentials: 'include'
+              });
+              if (!response.ok) {
+                console.error('[login] Failed to ensure user exists');
+              } else {
+                console.log('[login] User existence confirmed');
+              }
+            } catch (err) {
+              console.error('[login] Error ensuring user:', err);
+            }
+            
             toast.success('Welcome back!');
             
             // Add a small delay to ensure session is propagated

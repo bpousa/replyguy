@@ -35,6 +35,13 @@ export default function CheckoutRedirectPage() {
       return;
     }
 
+    // Special handling for free plan - no checkout needed
+    if (planId === 'free') {
+      console.log('[checkout-redirect] Free plan selected, redirecting to dashboard');
+      router.push('/dashboard');
+      return;
+    }
+
     // Guard: Check if user came from a valid auth flow
     // If referrer is empty and no session, they likely navigated directly
     if (status === 'unauthenticated' && !document.referrer && !sessionStorage.getItem('auth_flow_active')) {
@@ -45,12 +52,18 @@ export default function CheckoutRedirectPage() {
   }, [planId, status, router]);
 
   useEffect(() => {
+    // Skip auth checks if free plan (handled above)
+    if (planId === 'free') return;
+    
     let timeoutId: NodeJS.Timeout;
     let retryCount = 0;
     const maxRetries = 10; // Increased retries for PKCE flow
     let hasRedirected = false;
+    let isMounted = true;
     
     const checkAuthWithRetry = async () => {
+      // Check if component is still mounted
+      if (!isMounted) return;
       // Prevent multiple redirects
       if (hasRedirected) return;
       
@@ -97,9 +110,10 @@ export default function CheckoutRedirectPage() {
     timeoutId = setTimeout(checkAuthWithRetry, 3000); // Increased initial delay
     
     return () => {
+      isMounted = false;
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [status, user, router, refreshSession]);
+  }, [status, user, router, refreshSession, planId]);
 
   const proceedToCheckout = async () => {
     if (!planId || !user) return;

@@ -4,6 +4,8 @@ import { cookies } from 'next/headers';
 
 // This route ensures a user exists in public.users table
 export async function GET() {
+  console.log('[ensure-user] Starting user verification...');
+  
   try {
     const cookieStore = cookies();
     const supabase = createServerClient(cookieStore);
@@ -11,9 +13,17 @@ export async function GET() {
     // Get current session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
-    if (sessionError || !session) {
+    if (sessionError) {
+      console.error('[ensure-user] Session error:', sessionError);
+      return NextResponse.json({ error: 'Session error', details: sessionError.message }, { status: 401 });
+    }
+    
+    if (!session) {
+      console.log('[ensure-user] No session found');
       return NextResponse.json({ error: 'No session' }, { status: 401 });
     }
+    
+    console.log('[ensure-user] Session found for:', session.user.email);
     
     // Check if user exists in public.users
     const { data: existingUser, error: checkError } = await supabase
@@ -24,7 +34,11 @@ export async function GET() {
     
     if (checkError && checkError.code !== 'PGRST116') {
       console.error('[ensure-user] Error checking user:', checkError);
-      return NextResponse.json({ error: 'Database error' }, { status: 500 });
+      return NextResponse.json({ 
+        error: 'Database error', 
+        details: checkError.message,
+        code: checkError.code 
+      }, { status: 500 });
     }
     
     if (!existingUser) {
@@ -43,7 +57,16 @@ export async function GET() {
       
       if (insertError) {
         console.error('[ensure-user] Error creating user:', insertError);
-        return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
+        // If it's a unique constraint violation, the user already exists
+        if (insertError.code === '23505') {
+          console.log('[ensure-user] User already exists (unique constraint)');
+          return NextResponse.json({ success: true, message: 'User already exists' });
+        }
+        return NextResponse.json({ 
+          error: 'Failed to create user',
+          details: insertError.message,
+          code: insertError.code
+        }, { status: 500 });
       }
       
       // Create free subscription
@@ -66,9 +89,19 @@ export async function GET() {
       console.log('[ensure-user] User already exists');
     }
     
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ 
+      success: true,
+      user: {
+        id: session.user.id,
+        email: session.user.email,
+        existed: !!existingUser
+      }
+    });
   } catch (error) {
     console.error('[ensure-user] Unexpected error:', error);
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Internal error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }

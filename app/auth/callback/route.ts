@@ -1,18 +1,22 @@
 import { NextResponse } from 'next/server';
 import { NextRequest } from 'next/server';
-import { createServerClient } from '@/app/lib/auth';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
-  const requestUrl = new URL(request.url);
-  const code = requestUrl.searchParams.get('code');
-  const next = requestUrl.searchParams.get('next');
-  const plan = requestUrl.searchParams.get('plan');
-  const error = requestUrl.searchParams.get('error');
-  const error_description = requestUrl.searchParams.get('error_description');
+  const url = new URL(request.url);
+  
+  // Handle both token (email links) and code (OAuth)
+  const verifier = url.searchParams.get('token') || url.searchParams.get('code');
+  const type = url.searchParams.get('type'); // signup | magiclink | recovery
+  const plan = url.searchParams.get('plan');
+  const next = url.searchParams.get('next');
+  const error = url.searchParams.get('error');
+  const error_description = url.searchParams.get('error_description');
   
   console.log('[auth-callback] Received callback:', {
-    code: !!code,
+    hasVerifier: !!verifier,
+    type,
     plan,
     error,
     url: request.url
@@ -22,45 +26,71 @@ export async function GET(request: NextRequest) {
   if (error) {
     console.error('[auth-callback] Auth error:', error, error_description);
     return NextResponse.redirect(
-      new URL(`/auth/error?message=${encodeURIComponent(error_description || error)}`, requestUrl.origin)
+      new URL(`/auth/error?message=${encodeURIComponent(error_description || error)}`, url.origin),
+      { status: 302 }
     );
   }
 
-  // If no code, redirect to dashboard to handle the session
-  if (!code) {
-    console.log('[auth-callback] No code, redirecting to dashboard...');
-    // Supabase might have already set the session cookies
-    // Dashboard will handle session checking
-    return NextResponse.redirect(new URL('/dashboard', requestUrl.origin));
+  // Guard against missing verifier
+  if (!verifier) {
+    console.error('[auth-callback] No verifier (token/code) provided');
+    // If no verifier, might be a direct navigation - redirect to login
+    return NextResponse.redirect(
+      new URL('/auth/login?error=missing_verifier', url.origin), 
+      { status: 302 }
+    );
   }
 
   try {
+    // IMPORTANT: Pass cookies function, not cookies() invoked value
     const cookieStore = cookies();
-    const supabase = createServerClient(cookieStore);
-    
-    let session;
-    let user;
-    
-    if (code) {
-      // Standard OAuth code exchange flow
-      console.log('[auth-callback] Exchanging code for session...');
-      const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-      
-      if (exchangeError) {
-        console.error('[auth-callback] Exchange error:', exchangeError);
-        return NextResponse.redirect(
-          new URL(`/auth/error?message=${encodeURIComponent(exchangeError.message)}`, requestUrl.origin)
-        );
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+          set(name: string, value: string, options: any) {
+            try {
+              console.log(`[auth-callback] Setting cookie: ${name}`);
+              cookieStore.set({ name, value, ...options });
+            } catch (error) {
+              console.error('[auth-callback] Failed to set cookie:', name, error);
+            }
+          },
+          remove(name: string, options: any) {
+            try {
+              cookieStore.delete(name);
+            } catch (error) {
+              console.error('[auth-callback] Failed to remove cookie:', name, error);
+            }
+          },
+        },
       }
-      
-      session = data.session;
-      user = data.user;
+    );
+    
+    // Exchange the verifier for session (this mutates cookies)
+    console.log('[auth-callback] Exchanging verifier for session...');
+    const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(verifier);
+    
+    if (exchangeError) {
+      console.error('[auth-callback] Exchange failed:', exchangeError.message);
+      return NextResponse.redirect(
+        new URL(`/auth/error?message=${encodeURIComponent(exchangeError.message)}`, url.origin),
+        { status: 302 }
+      );
     }
     
+    const session = data?.session;
+    const user = data?.user;
+    
     if (!session) {
-      console.error('[auth-callback] No session created or found');
+      console.error('[auth-callback] No session created after exchange');
       return NextResponse.redirect(
-        new URL('/auth/error?message=No%20session%20created', requestUrl.origin)
+        new URL('/auth/error?message=No%20session%20created', url.origin),
+        { status: 302 }
       );
     }
     
@@ -70,23 +100,25 @@ export async function GET(request: NextRequest) {
       expiresAt: session.expires_at
     });
     
-    // The session should now be automatically stored in cookies by Supabase
-    // Let's verify it's accessible
+    // Log cookie size for debugging (remove in production)
+    if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_AUTH_DEBUG === 'true') {
+      const allCookies = cookieStore.getAll();
+      const authCookies = allCookies.filter(c => c.name.includes('sb-') || c.name.includes('supabase'));
+      console.log('[auth-callback] Auth cookie count:', authCookies.length);
+      console.log('[auth-callback] Total cookie bytes:', JSON.stringify(authCookies).length);
+      
+      // Log specific auth cookies for debugging
+      authCookies.forEach(cookie => {
+        console.log(`[auth-callback] Cookie ${cookie.name}: ${cookie.value.length} bytes`);
+      });
+    }
+    
+    // Verify session is accessible
     const { data: { session: verifySession } } = await supabase.auth.getSession();
     
     if (!verifySession) {
       console.error('[auth-callback] Session verification failed - session not persisted');
-      // In production, add a small delay to ensure cookies propagate
-      if (process.env.NODE_ENV === 'production') {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        // Try once more
-        const { data: { session: retrySession } } = await supabase.auth.getSession();
-        if (retrySession) {
-          console.log('[auth-callback] Session verified on retry');
-        } else {
-          console.error('[auth-callback] Session still not available after retry');
-        }
-      }
+      // Still proceed as cookies might need a moment to propagate
     } else {
       console.log('[auth-callback] Session verified successfully');
     }
@@ -110,13 +142,19 @@ export async function GET(request: NextRequest) {
     
     console.log('[auth-callback] Redirecting to:', redirectTo);
     
-    // Create redirect response - let Supabase handle cookie setting
-    return NextResponse.redirect(new URL(redirectTo, requestUrl.origin));
+    // Use establishing-session as an intermediate step
+    const establishingUrl = new URL('/auth/establishing-session', url.origin);
+    if (plan) establishingUrl.searchParams.set('plan', plan);
+    if (next) establishingUrl.searchParams.set('next', next);
+    
+    // Use 302 redirect to ensure Set-Cookie headers are preserved
+    return NextResponse.redirect(establishingUrl, { status: 302 });
     
   } catch (error) {
     console.error('[auth-callback] Unexpected error:', error);
     return NextResponse.redirect(
-      new URL('/auth/error?message=Authentication%20failed', requestUrl.origin)
+      new URL('/auth/error?message=Authentication%20failed', url.origin),
+      { status: 302 }
     );
   }
 }

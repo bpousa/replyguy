@@ -13,10 +13,17 @@ export const resetBrowserClient = () => {
 // Client-side Supabase client with proper cookie handling
 export const createBrowserClient = () => {
   if (!browserClient) {
+    // Determine cookie options based on environment
+    const cookieOptions = process.env.NODE_ENV === 'production'
+      ? { domain: '.appendment.com' }
+      : undefined; // Omit domain in dev for localhost
+    
     browserClient = createSSRBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
+        // Add cookie options for production domain
+        cookieOptions,
         cookies: {
           get(name: string) {
             if (typeof window === 'undefined') return '';
@@ -73,7 +80,7 @@ export const createBrowserClient = () => {
           autoRefreshToken: true,
           detectSessionInUrl: true,
           flowType: 'pkce',
-          debug: process.env.NODE_ENV === 'development',
+          debug: process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_AUTH_DEBUG === 'true',
           storage: {
             getItem: (key: string) => {
               if (typeof window === 'undefined') return null;

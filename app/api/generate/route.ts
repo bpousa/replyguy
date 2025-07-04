@@ -26,6 +26,7 @@ const requestSchema = z.object({
   replyLength: z.enum(['short', 'medium', 'long', 'extra-long']).optional(),
   enableStyleMatching: z.boolean().optional(),
   useCustomStyle: z.boolean().optional(),
+  customStyle: z.any().optional(),
   userId: z.string().optional(),
 });
 
@@ -196,7 +197,8 @@ export async function POST(req: NextRequest) {
   }
 }
 
-function buildGenerationPrompt(input: any, charLimit: number, styleInstructions: string, customStyleInstructions: string = ''): string {
+
+function buildGenerationPrompt(input: any, charLimit: number, styleInstructions: string): string {
   const antiAIPrompt = `
 Write like real people actually write on Twitter:
 - Start mid-thought sometimes: "honestly the worst part is..." or "nah that's not even..."
@@ -216,14 +218,35 @@ When sharing facts/stats:
 
 BE BRIEF. Most replies should be 1-2 sentences unless they specifically asked for more.
 
-Even if the user's suggestion sounds good, always put it in your own words. Never copy their phrasing exactly.`;
+Even if the user's suggestion sounds good, always put it in your own words. Never copy their phrasing exactly.`
 
   const currentYear = new Date().getFullYear();
   
+  let customStylePrompt = '';
+  if (input.useCustomStyle && input.customStyle) {
+    customStylePrompt = `
+
+--- YOUR CUSTOM STYLE ---
+Your writing style has been analyzed as:
+- Tone: ${input.customStyle.tone}
+- Formality: ${input.customStyle.formality}
+- Vocabulary: ${input.customStyle.vocabulary}
+- Sentence Structure: ${input.customStyle.sentenceStructure}
+- Emoji Usage: ${input.customStyle.emojiUsage}
+- Capitalization: ${input.customStyle.capitalization}
+- Punctuation: ${input.customStyle.punctuation}
+- Personality Traits: ${input.customStyle.personalityTraits.join(', ')}
+
+Follow this style closely.
+--- END CUSTOM STYLE ---
+`;
+  }
+
   return `
 🎯 YOUR MAIN TASK: Write a REPLY to this tweet: "${input.originalTweet}"
 
 The tweet author said: "${input.originalTweet}"
+
 You need to RESPOND TO THEM expressing this idea: "${input.responseIdea}"
 
 IMPORTANT: Never repeat the user's suggested response verbatim. Always rephrase and adapt it to sound natural while preserving the intended message.
@@ -269,12 +292,13 @@ REQUIREMENTS:
 Style guidance:
 - Pattern: ${input.selectedType.pattern}
 - Style rules: ${input.selectedType.styleRules}
-${customStyleInstructions ? customStyleInstructions : styleInstructions}
+${customStylePrompt ? customStylePrompt : styleInstructions}
 
 ${antiAIPrompt}
 
 Write the reply (just the text, no quotes):`;
 }
+
 
 function cleanReply(reply: string, charLimit: number): string {
   // Basic cleanup

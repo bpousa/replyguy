@@ -122,6 +122,9 @@ export default function LoginPage() {
 
         console.log('[login] Login successful for:', data.session.user.email);
         
+        // Mark auth flow as active so dashboard knows to wait
+        sessionStorage.setItem('auth_flow_active', 'true');
+        
         // Ensure user exists in database
         try {
           const response = await fetch('/auth/ensure-user', {
@@ -144,8 +147,11 @@ export default function LoginPage() {
         
         toast.success('Welcome back!');
         
-        // Navigate to dashboard immediately
-        router.push('/dashboard');
+        // Wait a moment for session cookies to be set
+        setTimeout(() => {
+          console.log('[login] Redirecting to dashboard...');
+          router.push('/dashboard');
+        }, 500);
       }
     } catch (error: any) {
       console.error('Login error:', error);

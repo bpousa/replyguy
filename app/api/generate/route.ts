@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Build generation prompt
-    const prompt = buildGenerationPrompt(validated, charLimit, styleInstructions, customStyleInstructions);
+    const prompt = buildGenerationPrompt(validated, charLimit, styleInstructions);
     
     console.log('\n📋 === GENERATION PROMPT ===');
     console.log('Has perplexity data in validated:', !!validated.perplexityData);

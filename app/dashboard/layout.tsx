@@ -25,7 +25,6 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const supabase = createBrowserClient();
-  const [user, setUser] = useState<any>(null);
   const [subscription, setSubscription] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

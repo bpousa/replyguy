@@ -147,11 +147,9 @@ export default function LoginPage() {
         
         toast.success('Welcome back!');
         
-        // Wait a moment for session cookies to be set
-        setTimeout(() => {
-          console.log('[login] Redirecting to dashboard...');
-          router.push('/dashboard');
-        }, 500);
+        // Always go through establishing-session to ensure proper session sync
+        console.log('[login] Redirecting to establishing-session...');
+        router.push('/auth/establishing-session');
       }
     } catch (error: any) {
       console.error('Login error:', error);

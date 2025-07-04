@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/app/lib/auth';
 import { cookies } from 'next/headers';
+import { toMs } from '@/app/lib/utils/time';
 
 export async function GET(request: NextRequest) {
   try {
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest) {
           emailConfirmed: session.user.email_confirmed_at,
           expiresAt: session.expires_at,
           expiresIn: session.expires_at ? 
-            `${Math.floor((new Date(session.expires_at).getTime() - Date.now()) / 1000 / 60)} minutes` : 
+            `${Math.floor((toMs(session.expires_at) - Date.now()) / 1000 / 60)} minutes` : 
             'unknown'
         } : null
       },

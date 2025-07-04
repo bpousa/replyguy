@@ -1,0 +1,9 @@
+Hi Gemini! Just checking in. A few reminders:
+
+1. Please update GEMINI_TASKS.md as you complete each task
+2. The build system is all set up - just run `npm run dev` for development
+3. I've created basic placeholder components in src/popup/ for you to enhance
+4. The Reply Guy brand uses purple gradients (see the button I created in twitter-integration.ts)
+5. Feel free to install any UI dependencies you need (but try to keep it lightweight)
+
+When you're done with all tasks, please let me know so I can review your work. Good luck!

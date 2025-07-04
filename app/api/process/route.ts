@@ -257,6 +257,23 @@ export async function POST(req: NextRequest) {
       console.log('❌ Raw request body needsResearch =', body?.needsResearch);
     }
 
+    // Get user's active style if requested
+    let activeStyle = null;
+    if (validated.useCustomStyle && userId !== 'anonymous') {
+      const { data: style, error: styleError } = await supabase
+        .from('user_styles')
+        .select('style_analysis')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .single();
+
+      if (styleError) {
+        console.error('Error fetching active style:', styleError);
+      } else {
+        activeStyle = style.style_analysis;
+      }
+    }
+
     // Step 2: Classify and select reply types
     console.log(`\n🏷️ ============ STEP 2: CLASSIFICATION [${requestId}] ============`);
     console.log('📤 Classification Input:', {
@@ -405,6 +422,7 @@ export async function POST(req: NextRequest) {
         replyLength: validated.replyLength || 'short',
         enableStyleMatching: validated.enableStyleMatching ?? true,
         useCustomStyle: validated.useCustomStyle,
+        customStyle: activeStyle, // Pass the active style to the generate API
         userId: validated.userId,
       }),
     });

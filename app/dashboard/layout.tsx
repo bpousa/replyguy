@@ -34,16 +34,34 @@ export default function DashboardLayout({
       try {
         console.log('[dashboard-layout] Checking auth...');
         
-        // Simple session check
-        const { data: { session } } = await supabase.auth.getSession();
+        // Simple session check with one retry for fresh logins
+        let { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
-          console.log('[dashboard-layout] No session, redirecting to login');
-          router.push('/auth/login');
-          return;
+          // If we're coming from a fresh login, the session might not be ready yet
+          const isFromLogin = document.referrer.includes('/auth/login') || 
+                            sessionStorage.getItem('auth_flow_active') === 'true';
+          
+          if (isFromLogin) {
+            console.log('[dashboard-layout] No session yet, waiting for fresh login...');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Try once more
+            const retryResult = await supabase.auth.getSession();
+            session = retryResult.data.session;
+          }
+          
+          if (!session) {
+            console.log('[dashboard-layout] No session, redirecting to login');
+            router.push('/auth/login');
+            return;
+          }
         }
         
         console.log('[dashboard-layout] Session found:', session.user.email);
+        
+        // Clear auth flow marker
+        sessionStorage.removeItem('auth_flow_active');
         
         const { data: { user } } = await supabase.auth.getUser();
         

@@ -1,361 +1,192 @@
+
+
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@/app/lib/auth';
-import { cookies } from 'next/headers';
-import { z } from 'zod';
-import { StyleAnalyzer } from '@/app/lib/services/style-analyzer.service';
+import { createClient } from '@/app/lib/supabase/server';
+import { OpenAI } from 'openai';
 
-// Request validation schemas
-const createStyleSchema = z.object({
-  name: z.string().min(1).max(50).optional(),
-  sampleTweets: z.array(z.string().min(1).max(500)).min(3).max(20),
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
-const updateStyleSchema = z.object({
-  styleId: z.string().uuid(),
-  name: z.string().min(1).max(50).optional(),
-  sampleTweets: z.array(z.string().min(1).max(500)).min(3).max(20).optional(),
-  isActive: z.boolean().optional(),
-});
+async function analyzeStyleWithGPT(tweets: string[]): Promise<any> {
+  const content = `
+    Analyze the writing style from the following tweets and return a JSON object.
 
-export async function GET(req: NextRequest) {
-  const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+    **Tweets:**
+    ${tweets.map((t, i) => `${i + 1}. ${t}`).join('\n')}
+
+    **JSON Output Format:**
+    {
+      "tone": "(e.g., witty, formal, sarcastic, enthusiastic)",
+      "formality": "(e.g., formal, informal, casual)",
+      "vocabulary": "(e.g., simple, sophisticated, technical, slang)",
+      "sentenceStructure": "(e.g., short and punchy, long and complex, varied)",
+      "emojiUsage": "(e.g., none, frequent, occasional, specific emojis)",
+      "capitalization": "(e.g., standard, all lowercase, title case)",
+      "punctuation": "(e.g., standard, minimal, expressive)",
+      "personalityTraits": ["(e.g., humorous", "analytical", "friendly", "direct")]
+    }
+  `;
 
   try {
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [{ role: 'user', content }],
+      response_format: { type: 'json_object' },
+    });
 
-    // Get user's styles
-    const { data: styles, error } = await supabase
+    if (response.choices[0].message.content) {
+      return JSON.parse(response.choices[0].message.content);
+    }
+    throw new Error('Failed to get valid JSON response from GPT-4o');
+  } catch (error) {
+    console.error('Error analyzing style with GPT-4o:', error);
+    throw new Error('Failed to analyze style.');
+  }
+}
+
+export async function GET(req: NextRequest) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { data: styles, error } = await supabase
+    .from('user_styles')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching user styles:', error);
+    return NextResponse.json({ error: 'Failed to fetch styles.' }, { status: 500 });
+  }
+
+  return NextResponse.json({ styles });
+}
+
+export async function POST(req: NextRequest) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { name, sampleTweets } = await req.json();
+
+  if (!name || !sampleTweets || sampleTweets.length < 3) {
+    return NextResponse.json({ error: 'Name and at least 3 sample tweets are required.' }, { status: 400 });
+  }
+
+  try {
+    const styleAnalysis = await analyzeStyleWithGPT(sampleTweets);
+
+    const { data: style, error } = await supabase
       .from('user_styles')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .insert({
+        user_id: user.id,
+        name,
+        sample_tweets: sampleTweets,
+        style_analysis: styleAnalysis,
+        analyzed_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
 
     if (error) {
       throw error;
     }
 
-    return NextResponse.json({ styles });
-  } catch (error) {
-    console.error('Get styles error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get styles' },
-      { status: 500 }
-    );
-  }
-}
-
-export async function POST(req: NextRequest) {
-  const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
-
-  try {
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    // Check user's subscription for Write Like Me feature
-    const { data: userData } = await supabase
-      .from('users')
-      .select('subscription_tier')
-      .eq('id', user.id)
-      .single();
-
-    // Write Like Me is available for professional (X Pro) and enterprise (X Business) tiers
-    const writeLikeMeTiers = ['professional', 'enterprise'];
-    
-    if (!userData || !writeLikeMeTiers.includes(userData.subscription_tier)) {
-      return NextResponse.json(
-        { error: 'Write Like Me feature requires Pro or Business plan' },
-        { status: 403 }
-      );
-    }
-
-    // Parse and validate request
-    const body = await req.json();
-    const validated = createStyleSchema.parse(body);
-
-    // Analyze the style using AI
-    let styleAnalysis = null;
-    let styleInstructions = '';
-
-    if (process.env.OPENAI_API_KEY) {
-      try {
-        const analyzer = new StyleAnalyzer(process.env.OPENAI_API_KEY);
-        
-        // Analyze each sample tweet
-        const analyses = await Promise.all(
-          validated.sampleTweets.map(tweet => analyzer.analyzeTweetStyle(tweet))
-        );
-
-        // Aggregate the analyses
-        const aggregated = {
-          tone: mostCommon(analyses.map(a => a.tone)),
-          formality: mostCommon(analyses.map(a => a.formality)),
-          vocabulary: mostCommon(analyses.map(a => a.vocabulary)),
-          sentenceLength: mostCommon(analyses.map(a => a.sentenceLength)),
-          hasEmojis: analyses.some(a => a.hasEmojis),
-          hasHashtags: analyses.some(a => a.hasHashtags),
-          punctuation: {
-            exclamations: analyses.some(a => a.punctuation.exclamations),
-            questions: analyses.some(a => a.punctuation.questions),
-            ellipsis: analyses.some(a => a.punctuation.ellipsis),
-            allCaps: analyses.some(a => a.punctuation.allCaps),
-          },
-          characteristics: [...new Set(analyses.flatMap(a => a.characteristics))].slice(0, 5),
-        };
-
-        styleAnalysis = aggregated;
-
-        // Generate style instructions
-        styleInstructions = generateStyleInstructions(aggregated, validated.sampleTweets);
-      } catch (error) {
-        console.error('Style analysis failed:', error);
-      }
-    }
-
-    // Create the style in database
-    const { data: style, error: createError } = await supabase
-      .from('user_styles')
-      .insert({
-        user_id: user.id,
-        name: validated.name || 'My Style',
-        sample_tweets: validated.sampleTweets,
-        tone: styleAnalysis?.tone,
-        formality: styleAnalysis?.formality,
-        vocabulary: styleAnalysis?.vocabulary,
-        sentence_length: styleAnalysis?.sentenceLength,
-        has_emojis: styleAnalysis?.hasEmojis,
-        has_hashtags: styleAnalysis?.hasHashtags,
-        uses_punctuation: styleAnalysis?.punctuation || {},
-        characteristics: styleAnalysis?.characteristics || [],
-        style_instructions: styleInstructions,
-        analyzed_at: styleAnalysis ? new Date().toISOString() : null,
-        is_active: true, // Make new style active by default
-      })
-      .select()
-      .single();
-
-    if (createError) {
-      throw createError;
-    }
-
     return NextResponse.json({ style });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: error.errors },
-        { status: 400 }
-      );
-    }
-
-    console.error('Create style error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create style' },
-      { status: 500 }
-    );
+    console.error('Error creating user style:', error);
+    return NextResponse.json({ error: 'Failed to create style.' }, { status: 500 });
   }
 }
 
 export async function PUT(req: NextRequest) {
-  const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { styleId, name, sampleTweets, isActive } = await req.json();
+
+  if (!styleId) {
+    return NextResponse.json({ error: 'Style ID is required.' }, { status: 400 });
+  }
+
+  if (isActive) {
+    const { error } = await supabase.rpc('set_active_style', {
+      p_user_id: user.id,
+      p_style_id: styleId,
+    });
+
+    if (error) {
+      console.error('Error setting active style:', error);
+      return NextResponse.json({ error: 'Failed to set active style.' }, { status: 500 });
+    }
+
+    return NextResponse.json({ message: 'Active style updated.' });
+  }
 
   try {
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    const updateData: any = { name };
+    if (sampleTweets) {
+      updateData.sample_tweets = sampleTweets;
+      updateData.style_analysis = await analyzeStyleWithGPT(sampleTweets);
+      updateData.analyzed_at = new Date().toISOString();
     }
 
-    // Parse and validate request
-    const body = await req.json();
-    const validated = updateStyleSchema.parse(body);
-
-    // Update the style
-    const updateData: any = {};
-    if (validated.name !== undefined) updateData.name = validated.name;
-    if (validated.isActive !== undefined) updateData.is_active = validated.isActive;
-
-    if (validated.sampleTweets) {
-      updateData.sample_tweets = validated.sampleTweets;
-      
-      // Re-analyze if samples changed
-      if (process.env.OPENAI_API_KEY) {
-        try {
-          const analyzer = new StyleAnalyzer(process.env.OPENAI_API_KEY);
-          const analyses = await Promise.all(
-            validated.sampleTweets.map(tweet => analyzer.analyzeTweetStyle(tweet))
-          );
-
-          const aggregated = {
-            tone: mostCommon(analyses.map(a => a.tone)),
-            formality: mostCommon(analyses.map(a => a.formality)),
-            vocabulary: mostCommon(analyses.map(a => a.vocabulary)),
-            sentenceLength: mostCommon(analyses.map(a => a.sentenceLength)),
-            hasEmojis: analyses.some(a => a.hasEmojis),
-            hasHashtags: analyses.some(a => a.hasHashtags),
-            punctuation: {
-              exclamations: analyses.some(a => a.punctuation.exclamations),
-              questions: analyses.some(a => a.punctuation.questions),
-              ellipsis: analyses.some(a => a.punctuation.ellipsis),
-              allCaps: analyses.some(a => a.punctuation.allCaps),
-            },
-            characteristics: [...new Set(analyses.flatMap(a => a.characteristics))].slice(0, 5),
-          };
-
-          updateData.tone = aggregated.tone;
-          updateData.formality = aggregated.formality;
-          updateData.vocabulary = aggregated.vocabulary;
-          updateData.sentence_length = aggregated.sentenceLength;
-          updateData.has_emojis = aggregated.hasEmojis;
-          updateData.has_hashtags = aggregated.hasHashtags;
-          updateData.uses_punctuation = aggregated.punctuation;
-          updateData.characteristics = aggregated.characteristics;
-          updateData.style_instructions = generateStyleInstructions(aggregated, validated.sampleTweets);
-          updateData.analyzed_at = new Date().toISOString();
-        } catch (error) {
-          console.error('Style re-analysis failed:', error);
-        }
-      }
-    }
-
-    const { data: style, error: updateError } = await supabase
+    const { data: style, error } = await supabase
       .from('user_styles')
       .update(updateData)
-      .eq('id', validated.styleId)
+      .eq('id', styleId)
       .eq('user_id', user.id)
       .select()
       .single();
 
-    if (updateError) {
-      throw updateError;
+    if (error) {
+      throw error;
     }
 
     return NextResponse.json({ style });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: error.errors },
-        { status: 400 }
-      );
-    }
-
-    console.error('Update style error:', error);
-    return NextResponse.json(
-      { error: 'Failed to update style' },
-      { status: 500 }
-    );
+    console.error('Error updating user style:', error);
+    return NextResponse.json({ error: 'Failed to update style.' }, { status: 500 });
   }
 }
 
 export async function DELETE(req: NextRequest) {
-  const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  try {
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const { searchParams } = new URL(req.url);
-    const styleId = searchParams.get('styleId');
-
-    if (!styleId) {
-      return NextResponse.json(
-        { error: 'Style ID required' },
-        { status: 400 }
-      );
-    }
-
-    const { error: deleteError } = await supabase
-      .from('user_styles')
-      .delete()
-      .eq('id', styleId)
-      .eq('user_id', user.id);
-
-    if (deleteError) {
-      throw deleteError;
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Delete style error:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete style' },
-      { status: 500 }
-    );
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-}
 
-// Helper function to find most common value
-function mostCommon<T>(arr: T[]): T {
-  const counts = new Map<T, number>();
-  for (const item of arr) {
-    counts.set(item, (counts.get(item) || 0) + 1);
+  const { searchParams } = new URL(req.url);
+  const styleId = searchParams.get('styleId');
+
+  if (!styleId) {
+    return NextResponse.json({ error: 'Style ID is required.' }, { status: 400 });
   }
-  
-  let maxCount = 0;
-  let mostCommonItem = arr[0];
-  
-  for (const [item, count] of counts) {
-    if (count > maxCount) {
-      maxCount = count;
-      mostCommonItem = item;
-    }
+
+  const { error } = await supabase
+    .from('user_styles')
+    .delete()
+    .eq('id', styleId)
+    .eq('user_id', user.id);
+
+  if (error) {
+    console.error('Error deleting user style:', error);
+    return NextResponse.json({ error: 'Failed to delete style.' }, { status: 500 });
   }
-  
-  return mostCommonItem;
-}
 
-// Generate style instructions for AI
-function generateStyleInstructions(analysis: any, samples: string[]): string {
-  const instructions = [`
-CRITICAL: Write in the exact style of these sample tweets:
-
-${samples.slice(0, 5).map((s, i) => `Example ${i + 1}: "${s}"`).join('\n')}
-
-Style characteristics:
-- Tone: ${analysis.tone}
-- Formality: ${analysis.formality}
-- Vocabulary: ${analysis.vocabulary}
-- Sentence length: ${analysis.sentenceLength}
-${analysis.hasEmojis ? '- Uses emojis naturally' : '- Rarely/never uses emojis'}
-${analysis.hasHashtags ? '- Includes hashtags' : '- No hashtags'}
-${analysis.characteristics.length > 0 ? `- Key patterns: ${analysis.characteristics.join(', ')}` : ''}
-
-Punctuation style:
-${analysis.punctuation.exclamations ? '- Uses exclamation points for emphasis' : '- Minimal exclamation points'}
-${analysis.punctuation.questions ? '- Asks questions' : '- Makes statements rather than asking'}
-${analysis.punctuation.ellipsis ? '- Uses ellipsis (...) for effect' : '- Complete sentences without ellipsis'}
-${analysis.punctuation.allCaps ? '- Sometimes uses ALL CAPS for emphasis' : '- No ALL CAPS'}
-
-Match this EXACT voice and style. Don't just follow the rules - actually write like these examples.
-`];
-
-  return instructions.join('\n').trim();
+  return NextResponse.json({ message: 'Style deleted successfully.' });
 }

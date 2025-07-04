@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -24,9 +25,7 @@ interface UserStyle {
   sample_tweets: string[];
   is_active: boolean;
   analyzed_at: string | null;
-  characteristics?: string[];
-  tone?: string;
-  formality?: string;
+  style_analysis: any;
 }
 
 export function WriteLikeMeSettings() {
@@ -44,9 +43,7 @@ export function WriteLikeMeSettings() {
 
   const loadStyles = async () => {
     try {
-      const response = await fetch('/api/user-style', {
-        credentials: 'include'
-      });
+      const response = await fetch('/api/user-style');
       const data = await response.json();
       
       if (response.ok) {
@@ -76,7 +73,6 @@ export function WriteLikeMeSettings() {
       const response = await fetch('/api/user-style', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({
           name: newStyleName || 'My Style',
           sampleTweets: validSamples,
@@ -113,7 +109,6 @@ export function WriteLikeMeSettings() {
       const response = await fetch('/api/user-style', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({
           styleId,
           name: style.name,
@@ -141,7 +136,6 @@ export function WriteLikeMeSettings() {
       const response = await fetch('/api/user-style', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({
           styleId,
           isActive: true,
@@ -172,7 +166,6 @@ export function WriteLikeMeSettings() {
     try {
       const response = await fetch(`/api/user-style?styleId=${styleId}`, {
         method: 'DELETE',
-        credentials: 'include',
       });
 
       if (response.ok) {
@@ -185,6 +178,7 @@ export function WriteLikeMeSettings() {
       toast.error('Failed to delete style');
     }
   };
+
 
   const addSampleField = () => {
     if (editing) {

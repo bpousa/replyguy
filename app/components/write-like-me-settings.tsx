@@ -412,10 +412,10 @@ export function WriteLikeMeSettings() {
                       </h4>
                       {style.analyzed_at && (
                         <p className="text-sm text-gray-500 mt-1">
-                          Analyzed: {style.tone && `${style.tone} tone`}
-                          {style.formality && `, ${style.formality}`}
-                          {style.characteristics && style.characteristics.length > 0 && 
-                            ` • ${style.characteristics.slice(0, 2).join(', ')}`}
+                          Analyzed: {style.style_analysis?.tone && `${style.style_analysis.tone} tone`}
+                          {style.style_analysis?.formality && `, ${style.style_analysis.formality}`}
+                          {style.style_analysis?.personalityTraits && style.style_analysis.personalityTraits.length > 0 && 
+                            ` • ${style.style_analysis.personalityTraits.slice(0, 2).join(', ')}`}
                         </p>
                       )}
                     </div>

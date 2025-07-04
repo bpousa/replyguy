@@ -1,7 +1,8 @@
 
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/app/lib/supabase/server';
+import { createServerClient } from '@/app/lib/auth';
+import { cookies } from 'next/headers';
 import { OpenAI } from 'openai';
 
 const openai = new OpenAI({
@@ -46,7 +47,8 @@ async function analyzeStyleWithGPT(tweets: string[]): Promise<any> {
 }
 
 export async function GET(req: NextRequest) {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createServerClient(cookieStore);
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -68,7 +70,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createServerClient(cookieStore);
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -108,7 +111,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createServerClient(cookieStore);
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -163,7 +167,8 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const supabase = createClient();
+  const cookieStore = cookies();
+  const supabase = createServerClient(cookieStore);
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {

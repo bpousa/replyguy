@@ -115,12 +115,40 @@ export default function LoginPage() {
           throw error;
         }
 
-        // Verify session was created with retry logic
-        let sessionVerified = false;
-        let retryCount = 0;
-        const maxRetries = 3;
+        // Use the session directly from the response
+        if (!data.session) {
+          throw new Error('No session returned from login');
+        }
+
+        console.log('[login] Login successful for:', data.session.user.email);
         
-        while (!sessionVerified && retryCount < maxRetries) {
+        // Ensure user exists in database
+        try {
+          const response = await fetch('/auth/ensure-user', {
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.text();
+            console.error('[login] Failed to ensure user exists:', response.status, errorData);
+          } else {
+            console.log('[login] User existence confirmed');
+          }
+        } catch (err) {
+          console.error('[login] Error ensuring user:', err);
+          // Don't fail login if ensure-user fails
+        }
+        
+        toast.success('Welcome back!');
+        
+        // Navigate to dashboard immediately
+        router.push('/dashboard');
+        
+        // Skip the old retry logic
+        if (false) {
           const { data: { session } } = await supabase.auth.getSession();
           
           if (session) {
@@ -164,10 +192,6 @@ export default function LoginPage() {
               }
             }
           }
-        }
-        
-        if (!sessionVerified) {
-          throw new Error('Unable to establish session. Please try logging in again.');
         }
       }
     } catch (error: any) {

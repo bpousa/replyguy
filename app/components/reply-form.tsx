@@ -85,9 +85,7 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
       if (!user || !userPlan.enable_write_like_me) return;
       
       try {
-        const response = await fetch('/api/user-style', {
-          credentials: 'include'
-        });
+        const response = await fetch('/api/user-style');
         if (response.ok) {
           const data = await response.json();
           const activeStyle = data.styles?.find((s: any) => s.is_active);

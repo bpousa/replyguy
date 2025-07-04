@@ -106,7 +106,10 @@
       "Bash(kill:*)",
       "Bash(su mike -c \"find . -name '*.sql' -type f | grep -E '(migration|schema)' | head -10\")",
       "Bash(npx ts-node:*)",
-      "Bash(gemini)"
+      "Bash(gemini)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(npm info:*)",
+      "Bash(npm update:*)"
     ],
     "deny": []
   }

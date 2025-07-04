@@ -5,11 +5,6 @@ import { ResponseType, Tone } from '@/app/lib/types';
 import { createServerClient } from '@/app/lib/auth';
 import { cookies } from 'next/headers';
 
-// Initialize OpenAI
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 // Request validation schema
 const requestSchema = z.object({
   tweet: z.string().min(1).max(2000),
@@ -26,6 +21,11 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Initialize OpenAI
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
 
     // Parse and validate request
     const body = await req.json();

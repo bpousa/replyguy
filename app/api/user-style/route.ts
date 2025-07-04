@@ -5,11 +5,10 @@ import { createServerClient } from '@/app/lib/auth';
 import { cookies } from 'next/headers';
 import { OpenAI } from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 async function analyzeStyleWithGPT(tweets: string[]): Promise<any> {
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
   const content = `
     Analyze the writing style from the following tweets and return a JSON object.
 

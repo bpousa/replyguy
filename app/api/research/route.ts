@@ -3,11 +3,6 @@ import { z } from 'zod';
 import OpenAI from 'openai';
 import { researchCache } from '@/app/lib/services/research-cache.service';
 
-// Initialize OpenAI for query generation
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 // Request validation schema
 const requestSchema = z.object({
   originalTweet: z.string().min(1).max(2000),
@@ -71,6 +66,11 @@ function sanitizePerplexityResponse(response: string, maxTokens: number = 400): 
 
 export async function POST(req: NextRequest) {
   try {
+    // Initialize OpenAI for query generation
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
     // Check if Perplexity is enabled
     if (!process.env.PERPLEXITY_API_KEY) {
       console.error('Perplexity API key not found');

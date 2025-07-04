@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createBrowserClient } from '@/app/lib/auth';
+import { useAuth } from '@/app/contexts/auth-context';
 import { Button } from '@/app/components/ui/button';
 import { 
   Home, 
@@ -29,50 +30,19 @@ export default function DashboardLayout({
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
+  const { user, status, checkSession } = useAuth();
+
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        console.log('[dashboard-layout] Checking auth...');
-        
-        // Simple session check with one retry for fresh logins
-        let { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          // If we're coming from a fresh login, the session might not be ready yet
-          const isFromLogin = document.referrer.includes('/auth/login') || 
-                            sessionStorage.getItem('auth_flow_active') === 'true';
-          
-          if (isFromLogin) {
-            console.log('[dashboard-layout] No session yet, waiting for fresh login...');
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Try once more
-            const retryResult = await supabase.auth.getSession();
-            session = retryResult.data.session;
-          }
-          
-          if (!session) {
-            console.log('[dashboard-layout] No session, redirecting to login');
-            router.push('/auth/login');
-            return;
-          }
-        }
-        
-        console.log('[dashboard-layout] Session found:', session.user.email);
-        
-        // Clear auth flow marker
-        sessionStorage.removeItem('auth_flow_active');
-        
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          router.push('/auth/login');
-          return;
-        }
-        
-        setUser(user);
-        
-        // Ensure user exists in database
+    if (status === 'unauthenticated') {
+      console.log('[dashboard-layout] No session, redirecting to login');
+      router.push('/auth/login');
+    } else if (status === 'authenticated' && user) {
+      console.log('[dashboard-layout] Session found:', user.email);
+      // Clear auth flow marker
+      sessionStorage.removeItem('auth_flow_active');
+      
+      // Ensure user exists in database
+      const ensureUser = async () => {
         try {
           const response = await fetch('/auth/ensure-user', {
             credentials: 'include'
@@ -85,8 +55,11 @@ export default function DashboardLayout({
         } catch (err) {
           console.error('[dashboard] Error ensuring user:', err);
         }
-        
-        // Get user's subscription from users table
+      };
+      ensureUser();
+
+      // Get user's subscription from users table
+      const fetchSubscription = async () => {
         const { data: userData } = await supabase
           .from('users')
           .select('subscription_tier')
@@ -107,29 +80,13 @@ export default function DashboardLayout({
             });
           }
         }
-      } catch (error) {
-        console.error('Auth error:', error);
-        router.push('/auth/login');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    checkAuth();
-    
-    // Listen for auth changes
-    const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') {
-        router.push('/auth/login');
-      } else if (event === 'SIGNED_IN' && session) {
-        checkAuth();
-      }
-    });
-    
-    return () => {
-      authListener?.unsubscribe();
-    };
-  }, [router]); // eslint-disable-line react-hooks/exhaustive-deps
+      };
+      fetchSubscription();
+      setLoading(false);
+    } else if (status === 'loading') {
+      setLoading(true);
+    }
+  }, [status, user, router, supabase]);
   
   const handleSignOut = async () => {
     try {

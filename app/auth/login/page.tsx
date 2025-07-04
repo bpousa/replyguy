@@ -146,53 +146,6 @@ export default function LoginPage() {
         
         // Navigate to dashboard immediately
         router.push('/dashboard');
-        
-        // Skip the old retry logic
-        if (false) {
-          const { data: { session } } = await supabase.auth.getSession();
-          
-          if (session) {
-            sessionVerified = true;
-            
-            // Ensure user exists in database
-            try {
-              const response = await fetch('/auth/ensure-user', {
-                credentials: 'include'
-              });
-              if (!response.ok) {
-                console.error('[login] Failed to ensure user exists');
-              } else {
-                console.log('[login] User existence confirmed');
-              }
-            } catch (err) {
-              console.error('[login] Error ensuring user:', err);
-            }
-            
-            toast.success('Welcome back!');
-            
-            // Add a small delay to ensure session is propagated
-            setTimeout(() => {
-              router.push('/dashboard');
-            }, 100);
-          } else {
-            retryCount++;
-            if (retryCount < maxRetries) {
-              console.log(`[login] Session not found, retrying (${retryCount}/${maxRetries})...`);
-              // Wait a bit before retrying
-              await new Promise(resolve => setTimeout(resolve, 1000));
-              
-              // Try to refresh session
-              const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
-              if (refreshedSession) {
-                sessionVerified = true;
-                toast.success('Welcome back!');
-                setTimeout(() => {
-                  router.push('/dashboard');
-                }, 100);
-              }
-            }
-          }
-        }
       }
     } catch (error: any) {
       console.error('Login error:', error);

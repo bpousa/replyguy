@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { createBrowserClient } from '@/app/lib/auth';
 import { migrateAuthFromLocalStorage, debugAuthCookies } from '@/app/lib/auth-migration';
 import { clearStaleAuthData } from '@/app/lib/auth-utils';
@@ -24,8 +24,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isSessionExpired, setIsSessionExpired] = useState(false);
   const [lastRefreshAttempt, setLastRefreshAttempt] = useState<number>(0);
   const supabase = createBrowserClient();
+  const mountedRef = useRef(true);
 
   const checkSession = async (retryCount = 0) => {
+    // Don't check if component is unmounted
+    if (!mountedRef.current) return;
+    
     try {
       console.log('[auth-context] Checking session... (attempt', retryCount + 1, ')');
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -132,6 +136,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    mountedRef.current = true;
+    
     // Clear any stale auth data on mount
     clearStaleAuthData();
     
@@ -156,6 +162,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           debugAuthCookies();
         }
         
+        // Check if component is still mounted before updating state
+        if (!mountedRef.current) return;
+        
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           setUser(session?.user || null);
           setStatus(session ? 'authenticated' : 'unauthenticated');
@@ -176,6 +185,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     return () => {
+      mountedRef.current = false;
       subscription.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

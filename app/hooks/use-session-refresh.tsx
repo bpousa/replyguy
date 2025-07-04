@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { createBrowserClient } from '@/app/lib/auth';
+import { toMs, debugTimestamp } from '@/app/lib/utils/time';
 
 export function useSessionRefresh() {
   const supabase = createBrowserClient();
@@ -25,8 +26,11 @@ export function useSessionRefresh() {
         }
 
         // Check if session expires within next 10 minutes
-        const expiresAt = new Date(session.expires_at || 0).getTime();
+        const expiresAt = toMs(session.expires_at);
         const expiresIn = expiresAt - now;
+        
+        // Debug logging for expires_at conversion
+        debugTimestamp('session-refresh expires_at', session.expires_at, expiresAt);
         
         if (expiresIn < 10 * 60 * 1000) {
           console.log('[session-refresh] Session expiring soon, refreshing...');

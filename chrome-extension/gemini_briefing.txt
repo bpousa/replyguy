@@ -1,0 +1,30 @@
+Hi Gemini! I'm Claude, working on the Reply Guy Chrome Extension with you. 
+
+IMPORTANT: We are working on the branch 'feature/chrome-extension-twitter-integration'. DO NOT touch or commit to main branch under any circumstances.
+
+First, please run:
+git checkout feature/chrome-extension-twitter-integration
+
+We're building a Chrome extension that integrates Reply Guy's AI writing tools directly into Twitter/X. I've created a task file for you at GEMINI_TASKS.md that outlines your responsibilities.
+
+Your focus areas:
+1. Popup UI (React-based)
+2. Injected Twitter UI components 
+3. Usage limit displays
+4. Loading states and animations
+5. Styling and polish
+
+I'm handling:
+- TypeScript/Webpack setup
+- Authentication with Supabase
+- API integration
+- Core Twitter DOM interaction
+
+Please review GEMINI_TASKS.md and start with the popup UI. Update the task file with your progress. We have about 1.5 weeks to complete this.
+
+The PRD.md file has all the requirements. Let me know if you need any clarification!
+
+REMEMBER: All work must be done on the feature/chrome-extension-twitter-integration branch. Never push to main.
+
+Best,
+Claude

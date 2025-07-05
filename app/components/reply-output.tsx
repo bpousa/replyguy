@@ -346,7 +346,7 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
                   Sources
                 </h3>
               </div>
-              <div className="space-y-2 overflow-x-hidden">
+              <div className="space-y-2 overflow-x-auto">
                 {reply.citations
                   .filter(citation => citation && citation.url) // Filter out invalid citations
                   .map((citation, index) => {
@@ -383,10 +383,10 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
                     >
                       <div className="flex items-start justify-between gap-2 min-w-0">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-amber-900 dark:text-amber-100 truncate">
+                          <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
                             {displayTitle || 'Source'}
                           </p>
-                          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1 truncate">
+                          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
                             {citation.url}
                           </p>
                         </div>

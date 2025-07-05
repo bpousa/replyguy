@@ -338,7 +338,7 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
           return null;
         })()}
         {reply.citations && reply.citations.length > 0 && (
-          <Card className="p-4 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
+          <Card className="p-4 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 overflow-hidden">
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <Link className="w-4 h-4 text-amber-700 dark:text-amber-300 flex-shrink-0" />
@@ -346,7 +346,7 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
                   Sources
                 </h3>
               </div>
-              <div className="space-y-2 -mx-2 px-2 overflow-x-auto max-w-full">
+              <div className="space-y-2 overflow-x-hidden">
                 {reply.citations
                   .filter(citation => citation && citation.url) // Filter out invalid citations
                   .map((citation, index) => {
@@ -386,7 +386,7 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
                           <p className="text-sm font-medium text-amber-900 dark:text-amber-100 truncate">
                             {displayTitle || 'Source'}
                           </p>
-                          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1 break-words overflow-hidden">
+                          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1 truncate">
                             {citation.url}
                           </p>
                         </div>

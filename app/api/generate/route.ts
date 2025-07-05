@@ -117,9 +117,9 @@ export async function POST(req: NextRequest) {
     const researchBuffer = hasResearch ? 1.2 : 1.0; // 20% extra for research complexity
     
     if (charLimit >= 2000) {
-      maxTokens = Math.ceil(1000 * researchBuffer); // 2000 chars / 2 chars per token
+      maxTokens = Math.ceil(1800 * researchBuffer); // ~3.3 chars/token with buffer for long content
     } else if (charLimit >= 1000) {
-      maxTokens = Math.ceil(600 * researchBuffer); // 1000 chars / 2 chars per token + buffer
+      maxTokens = Math.ceil(1000 * researchBuffer); // ~3 chars/token with buffer
     } else if (charLimit >= 560) {
       maxTokens = Math.ceil(300 * researchBuffer); // 560 chars / 2 chars per token + buffer
     } else {

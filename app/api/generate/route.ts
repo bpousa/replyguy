@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Build generation prompt
-    const prompt = buildGenerationPrompt(validated, charLimit, styleInstructions);
+    const prompt = buildGenerationPrompt(validated, charLimit, styleInstructions, replyLength);
     
     console.log('\n📋 === GENERATION PROMPT ===');
     console.log('Has perplexity data in validated:', !!validated.perplexityData);
@@ -117,9 +117,9 @@ export async function POST(req: NextRequest) {
     const researchBuffer = hasResearch ? 1.2 : 1.0; // 20% extra for research complexity
     
     if (charLimit >= 2000) {
-      maxTokens = Math.ceil(1000 * researchBuffer); // 2000 chars / 2 chars per token
+      maxTokens = Math.ceil(1800 * researchBuffer); // ~3.3 chars/token with buffer for long content
     } else if (charLimit >= 1000) {
-      maxTokens = Math.ceil(600 * researchBuffer); // 1000 chars / 2 chars per token + buffer
+      maxTokens = Math.ceil(1000 * researchBuffer); // ~3 chars/token with buffer
     } else if (charLimit >= 560) {
       maxTokens = Math.ceil(300 * researchBuffer); // 560 chars / 2 chars per token + buffer
     } else {
@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
       model: 'claude-3-5-sonnet-20241022',
       max_tokens: maxTokens,
       temperature: 0.8,
-      system: `You are typing a quick reply on Twitter/X. Write exactly like a real person would - casual, direct, sometimes imperfect. The user told you what they want to say, so say it naturally. No essay writing, no perfect grammar needed. Just real human replies. When stats/research are included, drop them in naturally like you're sharing something you just learned.`,
+      system: `You are typing a ${replyLength === 'extra-long' ? 'detailed thread-style' : replyLength === 'long' ? 'comprehensive' : 'quick'} reply on Twitter/X. Write exactly like a real person would - casual, direct, sometimes imperfect. The user told you what they want to say, so say it naturally. ${replyLength === 'short' || replyLength === 'medium' ? 'No essay writing, no perfect grammar needed. Just real human replies.' : 'Take the space to fully develop your thoughts while keeping it conversational.'} When stats/research are included, drop them in naturally like you're sharing something you just learned.`,
       messages: [{ role: 'user', content: prompt }],
     });
 
@@ -198,7 +198,7 @@ export async function POST(req: NextRequest) {
 }
 
 
-function buildGenerationPrompt(input: any, charLimit: number, styleInstructions: string): string {
+function buildGenerationPrompt(input: any, charLimit: number, styleInstructions: string, replyLength: string): string {
   const antiAIPrompt = `
 Write like real people actually write on Twitter:
 - Start mid-thought sometimes: "honestly the worst part is..." or "nah that's not even..."
@@ -216,7 +216,7 @@ When sharing facts/stats:
 - Or casual discovery: "just found out [fact] and now i can't stop thinking about it"
 - Or simple share: "fun fact: [stat]"
 
-BE BRIEF. Most replies should be 1-2 sentences unless they specifically asked for more.
+${replyLength === 'short' || replyLength === 'medium' ? 'BE BRIEF. Most replies should be 1-2 sentences.' : replyLength === 'long' ? 'Take your time to fully express the idea. Use multiple sentences to make your point clear.' : 'This is an extra-long reply. Fully develop your thoughts with detailed explanations, multiple points, and comprehensive coverage of the topic. Use the full character limit available.'}
 
 Even if the user's suggestion sounds good, always put it in your own words. Never copy their phrasing exactly.`
 

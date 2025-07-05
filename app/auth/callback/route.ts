@@ -102,7 +102,6 @@ export async function GET(request: NextRequest) {
     
     // Log cookie size for debugging (remove in production)
     if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_AUTH_DEBUG === 'true') {
-      const cookieStore = cookies();
       const allCookies = cookieStore.getAll();
       const authCookies = allCookies.filter(c => c.name.includes('sb-') || c.name.includes('supabase'));
       console.log('[auth-callback] Auth cookie count:', authCookies.length);

@@ -107,13 +107,20 @@ export async function POST(req: NextRequest) {
       // Step 6: Record template usage for diversity tracking
       memeTemplateTracker.recordUsage(userId, selection.templateId, selection.templateName);
       
-      // Step 7: Return template-specific response
+      // Step 7: Get box count for the selected template
+      const selectedTemplate = templates.find(t => t.id === selection.templateId);
+      const boxCount = selectedTemplate?.box_count || 2;
+      
+      console.log('[meme-text] Template box count:', boxCount);
+      
+      // Step 8: Return template-specific response
       return NextResponse.json({
         templateId: selection.templateId,
         templateName: selection.templateName,
         topText: selection.topText,
         bottomText: selection.bottomText,
         text: selection.text,
+        boxCount: boxCount, // Include box count for proper handling
         enhanced: true,
         method: 'template-selection',
         useAutomeme: false // We'll use captionImage instead

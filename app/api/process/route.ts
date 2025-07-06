@@ -502,6 +502,7 @@ export async function POST(req: NextRequest) {
               topText: memeTextData.topText,
               bottomText: memeTextData.bottomText,
               text: memeTextData.text,
+              boxCount: memeTextData.boxCount, // Pass box count from meme-text API
               userId: userId
             };
           } else {
@@ -542,25 +543,42 @@ export async function POST(req: NextRequest) {
       console.log('📤 Meme API Request Parameters:', JSON.stringify(memeRequestBody, null, 2));
       console.log('📍 Meme API URL:', new URL('/api/meme', req.url).toString());
       
-      try {
-        const memeResponse = await fetch(new URL('/api/meme', req.url), {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Cookie': req.headers.get('cookie') || ''
-          },
-          body: JSON.stringify(memeRequestBody),
-        });
-
-        console.log('📡 Meme API Response Status:', memeResponse.status);
-        console.log('📡 Meme API Response Headers:', Object.fromEntries(memeResponse.headers.entries()));
+      // Retry logic for meme generation
+      const maxMemeRetries = 3;
+      let memeAttempt = 0;
+      let lastMemeError: any = null;
+      
+      while (memeAttempt < maxMemeRetries && !memeUrl) {
+        memeAttempt++;
         
-        if (memeResponse.ok) {
-          const memeData = await memeResponse.json();
-          memeUrl = memeData.url;
-          memePageUrl = memeData.pageUrl;
-          console.log('✅ Meme generated successfully:', { memeUrl, memePageUrl });
-        } else {
+        try {
+          console.log(`🔄 Meme generation attempt ${memeAttempt}/${maxMemeRetries}`);
+          
+          const memeResponse = await fetch(new URL('/api/meme', req.url), {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Cookie': req.headers.get('cookie') || ''
+            },
+            body: JSON.stringify(memeRequestBody),
+          });
+
+          console.log('📡 Meme API Response Status:', memeResponse.status);
+          console.log('📡 Meme API Response Headers:', Object.fromEntries(memeResponse.headers.entries()));
+          
+          if (memeResponse.ok) {
+            const memeData = await memeResponse.json();
+            memeUrl = memeData.url;
+            memePageUrl = memeData.pageUrl;
+            console.log('✅ Meme generated successfully:', { memeUrl, memePageUrl, attempt: memeAttempt });
+            break; // Success, exit retry loop
+          } else {
+            // Check if error is retryable
+            const shouldRetry = memeResponse.status === 503 || // Service unavailable
+                              memeResponse.status === 502 || // Bad gateway
+                              memeResponse.status === 504;   // Gateway timeout
+            
+            if (!shouldRetry || memeAttempt === maxMemeRetries) {
           // Capture the full error response
           const responseText = await memeResponse.text();
           let errorData;
@@ -595,32 +613,33 @@ export async function POST(req: NextRequest) {
             console.error('  ⚠️ Forbidden - User plan does not include memes');
           }
           
-          // Don't fail the entire request if meme generation fails
-          // This is a nice-to-have feature, not critical
+              // Final attempt failed, log error
+              lastMemeError = errorData;
+              memeSkipReason = `Meme generation failed (${memeResponse.status}): ${errorData.error || 'Unknown error'}`;
+            } else {
+              // Retryable error, wait before next attempt
+              console.log(`⏳ Waiting before retry ${memeAttempt + 1}...`);
+              lastMemeError = { status: memeResponse.status, error: lastMemeError };
+              await new Promise(resolve => setTimeout(resolve, 1000 * memeAttempt)); // Exponential backoff
+            }
+          }
+        } catch (error) {
+          // Network error - always retry these
+          lastMemeError = error;
+          console.error(`❌ Meme generation attempt ${memeAttempt} failed with network error:`, error);
           
-          // Add info to debug output for user visibility
-          memeSkipReason = `Meme generation failed (${memeResponse.status}): ${errorData.error || 'Unknown error'}`;
+          if (memeAttempt < maxMemeRetries) {
+            console.log(`⏳ Waiting before retry ${memeAttempt + 1}...`);
+            await new Promise(resolve => setTimeout(resolve, 1000 * memeAttempt));
+          } else {
+            memeSkipReason = `Network error after ${memeAttempt} attempts: ${error instanceof Error ? error.message : 'Unknown error'}`;
+          }
         }
-      } catch (error) {
-        console.error('❌ MEME GENERATION NETWORK ERROR:', {
-          errorType: error instanceof Error ? error.constructor.name : 'Unknown',
-          message: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined,
-          memeText: finalMemeText,
-          userId: userId,
-          url: new URL('/api/meme', req.url).toString()
-        });
-        
-        // Check for specific network error types
-        if (error instanceof TypeError && error.message.includes('fetch')) {
-          console.error('  ⚠️ Network fetch error - possible causes:');
-          console.error('    - API endpoint unreachable');
-          console.error('    - DNS resolution failed');
-          console.error('    - Connection timeout');
-        }
-        
-        // Don't fail the entire request if meme generation fails
-        memeSkipReason = `Network error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      }
+      
+      // If all retries failed, log the final error
+      if (!memeUrl && lastMemeError && !memeSkipReason) {
+        memeSkipReason = `Meme generation failed after ${memeAttempt} attempts`;
       }
     } else {
       console.log('🚫 Meme generation skipped:', { 

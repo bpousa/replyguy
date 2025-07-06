@@ -322,6 +322,55 @@ export default function HomePage() {
     }
   };
 
+  const handleRegenerateMeme = async () => {
+    if (!generatedReply || !user) return;
+    
+    // Show loading state
+    toast.loading('Regenerating meme...', { id: 'meme-regen' });
+    
+    try {
+      // Call meme API directly with the existing reply text
+      const response = await fetch('/api/meme', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          text: generatedReply.debugInfo?.memeText || 'this is fine',
+          userId: user.id,
+        }),
+      });
+
+      if (response.ok) {
+        const memeData = await response.json();
+        
+        // Update the generated reply with new meme data
+        setGeneratedReply({
+          ...generatedReply,
+          memeUrl: memeData.url,
+          memePageUrl: memeData.pageUrl,
+          debugInfo: generatedReply.debugInfo ? {
+            ...generatedReply.debugInfo,
+            memeSkipReason: undefined, // Clear the skip reason
+          } : {
+            memeRequested: true,
+            memeDecided: true,
+            memeSkipReason: undefined
+          }
+        });
+        
+        toast.success('Meme regenerated successfully!', { id: 'meme-regen' });
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to regenerate meme', { id: 'meme-regen' });
+      }
+    } catch (error) {
+      console.error('Failed to regenerate meme:', error);
+      toast.error('Failed to regenerate meme', { id: 'meme-regen' });
+    }
+  };
+
   return (
     <main className="min-h-screen py-12 px-4">
       <div className="max-w-6xl mx-auto">
@@ -378,6 +427,7 @@ export default function HomePage() {
               reply={generatedReply} 
               isLoading={isGenerating}
               maxReplyLength={subscription?.subscription_plans?.max_reply_length || 280}
+              onRegenerateMeme={handleRegenerateMeme}
             />
           </div>
         </div>

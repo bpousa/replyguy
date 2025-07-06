@@ -93,28 +93,38 @@ IMPORTANT RULES:
 1. Use SIMPLE, COMMON meme phrases that work with Imgflip's automeme
 2. Keep it UNDER 8 WORDS - shorter is better!
 3. Avoid complex sentences or punctuation
-4. Stick to these PROVEN formats:
+4. ALWAYS prefer these ultra-reliable formats:
    - "this is fine"
+   - "but why"
+   - "seems legit"
+   - "mind blown"
+   - "wait what"
+   - "not bad"
+   - "challenge accepted"
+   - "why not both"
+   - "shut up and take my money"
+   
+5. If unsure, default to: "this is fine" or "but why"
+
+6. Other formats that often work:
    - "y u no [action]"
+   - "[noun] everywhere"
    - "not sure if [x] or [y]"
    - "one does not simply [action]"
-   - "shut up and take my money"
-   - "why not both"
-   - "[noun] everywhere"
-   - "ain't nobody got time for that"
-   - "such [adjective] much [noun]"
-   - "i don't always [x] but when i do [y]"
+   - "[emotion] intensifies"
 
 Examples of GOOD meme text:
 - "this is fine" 
-- "y u no work"
-- "bugs everywhere"
-- "not sure if bug or feature"
-- "one does not simply deploy on friday"
+- "but why"
+- "seems legit"
+- "mind blown"
+- "not bad"
 
-Examples of BAD meme text (too complex):
-- "when you realize the bug was in production all along"
-- "that moment when your code works but you don't know why"
+Examples of BAD meme text (avoid these):
+- Complex sentences with multiple clauses
+- Anything over 8 words
+- Specific references that aren't universally known
+- Abstract concepts like "provide evidence"
 
 Reply with ONLY the meme text, nothing else.`;
         console.log('[OpenAIMeme] Generating meme from reply');

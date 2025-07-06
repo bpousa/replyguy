@@ -6,7 +6,7 @@ import { GeneratedReply } from '@/app/lib/types';
 import { formatCost, formatDuration, copyToClipboard } from '@/app/lib/utils';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
-import { Copy, Check, Sparkles, DollarSign, Clock, Info, Link, ExternalLink, AlertCircle, Flag, ThumbsUp, MessageSquare } from 'lucide-react';
+import { Copy, Check, Sparkles, DollarSign, Clock, Info, Link, ExternalLink, AlertCircle, Flag, ThumbsUp, MessageSquare, RefreshCw } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LoadingReplyGuy } from './loading-reply-guy';
@@ -15,9 +15,10 @@ interface ReplyOutputProps {
   reply: GeneratedReply | null;
   isLoading: boolean;
   maxReplyLength?: number;
+  onRegenerateMeme?: () => void;
 }
 
-export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: ReplyOutputProps) {
+export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280, onRegenerateMeme }: ReplyOutputProps) {
   const [copied, setCopied] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackSent, setFeedbackSent] = useState(false);
@@ -316,12 +317,48 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280 }: 
                   Meme generation unavailable
                 </p>
                 <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                  The meme couldn&apos;t be generated with the current text. Try a different response or add custom meme text for better results.
+                  {(() => {
+                    const skipReason = reply.debugInfo.memeSkipReason || '';
+                    
+                    // Parse specific error types and provide helpful messages
+                    if (skipReason.includes('(422)') || skipReason.toLowerCase().includes('no suitable meme')) {
+                      return "The AI couldn't match your text to a meme template. Try using shorter, more meme-friendly phrases like 'this is fine' or 'but why' or 'shut up and take my money'.";
+                    } else if (skipReason.includes('(429)') || skipReason.toLowerCase().includes('limit reached')) {
+                      // Extract limit numbers if available
+                      const limitMatch = skipReason.match(/(\d+)\/(\d+)/);
+                      if (limitMatch) {
+                        return `You've reached your monthly meme limit (${limitMatch[1]}/${limitMatch[2]}). Upgrade your plan to create more memes!`;
+                      }
+                      return "You've reached your monthly meme limit. Upgrade your plan to create more memes!";
+                    } else if (skipReason.includes('(403)') || skipReason.toLowerCase().includes('plan does not include')) {
+                      return "Memes aren't included in your current plan. Upgrade to add meme generation!";
+                    } else if (skipReason.includes('(503)') || skipReason.toLowerCase().includes('service unavailable')) {
+                      return "Meme service is temporarily unavailable. Please try again in a few moments.";
+                    } else if (skipReason.toLowerCase().includes('network') || skipReason.toLowerCase().includes('timeout')) {
+                      return "Connection issue with meme service. Please try again.";
+                    } else {
+                      // Default message for unknown errors
+                      return "The meme couldn't be generated. Try a different response or add custom meme text for better results.";
+                    }
+                  })()}
                 </p>
                 {debugMode && (
                   <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 font-mono break-all">
                     Debug: {reply.debugInfo.memeSkipReason}
                   </p>
+                )}
+                {onRegenerateMeme && (
+                  <div className="mt-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onRegenerateMeme}
+                      className="text-xs"
+                    >
+                      <RefreshCw className="w-3 h-3 mr-1" />
+                      Try Again
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>

@@ -75,7 +75,7 @@ class APIService {
   }
 
   async getCurrentUser(): Promise<User> {
-    return this.fetchWithAuth('/user');
+    return this.fetchWithAuth('/auth/session');
   }
 }
 

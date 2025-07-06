@@ -13,8 +13,11 @@ class AuthService {
         domain: '.appendment.com'
       });
 
-      const accessToken = cookies.find(c => c.name === 'sb-access-token')?.value;
-      const refreshToken = cookies.find(c => c.name === 'sb-refresh-token')?.value;
+      // Supabase uses project-specific cookie names
+      const authToken = cookies.find(c => 
+        c.name.startsWith('sb-') && c.name.includes('-auth-token')
+      );
+      const accessToken = authToken?.value;
 
       if (!accessToken) {
         return { isAuthenticated: false };
@@ -42,7 +45,7 @@ class AuthService {
   async waitForLogin(): Promise<AuthState> {
     // Open Reply Guy login page
     chrome.tabs.create({
-      url: 'https://replyguy.appendment.com/login?extension=true'
+      url: 'https://replyguy.appendment.com/auth/login?extension=true'
     });
 
     // Poll for auth cookies

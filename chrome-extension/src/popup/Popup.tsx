@@ -50,7 +50,7 @@ export function Popup() {
     <div className="popup-container">
       <div className="popup-header">
         <h1>Reply Guy</h1>
-        <p>AI-powered replies for Twitter</p>
+        <p>AI-powered replies for X</p>
       </div>
 
       {loading ? (
@@ -123,10 +123,10 @@ export function Popup() {
       ) : (
         <div className="auth-section">
           <h2>Sign in to Reply Guy</h2>
-          <p>Generate AI-powered replies directly from Twitter. Sign in to get started.</p>
+          <p>Generate AI-powered replies directly from X. Sign in to get started.</p>
           <button 
             className="btn-primary"
-            onClick={() => chrome.tabs.create({ url: 'https://replyguy.appendment.com/login?extension=true' })}
+            onClick={() => chrome.tabs.create({ url: 'https://replyguy.appendment.com/auth/login?extension=true' })}
           >
             Sign In
           </button>

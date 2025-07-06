@@ -98,12 +98,12 @@ export async function POST(req: NextRequest) {
     const examples = {
       agree: [
         "Build on their point with evidence",
-        "Share a supporting anecdote",
+        "Provide supporting data or statistics",
         "Validate their feelings",
         "Add another perspective that agrees",
         "Express enthusiastic agreement",
-        "Share a similar frustration",
-        "Confirm with personal experience"
+        "Ask follow-up questions to learn more",
+        "Suggest related resources or solutions"
       ],
       disagree: [
         "Present a counter-argument politely",

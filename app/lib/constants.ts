@@ -33,12 +33,12 @@ export const PLACEHOLDER_TWEETS = [
 ];
 
 export const PLACEHOLDER_IDEAS = [
-  "Share a similar experience",
+  "Ask a thoughtful question",
   "Offer encouragement",
   "Add a helpful tip",
   "Make a witty observation",
-  "Ask a follow-up question",
-  "Provide relevant information",
+  "Provide useful resources",
+  "Share relevant data or facts",
 ];
 
 export const REPLY_LENGTHS = [

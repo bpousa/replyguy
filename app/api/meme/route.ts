@@ -13,6 +13,7 @@ const requestSchema = z.object({
   topText: z.string().max(100).optional(),
   bottomText: z.string().max(100).optional(),
   userId: z.string().optional(),
+  boxCount: z.number().int().min(1).max(20).optional(), // Template box count if known
 });
 
 export async function POST(req: NextRequest) {
@@ -127,11 +128,31 @@ export async function POST(req: NextRequest) {
       });
       
       try {
+        // Get template info to check box count
+        let boxCount = validated?.boxCount; // Use provided box count if available
+        
+        if (!boxCount) {
+          try {
+            const templates = await imgflipService.getPopularMemes();
+            const template = templates.find(t => t.id === validated?.templateId);
+            if (template) {
+              boxCount = template.box_count;
+              console.log('[meme API] 📦 Template box count from API:', boxCount);
+            }
+          } catch (err) {
+            console.log('[meme API] ⚠️ Could not fetch template info, proceeding without box count');
+          }
+        } else {
+          console.log('[meme API] 📦 Using provided box count:', boxCount);
+        }
+        
         // Use captionImage for specific template
         memeResult = await imgflipService.captionImage(
           validated.templateId,
           validated.topText || validated.text || '',
-          validated.bottomText || ''
+          validated.bottomText || '',
+          true, // removeWatermark
+          boxCount // Pass box count if we have it
         );
         console.log('[meme API] ✅ Template-specific meme generated successfully');
       } catch (error) {

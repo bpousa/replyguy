@@ -21,6 +21,27 @@ export default function LoginPage() {
   const [resendTimer, setResendTimer] = useState(60);
 
   useEffect(() => {
+    // Check for existing rate limit
+    const rateLimitTimestamp = localStorage.getItem('login_rate_limit');
+    if (rateLimitTimestamp) {
+      const timeSinceLimit = Date.now() - parseInt(rateLimitTimestamp);
+      const oneHour = 60 * 60 * 1000; // 60 minutes in milliseconds
+      
+      if (timeSinceLimit < oneHour) {
+        const minutesRemaining = Math.ceil((oneHour - timeSinceLimit) / (60 * 1000));
+        toast(
+          `Rate limit active. Please wait ${minutesRemaining} more minutes before trying to login with password.`,
+          { 
+            duration: 8000,
+            icon: '⏰'
+          }
+        );
+      } else {
+        // Clear expired rate limit
+        localStorage.removeItem('login_rate_limit');
+      }
+    }
+    
     // Check for incognito mode / private browsing
     const checkIncognito = async () => {
       try {
@@ -153,7 +174,36 @@ export default function LoginPage() {
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      toast.error(error.message || 'Failed to sign in');
+      
+      // Check for rate limit errors
+      if (error.message?.toLowerCase().includes('rate limit') || 
+          error.message?.toLowerCase().includes('too many requests') ||
+          error.status === 429) {
+        toast.error(
+          <div className="space-y-2">
+            <p className="font-semibold">Too many login attempts</p>
+            <p className="text-sm">
+              For security reasons, please wait 60 minutes before trying again.
+            </p>
+            <p className="text-sm">
+              Alternatively, you can:
+              • Use magic link login instead
+              • Contact support if urgent
+            </p>
+          </div>,
+          { 
+            duration: 10000,
+            style: {
+              maxWidth: '400px',
+            }
+          }
+        );
+        
+        // Store rate limit timestamp
+        localStorage.setItem('login_rate_limit', Date.now().toString());
+      } else {
+        toast.error(error.message || 'Failed to sign in');
+      }
     } finally {
       setIsLoading(false);
     }

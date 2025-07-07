@@ -17,6 +17,11 @@ interface SubscriptionPlan {
   enable_style_matching?: boolean;
   enable_write_like_me?: boolean;
   enable_perplexity_guidance?: boolean;
+  enable_memes?: boolean;
+  enable_long_replies?: boolean;
+  max_tweet_length?: number;
+  max_response_idea_length?: number;
+  max_reply_length?: number;
 }
 
 export async function POST(req: NextRequest) {
@@ -135,6 +140,13 @@ export async function POST(req: NextRequest) {
         suggestionsRemaining,
         enable_style_matching: plan.enable_style_matching || false,
         enable_write_like_me: plan.enable_write_like_me || false,
+        enable_perplexity_guidance: plan.enable_perplexity_guidance || false,
+        enable_memes: plan.enable_memes || false,
+        enable_long_replies: plan.enable_long_replies || false,
+        // Character limits
+        max_tweet_length: plan.max_tweet_length || 280,
+        max_response_idea_length: plan.max_response_idea_length || 200,
+        max_reply_length: plan.max_reply_length || 280,
       },
       upgradeUrl: !canGenerate ? '/pricing' : null,
     });

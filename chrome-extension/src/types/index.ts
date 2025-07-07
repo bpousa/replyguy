@@ -1,7 +1,25 @@
 export interface User {
   id: string;
   email: string;
-  plan?: 'free' | 'pro' | 'enterprise';
+  plan?: 'free' | 'basic' | 'pro' | 'business';
+}
+
+export interface UserPlan {
+  name: string;
+  max_tweet_length: number;
+  max_response_idea_length: number;
+  max_reply_length: number;
+  enable_long_replies: boolean;
+  enable_style_matching: boolean;
+  enable_perplexity_guidance: boolean;
+  enable_memes: boolean;
+  enable_write_like_me: boolean;
+  meme_limit: number;
+  memes_used: number;
+  suggestion_limit: number;
+  suggestions_used: number;
+  reply_limit: number;
+  replies_used: number;
 }
 
 export interface UsageLimits {
@@ -11,13 +29,21 @@ export interface UsageLimits {
   suggestionsTotal: number;
   memesRemaining: number;
   memesTotal: number;
+  userPlan?: UserPlan;
 }
 
 export interface GenerateReplyRequest {
   originalTweet: string;
-  userInput?: string;
-  tone: string;
+  responseIdea: string;
   responseType: 'agree' | 'disagree' | 'neutral' | 'other';
+  tone: string;
+  replyLength?: 'short' | 'medium' | 'long' | 'extra-long';
+  needsResearch?: boolean;
+  perplexityGuidance?: string;
+  includeMeme?: boolean;
+  memeText?: string;
+  memeTextMode?: 'tweet' | 'reply' | 'custom';
+  useCustomStyle?: boolean;
 }
 
 export interface GenerateReplyResponse {
@@ -30,7 +56,7 @@ export interface SuggestionsResponse {
 }
 
 export interface ChromeMessage {
-  action: 'generateReply' | 'getSuggestions' | 'generateMeme' | 'checkAuth' | 'getUsageLimits' | 'openLogin' | 'authStateChanged';
+  action: 'generateReply' | 'getSuggestions' | 'getSuggestResearch' | 'generateMeme' | 'checkAuth' | 'getUsageLimits' | 'openLogin' | 'authStateChanged';
   data?: any;
 }
 

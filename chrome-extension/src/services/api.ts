@@ -1,10 +1,10 @@
 import { 
   GenerateReplyRequest, 
   GenerateReplyResponse, 
-  SuggestionsResponse, 
   UsageLimits,
+  UserPlan,
   User 
-} from '@/types';
+} from '../types';
 
 const API_BASE_URL = 'https://replyguy.appendment.com/api';
 
@@ -31,40 +31,113 @@ class APIService {
   }
 
   async generateReply(request: GenerateReplyRequest): Promise<GenerateReplyResponse> {
-    return this.fetchWithAuth('/generate', {
+    return this.fetchWithAuth('/process', {
       method: 'POST',
       body: JSON.stringify(request),
     });
   }
 
-  async getSuggestions(tweet: string): Promise<SuggestionsResponse> {
+  async getSuggestions(params: { 
+    tweet: string; 
+    responseType?: string; 
+    tone?: string 
+  }): Promise<{ suggestion: string }> {
     return this.fetchWithAuth('/suggest', {
       method: 'POST',
-      body: JSON.stringify({ tweet }),
+      body: JSON.stringify(params),
     });
   }
 
-  async generateMeme(text: string, context: string): Promise<{ url: string }> {
-    return this.fetchWithAuth('/meme', {
+  async getSuggestResearch(params: {
+    originalTweet: string;
+    responseIdea: string;
+    responseType: string;
+    tone: string;
+  }): Promise<{ suggestions: string[] }> {
+    return this.fetchWithAuth('/suggest-research', {
       method: 'POST',
-      body: JSON.stringify({ text, context }),
+      body: JSON.stringify(params),
+    });
+  }
+
+  async generateMeme(params: {
+    memeTextSource: 'tweet' | 'reply' | 'custom';
+    originalTweet?: string;
+    generatedReply?: string;
+    customText?: string;
+    enhance?: boolean;
+  }): Promise<{ imageUrl: string; pageUrl: string }> {
+    return this.fetchWithAuth('/meme/generate', {
+      method: 'POST',
+      body: JSON.stringify(params),
     });
   }
 
   async getUsageLimits(): Promise<UsageLimits> {
-    const [limits, plan] = await Promise.all([
-      this.fetchWithAuth('/check-limits'),
-      this.fetchWithAuth('/user/plan'),
-    ]);
-    
-    return {
-      repliesRemaining: limits.repliesRemaining,
-      repliesTotal: plan.limits.replies,
-      suggestionsRemaining: limits.suggestionsRemaining,
-      suggestionsTotal: plan.limits.suggestions,
-      memesRemaining: limits.memesRemaining,
-      memesTotal: plan.limits.memes,
-    };
+    try {
+      const response = await this.fetchWithAuth('/check-limits', {
+        method: 'POST',
+        body: JSON.stringify({})
+      });
+      
+      const { limits } = response;
+      
+      const userPlan: UserPlan = {
+        name: limits.plan_name || 'Free',
+        max_tweet_length: limits.max_tweet_length || 280,
+        max_response_idea_length: limits.max_response_idea_length || 200,
+        max_reply_length: limits.max_reply_length || 280,
+        enable_long_replies: limits.enable_long_replies || false,
+        enable_style_matching: limits.enable_style_matching || false,
+        enable_perplexity_guidance: limits.enable_perplexity_guidance || false,
+        enable_memes: limits.enable_memes || false,
+        enable_write_like_me: limits.enable_write_like_me || false,
+        meme_limit: limits.meme_limit || 0,
+        memes_used: limits.memes_used || 0,
+        suggestion_limit: limits.suggestion_limit || 0,
+        suggestions_used: limits.suggestions_used || 0,
+        reply_limit: limits.reply_limit || 10,
+        replies_used: limits.replies_used || 0,
+      };
+      
+      return {
+        repliesRemaining: limits.repliesRemaining,
+        repliesTotal: limits.reply_limit,
+        suggestionsRemaining: limits.suggestionsRemaining,
+        suggestionsTotal: limits.suggestion_limit,
+        memesRemaining: limits.memesRemaining,
+        memesTotal: limits.meme_limit,
+        userPlan
+      };
+    } catch (error) {
+      console.error('[API] Failed to get usage limits:', error);
+      // Return default free plan limits
+      return {
+        repliesRemaining: 10,
+        repliesTotal: 10,
+        suggestionsRemaining: 0,
+        suggestionsTotal: 0,
+        memesRemaining: 0,
+        memesTotal: 0,
+        userPlan: {
+          name: 'Free',
+          max_tweet_length: 280,
+          max_response_idea_length: 200,
+          max_reply_length: 280,
+          enable_long_replies: false,
+          enable_style_matching: false,
+          enable_perplexity_guidance: false,
+          enable_memes: false,
+          enable_write_like_me: false,
+          meme_limit: 0,
+          memes_used: 0,
+          suggestion_limit: 0,
+          suggestions_used: 0,
+          reply_limit: 10,
+          replies_used: 0,
+        }
+      };
+    }
   }
 
   async getCurrentUser(): Promise<User> {

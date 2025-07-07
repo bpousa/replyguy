@@ -1,6 +1,6 @@
-import { ChromeMessage } from '@/types';
-import { authService } from '@/services/auth';
-import { apiService } from '@/services/api';
+import { ChromeMessage } from '../types';
+import { authService } from '../services/auth';
+import { apiService } from '../services/api';
 
 // Check auth on extension startup
 chrome.runtime.onInstalled.addListener(async () => {
@@ -24,12 +24,17 @@ chrome.runtime.onMessage.addListener((message: ChromeMessage, sender, sendRespon
           break;
 
         case 'getSuggestions':
-          const suggestions = await apiService.getSuggestions(message.data.tweet);
+          const suggestions = await apiService.getSuggestions(message.data);
           sendResponse({ success: true, data: suggestions });
           break;
 
+        case 'getSuggestResearch':
+          const researchSuggestions = await apiService.getSuggestResearch(message.data);
+          sendResponse({ success: true, data: researchSuggestions });
+          break;
+
         case 'generateMeme':
-          const meme = await apiService.generateMeme(message.data.text, message.data.context);
+          const meme = await apiService.generateMeme(message.data);
           sendResponse({ success: true, data: meme });
           break;
 

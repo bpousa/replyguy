@@ -147,7 +147,7 @@ export class TwitterIntegration {
       transition: 'transform 0.2s ease',
       zIndex: '1000',
       // Add a temporary border for debugging
-      border: '2px solid red'
+      border: 'none'
     });
     
     // Create button with inline styles
@@ -164,12 +164,17 @@ export class TwitterIntegration {
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       ">
         <svg viewBox="0 0 24 24" style="
-          width: 20px;
-          height: 20px;
-          color: white;
+          width: 22px;
+          height: 22px;
           fill: white;
         ">
-          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" fill="white"/>
+          <text x="50%" y="50%" 
+                text-anchor="middle" 
+                dominant-baseline="middle" 
+                font-family="Arial, sans-serif" 
+                font-size="11" 
+                font-weight="bold" 
+                fill="white">RG</text>
         </svg>
       </div>
     `;
@@ -290,26 +295,30 @@ export class TwitterIntegration {
           this.overlays.set(composeArea, overlay);
         }
 
-        // Show loading state
-        overlay.showLoading();
-
-        try {
-          // Get suggestions from API
-          const response = await chrome.runtime.sendMessage({
-            action: 'getSuggestions',
-            data: { tweet: tweetText }
-          });
-
-          if (response.success) {
-            overlay.show(response.data.suggestions, (suggestion) => {
-              this.insertSuggestion(composeArea, suggestion);
+        // Show comprehensive options UI
+        overlay.showOptions(tweetText, async (data) => {
+          // Generate full reply with all options
+          overlay.showLoading();
+          
+          try {
+            const response = await chrome.runtime.sendMessage({
+              action: 'generateReply',
+              data: data
             });
-          } else {
-            overlay.showError(response.error || 'Failed to get suggestions');
+
+            if (response.success) {
+              // Show the generated reply with optional meme
+              overlay.showGeneratedReply(
+                response.data.reply,
+                response.data.memeUrl
+              );
+            } else {
+              overlay.showError(response.error || 'Failed to generate reply');
+            }
+          } catch (error) {
+            overlay.showError('Failed to connect to Reply Guy. Please make sure you are logged in.');
           }
-        } catch (error) {
-          overlay.showError('Failed to connect to Reply Guy. Please make sure you are logged in.');
-        }
+        });
       }, 500);
     }
   }

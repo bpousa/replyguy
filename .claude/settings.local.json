@@ -119,7 +119,8 @@
       "Bash(pnpm install:*)",
       "Bash(pnpm run build:*)",
       "Bash(pnpm -C /home/mike/SuperClaude/mcp-servers/chrome run build)",
-      "Bash(unzip:*)"
+      "Bash(unzip:*)",
+      "Bash(mcp-chrome-bridge:*)"
     ],
     "deny": []
   }

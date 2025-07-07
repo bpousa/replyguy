@@ -133,12 +133,14 @@ export const createServerClient = (cookieStore: ReturnType<typeof cookies>) => {
                 secure: isProduction,
                 sameSite: 'lax' as const,
                 path: '/',
+                // Set domain to parent domain in production for cross-subdomain access
+                ...(isProduction ? { domain: '.appendment.com' } : {}),
                 // Preserve Supabase's original maxAge if provided
                 ...(options.maxAge ? { maxAge: options.maxAge } : {})
               } : {})
             };
             
-            console.log(`[auth] Setting cookie: ${name}, httpOnly: ${cookieOptions.httpOnly}, secure: ${cookieOptions.secure}`);
+            console.log(`[auth] Setting cookie: ${name}, httpOnly: ${cookieOptions.httpOnly}, secure: ${cookieOptions.secure}, domain: ${cookieOptions.domain || 'default'}`)
             cookieStore.set(cookieOptions);
           } catch (error) {
             // This is critical for auth - log the full error

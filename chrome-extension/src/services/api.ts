@@ -9,27 +9,20 @@ import {
 const API_BASE_URL = 'https://replyguy.appendment.com/api';
 
 class APIService {
-  private token: string | null = null;
-
-  setToken(token: string) {
-    this.token = token;
-  }
-
   private async fetchWithAuth(endpoint: string, options: RequestInit = {}) {
-    if (!this.token) {
-      throw new Error('Not authenticated');
-    }
-
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
+      credentials: 'include', // Include cookies for authentication
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.token}`,
         ...options.headers,
       },
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Not authenticated');
+      }
       const error = await response.json().catch(() => ({ error: 'Request failed' }));
       throw new Error(error.error || `HTTP ${response.status}`);
     }

@@ -12,6 +12,7 @@
   "host_permissions": [
     "*://*.twitter.com/*",
     "*://*.x.com/*",
+    "*://*.appendment.com/*",
     "*://*.replyguy.appendment.com/*" 
   ],
   "background": {

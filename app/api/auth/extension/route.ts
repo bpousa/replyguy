@@ -21,17 +21,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ 
         authenticated: false, 
         error: sessionError.message 
+      }, {
+        headers: {
+          'Access-Control-Allow-Origin': request.headers.get('origin') || '*',
+          'Access-Control-Allow-Credentials': 'true',
+        }
       });
     }
     
     if (!session) {
       console.log('[extension-auth] No session found');
-      return NextResponse.json({ authenticated: false });
+      return NextResponse.json({ authenticated: false }, {
+        headers: {
+          'Access-Control-Allow-Origin': request.headers.get('origin') || '*',
+          'Access-Control-Allow-Credentials': 'true',
+        }
+      });
     }
     
     console.log('[extension-auth] Session found for user:', session.user.email);
     
-    // Return user data in a simple format
+    // Return user data in a simple format with CORS headers
     return NextResponse.json({
       authenticated: true,
       user: {
@@ -39,6 +49,11 @@ export async function GET(request: NextRequest) {
         email: session.user.email,
       },
       // Don't send the actual token - the extension should use cookies
+    }, {
+      headers: {
+        'Access-Control-Allow-Origin': request.headers.get('origin') || '*',
+        'Access-Control-Allow-Credentials': 'true',
+      }
     });
     
   } catch (error) {
@@ -46,7 +61,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       authenticated: false,
       error: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    }, { 
+      status: 500,
+      headers: {
+        'Access-Control-Allow-Origin': request.headers.get('origin') || '*',
+        'Access-Control-Allow-Credentials': 'true',
+      }
+    });
   }
 }
 

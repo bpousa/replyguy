@@ -21,7 +21,12 @@ export class TwitterIntegration {
     });
     
     this.setupObserver();
-    this.injectReplyButtons();
+    
+    // Initial injection with a delay to ensure page is loaded
+    setTimeout(() => this.injectReplyButtons(), 1000);
+    
+    // Try again after a longer delay in case of slow loading
+    setTimeout(() => this.injectReplyButtons(), 3000);
   }
 
   cleanup() {
@@ -39,13 +44,31 @@ export class TwitterIntegration {
   }
 
   private setupObserver() {
+    let debounceTimer: number | null = null;
+    
     this.observer = new MutationObserver((mutations) => {
-      // Check if new tweets or reply buttons were added
-      for (const mutation of mutations) {
-        if (mutation.type === 'childList') {
+      // Debounce to avoid too many calls
+      if (debounceTimer) clearTimeout(debounceTimer);
+      
+      debounceTimer = setTimeout(() => {
+        // Check if new tweets were added
+        const hasNewTweets = mutations.some(mutation => {
+          if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+            return Array.from(mutation.addedNodes).some(node => {
+              if (node instanceof Element) {
+                return node.matches('article') || node.querySelector('article');
+              }
+              return false;
+            });
+          }
+          return false;
+        });
+        
+        if (hasNewTweets) {
+          console.log('[ReplyGuy] New tweets detected, re-injecting buttons');
           this.injectReplyButtons();
         }
-      }
+      }, 500);
     });
 
     this.observer.observe(document.body, {
@@ -56,6 +79,7 @@ export class TwitterIntegration {
 
   private injectReplyButtons() {
     console.log('[ReplyGuy] Looking for reply buttons...');
+    console.log('[ReplyGuy] Current page has', document.querySelectorAll('article').length, 'tweet articles');
     
     // Find all reply buttons on the page
     const replyButtons = this.findReplyButtons();
@@ -69,52 +93,94 @@ export class TwitterIntegration {
         if (rgButton) {
           this.injectedButtons.set(tweet, rgButton);
         }
+      } else if (!tweet) {
+        console.log(`[ReplyGuy] No article found for reply button ${index + 1}`);
       }
     });
   }
 
   private findReplyButtons(): Element[] {
-    // Find all reply button containers
-    const replyButtons = document.querySelectorAll('[data-testid="reply"]');
-    return Array.from(replyButtons);
+    // Try multiple selectors for reply buttons
+    const selectors = [
+      '[data-testid="reply"]',
+      '[aria-label*="Reply"]',
+      '[role="button"][aria-label*="Reply"]',
+      'div[role="button"] svg path[d*="M1.751 10c0-4.42"]' // Reply icon path
+    ];
+    
+    let replyButtons: Element[] = [];
+    for (const selector of selectors) {
+      const buttons = document.querySelectorAll(selector);
+      if (buttons.length > 0) {
+        console.log(`[ReplyGuy] Found ${buttons.length} reply buttons with selector: ${selector}`);
+        replyButtons = Array.from(buttons);
+        break;
+      }
+    }
+    
+    if (replyButtons.length === 0) {
+      console.log('[ReplyGuy] No reply buttons found with any selector');
+    }
+    
+    return replyButtons;
   }
 
   private createReplyGuyIcon(replyButton: Element, tweet: Element): HTMLElement | null {
-    // Create container for Reply Guy icon
+    // Create container for Reply Guy icon with all inline styles
     const container = document.createElement('div');
-    container.className = 'css-175oi2r r-18u37iz r-1h0z5md';
+    container.id = `replyguy-btn-${Date.now()}`; // Unique ID for debugging
     container.setAttribute('role', 'button');
     container.setAttribute('data-testid', 'replyguy');
     container.setAttribute('tabindex', '0');
-    container.style.marginLeft = '8px';
-    container.style.cursor = 'pointer';
     
+    // Apply all styles inline for maximum compatibility
+    Object.assign(container.style, {
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '36px',
+      height: '36px',
+      marginLeft: '12px',
+      cursor: 'pointer',
+      position: 'relative',
+      borderRadius: '50%',
+      transition: 'transform 0.2s ease',
+      zIndex: '1000',
+      // Add a temporary border for debugging
+      border: '2px solid red'
+    });
+    
+    // Create button with inline styles
     container.innerHTML = `
-      <div class="css-175oi2r r-xoduu5 r-1mlwlqe r-1d2f490 r-1udh08x r-u8s1d r-zchlnj r-ipm5af r-417010">
-        <div class="css-175oi2r r-1niwhzg r-vvn4in r-u6sd8q r-4gszlv r-1p0dtai r-1pi2tsx r-1d2f490 r-u8s1d r-zchlnj r-ipm5af r-13qz1uu r-1wyyakw"
-             style="background-image: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 34px; height: 34px;"></div>
-        <svg viewBox="0 0 24 24" aria-hidden="true" class="r-4qtqp9 r-yyyyoo r-dnmrzs r-bnwqim r-lrvibr r-m6rgpd r-1xvli5t r-1hdv0qi" style="color: white; width: 18px; height: 18px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
-          <g>
-            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" fill="currentColor"/>
-          </g>
+      <div style="
+        position: relative;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      ">
+        <svg viewBox="0 0 24 24" style="
+          width: 20px;
+          height: 20px;
+          color: white;
+          fill: white;
+        ">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" fill="white"/>
         </svg>
       </div>
     `;
 
-    // Add hover effect
+    // Add hover effect with inline styles
     container.addEventListener('mouseenter', () => {
-      const bg = container.querySelector('.css-175oi2r.r-1niwhzg') as HTMLElement;
-      if (bg) {
-        bg.style.transform = 'scale(1.1)';
-        bg.style.transition = 'transform 0.2s';
-      }
+      container.style.transform = 'scale(1.1)';
     });
     
     container.addEventListener('mouseleave', () => {
-      const bg = container.querySelector('.css-175oi2r.r-1niwhzg') as HTMLElement;
-      if (bg) {
-        bg.style.transform = 'scale(1)';
-      }
+      container.style.transform = 'scale(1)';
     });
 
     container.addEventListener('click', (e) => {
@@ -122,10 +188,58 @@ export class TwitterIntegration {
       this.handleReplyGuyClick(tweet);
     });
     
-    // Insert after the reply button
-    const replyButtonContainer = replyButton.closest('.css-175oi2r.r-1kbdv8c.r-18u37iz.r-1wtj0ep.r-1s2bzr4.r-htvplk');
-    if (replyButtonContainer && replyButtonContainer.parentNode) {
-      replyButtonContainer.parentNode.insertBefore(container, replyButtonContainer.nextSibling);
+    // Find the actions bar - try multiple strategies
+    let insertionPoint: Element | null = null;
+    let insertionStrategy = '';
+    
+    // Strategy 1: Find the role="group" container (most reliable)
+    const actionsGroup = replyButton.closest('[role="group"]');
+    if (actionsGroup) {
+      insertionPoint = actionsGroup;
+      insertionStrategy = 'role=group';
+    }
+    
+    // Strategy 2: Find parent with multiple action buttons
+    if (!insertionPoint) {
+      let parent = replyButton.parentElement;
+      while (parent && parent !== document.body) {
+        // Check if this parent contains multiple action buttons
+        const buttons = parent.querySelectorAll('[role="button"]');
+        if (buttons.length >= 3) { // Usually has reply, retweet, like, share
+          insertionPoint = parent;
+          insertionStrategy = 'multiple-buttons-parent';
+          break;
+        }
+        parent = parent.parentElement;
+      }
+    }
+    
+    // Strategy 3: Direct parent of reply button
+    if (!insertionPoint && replyButton.parentElement) {
+      insertionPoint = replyButton.parentElement;
+      insertionStrategy = 'direct-parent';
+    }
+    
+    if (insertionPoint) {
+      // Try to insert after the reply button
+      if (replyButton.parentElement && replyButton.parentElement.parentElement === insertionPoint) {
+        insertionPoint.insertBefore(container, replyButton.parentElement.nextSibling);
+      } else {
+        // Fallback: append to the container
+        insertionPoint.appendChild(container);
+      }
+      
+      console.log(`[ReplyGuy] Button injected using strategy: ${insertionStrategy}`);
+      console.log(`[ReplyGuy] Button ID: ${container.id}`);
+      console.log(`[ReplyGuy] Button visibility:`, {
+        offsetWidth: container.offsetWidth,
+        offsetHeight: container.offsetHeight,
+        display: window.getComputedStyle(container).display,
+        visibility: window.getComputedStyle(container).visibility
+      });
+    } else {
+      console.log('[ReplyGuy] Could not find suitable container for button');
+      return null;
     }
     
     return container;

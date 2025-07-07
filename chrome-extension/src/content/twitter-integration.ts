@@ -4,9 +4,22 @@ export class TwitterIntegration {
   private observer: MutationObserver | null = null;
   private injectedButtons: WeakMap<Element, HTMLElement> = new WeakMap();
   private overlays: WeakMap<Element, SuggestionsOverlay> = new WeakMap();
+  private isAuthenticated: boolean = false;
 
   initialize() {
-    console.log('Reply Guy: Initializing X integration');
+    console.log('[ReplyGuy] Initializing X integration');
+    console.log('[ReplyGuy] Current URL:', window.location.href);
+    
+    // Check if we're authenticated
+    chrome.runtime.sendMessage({ action: 'checkAuth' }).then(response => {
+      if (response?.success) {
+        this.isAuthenticated = response.data.isAuthenticated;
+        console.log('[ReplyGuy] Auth status:', this.isAuthenticated);
+      }
+    }).catch(err => {
+      console.error('[ReplyGuy] Failed to check auth:', err);
+    });
+    
     this.setupObserver();
     this.injectReplyButtons();
   }
@@ -42,12 +55,16 @@ export class TwitterIntegration {
   }
 
   private injectReplyButtons() {
+    console.log('[ReplyGuy] Looking for reply buttons...');
+    
     // Find all reply buttons on the page
     const replyButtons = this.findReplyButtons();
+    console.log('[ReplyGuy] Found', replyButtons.length, 'reply buttons');
     
-    replyButtons.forEach(replyButton => {
+    replyButtons.forEach((replyButton, index) => {
       const tweet = replyButton.closest('article');
       if (tweet && !this.injectedButtons.has(tweet)) {
+        console.log(`[ReplyGuy] Injecting button ${index + 1}`);
         const rgButton = this.createReplyGuyIcon(replyButton, tweet);
         if (rgButton) {
           this.injectedButtons.set(tweet, rgButton);
@@ -70,6 +87,7 @@ export class TwitterIntegration {
     container.setAttribute('data-testid', 'replyguy');
     container.setAttribute('tabindex', '0');
     container.style.marginLeft = '8px';
+    container.style.cursor = 'pointer';
     
     container.innerHTML = `
       <div class="css-175oi2r r-xoduu5 r-1mlwlqe r-1d2f490 r-1udh08x r-u8s1d r-zchlnj r-ipm5af r-417010">
@@ -114,14 +132,28 @@ export class TwitterIntegration {
   }
 
   private async handleReplyGuyClick(tweet: Element) {
+    console.log('[ReplyGuy] Button clicked');
+    
+    // Check if authenticated
+    const authResponse = await chrome.runtime.sendMessage({ action: 'checkAuth' });
+    if (!authResponse?.success || !authResponse.data.isAuthenticated) {
+      console.log('[ReplyGuy] User not authenticated, prompting to login');
+      if (confirm('Please sign in to Reply Guy to use this feature. Would you like to sign in now?')) {
+        chrome.runtime.sendMessage({ action: 'openLogin' });
+      }
+      return;
+    }
+    
     // Get tweet text
     const tweetTextElement = tweet.querySelector('[data-testid="tweetText"]');
     const tweetText = tweetTextElement?.textContent || '';
     
     if (!tweetText) {
-      console.error('Could not find tweet text');
+      console.error('[ReplyGuy] Could not find tweet text');
       return;
     }
+    
+    console.log('[ReplyGuy] Tweet text:', tweetText.substring(0, 50) + '...');
 
     // Find or create the reply compose area
     const replyButton = tweet.querySelector('[data-testid="reply"]') as HTMLElement;

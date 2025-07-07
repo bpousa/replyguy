@@ -143,6 +143,7 @@ export async function POST(req: NextRequest) {
 Generate a creative and specific response idea for a ${validated.responseType} reply with a ${validated.tone} tone.
 The suggestion should be 5-15 words that describes what the reply should convey.
 Be specific and avoid generic suggestions.
+IMPORTANT: Do not suggest replies that require sharing a personal story or experience, as the user wants to avoid making up fake anecdotes.
 
 Examples of ${validated.responseType} responses:
 ${shuffled.map(ex => `- "${ex}"`).join('\n')}

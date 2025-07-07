@@ -9,6 +9,28 @@ export async function middleware(request: NextRequest) {
   console.log(`[middleware] Full URL: ${request.url}`);
   console.log(`[middleware] Referrer: ${request.headers.get('referer')}`);
   
+  // Handle CORS for Chrome extension
+  const origin = request.headers.get('origin');
+  const isExtensionRequest = origin && origin.startsWith('chrome-extension://');
+  
+  if (isExtensionRequest && pathname.startsWith('/api/')) {
+    console.log(`[middleware] Chrome extension request from: ${origin}`);
+    
+    // For preflight requests
+    if (request.method === 'OPTIONS') {
+      return new NextResponse(null, {
+        status: 200,
+        headers: {
+          'Access-Control-Allow-Origin': origin,
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, Cookie',
+          'Access-Control-Allow-Credentials': 'true',
+          'Access-Control-Max-Age': '86400',
+        },
+      });
+    }
+  }
+  
   // Allow auth pages without cookies
   if (pathname.startsWith('/auth/')) {
     return NextResponse.next();
@@ -111,7 +133,17 @@ export async function middleware(request: NextRequest) {
   }
   
   // Allow request to proceed
-  return NextResponse.next();
+  const response = NextResponse.next();
+  
+  // Add CORS headers for Chrome extension
+  if (isExtensionRequest && pathname.startsWith('/api/')) {
+    response.headers.set('Access-Control-Allow-Origin', origin!);
+    response.headers.set('Access-Control-Allow-Credentials', 'true');
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+  }
+  
+  return response;
 }
 
 export const config = {

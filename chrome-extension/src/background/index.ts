@@ -37,6 +37,11 @@ chrome.runtime.onMessage.addListener((message: ChromeMessage, sender, sendRespon
           const limits = await apiService.getUsageLimits();
           sendResponse({ success: true, data: limits });
           break;
+          
+        case 'openLogin':
+          chrome.tabs.create({ url: 'https://replyguy.appendment.com/auth/login?extension=true' });
+          sendResponse({ success: true });
+          break;
 
         default:
           sendResponse({ success: false, error: 'Unknown action' });

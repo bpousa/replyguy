@@ -109,7 +109,17 @@
       "Bash(gemini)",
       "mcp__sequential-thinking__sequentialthinking",
       "Bash(npm info:*)",
-      "Bash(npm update:*)"
+      "Bash(npm update:*)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(npx webpack:*)",
+      "Bash(git branch:*)",
+      "Bash(npx:*)",
+      "WebFetch(domain:modelcontextprotocol.io)",
+      "Bash(git clone:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm run build:*)",
+      "Bash(pnpm -C /home/mike/SuperClaude/mcp-servers/chrome run build)",
+      "Bash(unzip:*)"
     ],
     "deny": []
   }

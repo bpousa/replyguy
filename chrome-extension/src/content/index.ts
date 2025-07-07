@@ -6,16 +6,32 @@ let authState: AuthState = { isAuthenticated: false };
 
 // Initialize on page load
 async function initialize() {
-  // Check authentication
-  const response = await chrome.runtime.sendMessage({ action: 'checkAuth' });
-  if (response.success) {
-    authState = response.data;
-  }
+  console.log('[ReplyGuy Content] Initializing on:', window.location.href);
+  
+  try {
+    // Check authentication
+    console.log('[ReplyGuy Content] Checking authentication...');
+    const response = await chrome.runtime.sendMessage({ action: 'checkAuth' });
+    console.log('[ReplyGuy Content] Auth response:', response);
+    
+    if (response.success) {
+      authState = response.data;
+      console.log('[ReplyGuy Content] Auth state:', authState);
+    }
 
-  // Initialize Twitter integration if authenticated
-  if (authState.isAuthenticated) {
-    twitterIntegration = new TwitterIntegration();
-    twitterIntegration.initialize();
+    // Initialize Twitter integration if authenticated
+    if (authState.isAuthenticated) {
+      console.log('[ReplyGuy Content] User authenticated, initializing Twitter integration');
+      twitterIntegration = new TwitterIntegration();
+      twitterIntegration.initialize();
+    } else {
+      console.log('[ReplyGuy Content] User not authenticated');
+      // Still initialize but show auth prompts instead
+      twitterIntegration = new TwitterIntegration();
+      twitterIntegration.initialize();
+    }
+  } catch (error) {
+    console.error('[ReplyGuy Content] Initialization error:', error);
   }
 }
 

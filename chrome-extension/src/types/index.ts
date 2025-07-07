@@ -1,7 +1,7 @@
 export interface User {
   id: string;
   email: string;
-  plan: 'free' | 'pro' | 'enterprise';
+  plan?: 'free' | 'pro' | 'enterprise';
 }
 
 export interface UsageLimits {
@@ -30,7 +30,7 @@ export interface SuggestionsResponse {
 }
 
 export interface ChromeMessage {
-  action: 'generateReply' | 'getSuggestions' | 'generateMeme' | 'checkAuth' | 'getUsageLimits';
+  action: 'generateReply' | 'getSuggestions' | 'generateMeme' | 'checkAuth' | 'getUsageLimits' | 'openLogin' | 'authStateChanged';
   data?: any;
 }
 

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Reply Guy for Twitter",
+  "name": "Reply Guy for X",
   "version": "1.0",
-  "description": "Integrate Reply Guy's writing tools directly into Twitter.",
+  "description": "Integrate Reply Guy's writing tools directly into X (formerly Twitter).",
   "permissions": [
     "activeTab",
     "scripting",

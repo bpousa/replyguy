@@ -316,10 +316,17 @@ export class TwitterIntegration {
               
               // Log tracking status for debugging
               if (replyData.trackingStatus) {
-                console.log('[ReplyGuy] Tracking status:', replyData.trackingStatus);
+                console.log('[ReplyGuy] 📊 Daily Usage Tracking Status:', {
+                  success: replyData.trackingStatus.success,
+                  date: replyData.trackingStatus.date,
+                  timezone: replyData.trackingStatus.timezone,
+                  error: replyData.trackingStatus.error || 'none'
+                });
                 if (!replyData.trackingStatus.success) {
-                  console.error('[ReplyGuy] Failed to track usage:', replyData.trackingStatus.error);
+                  console.error('[ReplyGuy] ❌ Failed to track daily usage:', replyData.trackingStatus.error);
                 }
+              } else {
+                console.warn('[ReplyGuy] ⚠️ No tracking status returned from API');
               }
               
               overlay.showGeneratedReply(

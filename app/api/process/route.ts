@@ -806,7 +806,7 @@ export async function POST(req: NextRequest) {
         result.trackingStatus = {
           success: false,
           error: trackingError instanceof Error ? trackingError.message : 'Unknown error',
-          date: userDate || 'unknown',
+          date: 'unknown',
           timezone: 'unknown'
         };
       }

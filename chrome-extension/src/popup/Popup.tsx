@@ -72,10 +72,6 @@ export function Popup() {
         <div className="loading-container">
           <div className="spinner"></div>
         </div>
-      ) : isGenerating ? (
-        <div className="loading-container">
-          <img src="icons/smiling-guy.gif" alt="Generating..." />
-        </div>
       ) : authState.isAuthenticated ? (
         <>
           <div className="popup-content">

@@ -86,6 +86,7 @@ export default function HomePage() {
       return usage.replies_used || 0;
     } else {
       // No usage record for today yet
+      console.log('[dashboard] No daily usage found for date:', today, 'userId:', userId);
       console.log('[dashboard] No usage record found for date:', today);
       return 0;
     }

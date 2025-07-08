@@ -256,8 +256,8 @@ export class SuggestionsOverlay {
           </button>
           ${this.usageLimits ? `
           <div class="reply-guy-usage">
-            <span class="reply-guy-usage-remaining">${this.usageLimits.repliesRemaining || 0}</span> replies left today
-            <span class="reply-guy-usage-detail">(${(this.usageLimits.repliesTotal || 0) - (this.usageLimits.repliesRemaining || 0)} of ${this.usageLimits.repliesTotal || 0} used)</span>
+            <span class="reply-guy-usage-used">${(this.usageLimits.repliesTotal || 0) - (this.usageLimits.repliesRemaining || 0)}</span> / ${this.usageLimits.repliesTotal || 0} replies
+            <span class="reply-guy-usage-detail">(${this.usageLimits.repliesRemaining || 0} remaining this billing period)</span>
           </div>
           ` : ''}
         </div>
@@ -420,7 +420,9 @@ export class SuggestionsOverlay {
     });
     
     // Research suggest button
-    this.overlay.querySelector('#reply-guy-suggest-research')?.addEventListener('click', async () => {
+    this.overlay.querySelector('#reply-guy-suggest-research')?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       if (!this.tweet.trim() || !this.responseIdea.trim()) {
         alert('Please enter a tweet and response idea first');
         return;
@@ -947,6 +949,21 @@ export class SuggestionsOverlay {
         gap: 16px;
       }
       
+      .reply-guy-loading img {
+        animation: pulse 2s ease-in-out infinite;
+      }
+      
+      @keyframes pulse {
+        0%, 100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1.05);
+          opacity: 0.8;
+        }
+      }
+      
       .reply-guy-spinner {
         width: 40px;
         height: 40px;
@@ -959,6 +976,48 @@ export class SuggestionsOverlay {
       @keyframes spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
+      }
+      
+      /* Loading dots animation */
+      .reply-guy-loading-text {
+        color: #666;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      
+      .reply-guy-loading-dots {
+        display: inline-flex;
+        gap: 3px;
+      }
+      
+      .reply-guy-loading-dot {
+        width: 6px;
+        height: 6px;
+        background: #667eea;
+        border-radius: 50%;
+        display: inline-block;
+        animation: loadingDot 1.4s infinite ease-in-out both;
+      }
+      
+      .reply-guy-loading-dot:nth-child(1) {
+        animation-delay: -0.32s;
+      }
+      
+      .reply-guy-loading-dot:nth-child(2) {
+        animation-delay: -0.16s;
+      }
+      
+      @keyframes loadingDot {
+        0%, 80%, 100% {
+          transform: scale(0.8);
+          opacity: 0.5;
+        }
+        40% {
+          transform: scale(1.2);
+          opacity: 1;
+        }
       }
       
       /* Error State */
@@ -1113,35 +1172,8 @@ export class SuggestionsOverlay {
     });
     
     this.overlay.querySelector('.reply-guy-insert-btn')?.addEventListener('click', () => {
-      // Insert the reply into the compose area
-      const textbox = this.container.querySelector('[role="textbox"]') as HTMLElement;
-      if (textbox) {
-        // Clear existing content properly
-        textbox.innerHTML = '';
-        
-        // Focus the textbox first
-        textbox.focus();
-        
-        // Use execCommand for better compatibility with X's handlers
-        document.execCommand('insertText', false, reply);
-        
-        // Trigger multiple events to ensure X recognizes the input
-        const inputEvent = new InputEvent('input', { 
-          bubbles: true, 
-          cancelable: true,
-          inputType: 'insertText',
-          data: reply
-        });
-        textbox.dispatchEvent(inputEvent);
-        
-        // Also trigger a change event
-        const changeEvent = new Event('change', { bubbles: true });
-        textbox.dispatchEvent(changeEvent);
-        
-        // Trigger keyup to update character count
-        const keyupEvent = new KeyboardEvent('keyup', { bubbles: true });
-        textbox.dispatchEvent(keyupEvent);
-      }
+      // Use the robust insertion method
+      this.insertGeneratedReply(this.container, reply);
       this.remove();
     });
 
@@ -1319,86 +1351,6 @@ export class SuggestionsOverlay {
     this.overlay.innerHTML = `
       <style>
         ${this.getComprehensiveStyles()}
-        .reply-guy-loading {
-          padding: 40px;
-          text-align: center;
-          color: #495057;
-        }
-        
-        /* Dashboard-style loading bars */
-        .reply-guy-loading-bars {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          margin-bottom: 20px;
-        }
-        
-        .reply-guy-loading-bar {
-          height: 4px;
-          background: #f0f0f0;
-          border-radius: 2px;
-          overflow: hidden;
-          position: relative;
-        }
-        
-        .reply-guy-loading-bar::after {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          height: 100%;
-          width: 100%;
-          background: linear-gradient(90deg, 
-            transparent 0%, 
-            #667eea 20%, 
-            #764ba2 50%, 
-            #667eea 80%, 
-            transparent 100%);
-          animation: shimmer 2s infinite;
-        }
-        
-        .reply-guy-loading-bar:nth-child(1) { width: 100%; }
-        .reply-guy-loading-bar:nth-child(2) { width: 85%; }
-        .reply-guy-loading-bar:nth-child(3) { width: 70%; }
-        .reply-guy-loading-bar:nth-child(4) { width: 90%; }
-        
-        @keyframes shimmer {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-        
-        .reply-guy-loading-text {
-          font-size: 14px;
-          font-weight: 500;
-          color: #495057;
-          margin-top: 16px;
-        }
-        
-        .reply-guy-loading-dots {
-          display: inline-flex;
-          gap: 4px;
-          margin-left: 4px;
-        }
-        
-        .reply-guy-loading-dot {
-          width: 4px;
-          height: 4px;
-          background: #667eea;
-          border-radius: 50%;
-          animation: bounce 1.4s infinite ease-in-out both;
-        }
-        
-        .reply-guy-loading-dot:nth-child(1) { animation-delay: -0.32s; }
-        .reply-guy-loading-dot:nth-child(2) { animation-delay: -0.16s; }
-        
-        @keyframes bounce {
-          0%, 80%, 100% {
-            transform: scale(0);
-          }
-          40% {
-            transform: scale(1);
-          }
-        }
       </style>
       <div class="reply-guy-header">
         <div class="reply-guy-title">
@@ -1417,12 +1369,7 @@ export class SuggestionsOverlay {
         </div>
       </div>
       <div class="reply-guy-loading">
-        <div class="reply-guy-loading-bars">
-          <div class="reply-guy-loading-bar"></div>
-          <div class="reply-guy-loading-bar"></div>
-          <div class="reply-guy-loading-bar"></div>
-          <div class="reply-guy-loading-bar"></div>
-        </div>
+        <img src="${chrome.runtime.getURL('icons/reply_guy_logo.png')}" alt="Generating..." />
         <div class="reply-guy-loading-text">
           Crafting the perfect reply
           <span class="reply-guy-loading-dots">

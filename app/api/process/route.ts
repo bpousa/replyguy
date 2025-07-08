@@ -516,7 +516,7 @@ export async function POST(req: NextRequest) {
             
             // Validate that the meme text is contextually relevant
             const genericPhrases = ['this is fine', 'but why', 'seems legit', 'mind blown', 'not bad'];
-            const isGeneric = genericPhrases.includes(finalMemeText.toLowerCase());
+            const isGeneric = finalMemeText ? genericPhrases.includes(finalMemeText.toLowerCase()) : false;
             
             if (isGeneric && memeTextData.method !== 'user-provided') {
               console.warn('⚠️ Generic meme text detected, attempting to improve...');

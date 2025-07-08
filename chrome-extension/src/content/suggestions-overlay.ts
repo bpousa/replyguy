@@ -1204,7 +1204,7 @@ export class SuggestionsOverlay {
         
         ${memeUrl ? `
         <div class="reply-guy-meme-notice" style="display: none; margin-top: 12px; padding: 12px 16px; background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 8px; color: #0c5460; font-size: 14px; text-align: center;">
-          🖼️ Meme downloaded! Drag it from your downloads into X or use the photo button
+          🖼️ Meme will open in a new window
         </div>
         ` : ''}
       </div>
@@ -1248,32 +1248,51 @@ export class SuggestionsOverlay {
           copyNotice.style.display = 'block';
         }
         
-        // Auto-download meme if present
+        // Open meme in new window if present
         if (memeUrl) {
           try {
-            // Create a temporary anchor element to trigger download
-            const link = document.createElement('a');
-            link.href = memeUrl;
+            // Open in a new window so user can save it
+            // Using window.open with specific features to ensure it opens as a popup
+            const memeWindow = window.open(
+              memeUrl, 
+              '_blank', 
+              'width=600,height=600,toolbar=no,menubar=no,location=no,status=no'
+            );
             
-            // Generate filename with timestamp
-            const timestamp = new Date().getTime();
-            link.download = `replyguy-meme-${timestamp}.jpg`;
-            
-            // Trigger download
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            // Show meme notice
+            if (memeWindow) {
+              // Show meme notice with updated instructions
+              const memeNotice = this.overlay?.querySelector('.reply-guy-meme-notice') as HTMLElement;
+              if (memeNotice) {
+                memeNotice.innerHTML = '🖼️ Meme opened in new window! Right-click the image and save it, then drag into X or use the photo button';
+                memeNotice.style.display = 'block';
+              }
+              
+              console.log('[ReplyGuy] Meme opened in new window');
+              
+              // Focus back on the main window after a short delay
+              setTimeout(() => {
+                window.focus();
+              }, 100);
+            } else {
+              // Popup was blocked, fall back to opening in new tab
+              window.open(memeUrl, '_blank');
+              
+              const memeNotice = this.overlay?.querySelector('.reply-guy-meme-notice') as HTMLElement;
+              if (memeNotice) {
+                memeNotice.innerHTML = '🖼️ Meme opened in new tab! Right-click to save it, then return here to paste your reply';
+                memeNotice.style.display = 'block';
+              }
+              
+              console.log('[ReplyGuy] Meme opened in new tab (popup blocked)');
+            }
+          } catch (openError) {
+            console.error('[ReplyGuy] Failed to open meme in new window:', openError);
+            // Show the URL so user can manually open it
             const memeNotice = this.overlay?.querySelector('.reply-guy-meme-notice') as HTMLElement;
             if (memeNotice) {
+              memeNotice.innerHTML = `🖼️ <a href="${memeUrl}" target="_blank" style="color: #0c5460; text-decoration: underline;">Click here to open meme</a> - then right-click to save`;
               memeNotice.style.display = 'block';
             }
-            
-            console.log('[ReplyGuy] Meme auto-downloaded:', link.download);
-          } catch (downloadError) {
-            console.error('[ReplyGuy] Failed to auto-download meme:', downloadError);
-            // Could show a fallback download button here if needed
           }
         }
         

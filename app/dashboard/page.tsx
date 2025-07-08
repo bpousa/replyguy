@@ -41,7 +41,7 @@ export default function HomePage() {
       .from('daily_usage')
       .select('*')
       .eq('user_id', userId)
-      .eq('date', today)
+      .eq('usage_date', today)
       .maybeSingle();
       
     if (usageError) {
@@ -54,7 +54,7 @@ export default function HomePage() {
       });
       return 0;
     } else if (usage) {
-      return usage.replies_generated || 0;
+      return usage.replies_used || 0;
     } else {
       // No usage record for today yet
       return 0;

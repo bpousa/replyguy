@@ -1112,8 +1112,17 @@ export class SuggestionsOverlay {
     this.overlay.innerHTML = `
       <style>
         ${this.getComprehensiveStyles()}
-        .reply-guy-result {
+        /* Override to ensure proper flex layout for result display */
+        .reply-guy-overlay {
+          display: flex !important;
+          flex-direction: column !important;
+          max-height: 80vh !important;
+        }
+        .reply-guy-content-scroll {
+          overflow-y: auto;
+          flex: 1;
           padding: 20px;
+          min-height: 0; /* Important for Firefox */
         }
         .reply-guy-reply-text {
           background: #f8f9fa;
@@ -1138,9 +1147,16 @@ export class SuggestionsOverlay {
           border-radius: 12px;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
+        .reply-guy-result-footer {
+          flex-shrink: 0;
+          padding: 0 20px 20px;
+          border-top: 1px solid #e9ecef;
+          background: white;
+        }
         .reply-guy-result-actions {
           display: flex;
           gap: 12px;
+          padding-top: 16px;
         }
         .reply-guy-copy-btn {
           flex: 1;
@@ -1164,6 +1180,23 @@ export class SuggestionsOverlay {
         .reply-guy-copy-btn.copied {
           background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
         }
+        .reply-guy-notice {
+          margin-top: 12px;
+          padding: 12px 16px;
+          border-radius: 8px;
+          font-size: 14px;
+          text-align: center;
+        }
+        .reply-guy-copy-notice {
+          background: #d4edda;
+          border: 1px solid #c3e6cb;
+          color: #155724;
+        }
+        .reply-guy-meme-notice {
+          background: #d1ecf1;
+          border: 1px solid #bee5eb;
+          color: #0c5460;
+        }
       </style>
       <div class="reply-guy-header">
         <div class="reply-guy-title">
@@ -1183,7 +1216,7 @@ export class SuggestionsOverlay {
         <button class="reply-guy-close" aria-label="Close">×</button>
       </div>
       
-      <div class="reply-guy-result">
+      <div class="reply-guy-content-scroll">
         <div class="reply-guy-reply-text">
           ${this.escapeHtml(reply)}
         </div>
@@ -1193,17 +1226,19 @@ export class SuggestionsOverlay {
           <img src="${memeUrl}" alt="Generated meme" />
         </div>
         ` : ''}
-        
+      </div>
+      
+      <div class="reply-guy-result-footer">
         <div class="reply-guy-result-actions">
           <button class="reply-guy-copy-btn">${memeUrl ? '📋 Copy Reply & Download Meme' : '📋 Copy Reply'}</button>
         </div>
         
-        <div class="reply-guy-copy-notice" style="display: none; margin-top: 16px; padding: 12px 16px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; color: #155724; font-size: 14px; text-align: center;">
+        <div class="reply-guy-copy-notice reply-guy-notice" style="display: none;">
           ✅ Reply copied! Click in the reply box and paste with <strong>Ctrl+V</strong> (or <strong>Cmd+V</strong> on Mac)
         </div>
         
         ${memeUrl ? `
-        <div class="reply-guy-meme-notice" style="display: none; margin-top: 12px; padding: 12px 16px; background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 8px; color: #0c5460; font-size: 14px; text-align: center;">
+        <div class="reply-guy-meme-notice reply-guy-notice" style="display: none;">
           🖼️ Meme will open in a new window
         </div>
         ` : ''}

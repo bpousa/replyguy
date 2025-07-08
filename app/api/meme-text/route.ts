@@ -36,10 +36,15 @@ export async function POST(req: NextRequest) {
     // Check if services are configured
     if (!openAIMemeService.isConfigured() || !imgflipService.isConfigured()) {
       console.error('[meme-text] Services not fully configured');
+      // Generate a basic context-aware fallback
+      const contextFallback = validated.tone === 'humorous' ? 'funny story' :
+                             validated.tone === 'sarcastic' ? 'oh really' :
+                             validated.tone === 'professional' ? 'lets work' :
+                             'interesting';
       return NextResponse.json({
-        text: validated.userText || 'this is fine',
+        text: validated.userText || contextFallback,
         enhanced: false,
-        method: 'fallback',
+        method: 'service-not-configured',
         useAutomeme: true
       });
     }
@@ -113,13 +118,30 @@ export async function POST(req: NextRequest) {
       
       console.log('[meme-text] Template box count:', boxCount);
       
-      // Step 8: Return template-specific response
+      // Step 8: Handle multi-box text distribution if needed
+      let textDistribution;
+      if (boxCount > 1 && selection.text && !selection.topText && !selection.bottomText) {
+        // Template needs multiple boxes but only single text was provided
+        textDistribution = openAIMemeService.distributeTextForTemplate(
+          selection.templateName,
+          selection.text,
+          boxCount
+        );
+        console.log('[meme-text] Distributed text for multi-box template:', textDistribution);
+      } else {
+        // Use the provided multi-box text
+        textDistribution = {
+          topText: selection.topText,
+          bottomText: selection.bottomText,
+          text: selection.text
+        };
+      }
+      
+      // Step 9: Return template-specific response
       return NextResponse.json({
         templateId: selection.templateId,
         templateName: selection.templateName,
-        topText: selection.topText,
-        bottomText: selection.bottomText,
-        text: selection.text,
+        ...textDistribution, // Spread the distributed text
         boxCount: boxCount, // Include box count for proper handling
         enhanced: true,
         method: 'template-selection',
@@ -158,9 +180,14 @@ export async function POST(req: NextRequest) {
     
     console.error('[meme-text] Error:', error);
     
-    // Final fallback
+    // Final fallback - try to generate something context-aware
+    const errorFallback = body?.tone === 'humorous' ? 'plot twist' :
+                         body?.tone === 'sarcastic' ? 'shocking' :
+                         body?.tone === 'professional' ? 'noted' :
+                         'unexpected';
+    
     return NextResponse.json({
-      text: body?.userText || 'this is fine',
+      text: body?.userText || errorFallback,
       enhanced: false,
       method: 'error-fallback',
       useAutomeme: true

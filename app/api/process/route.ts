@@ -514,14 +514,33 @@ export async function POST(req: NextRequest) {
               method: memeTextData.method
             });
             
+            // Validate that the meme text is contextually relevant
+            const genericPhrases = ['this is fine', 'but why', 'seems legit', 'mind blown', 'not bad'];
+            const isGeneric = genericPhrases.includes(finalMemeText.toLowerCase());
+            
+            if (isGeneric && memeTextData.method !== 'user-provided') {
+              console.warn('⚠️ Generic meme text detected, attempting to improve...');
+              // Log context for debugging
+              console.log('Context that led to generic meme:', {
+                originalTweet: validated.originalTweet.substring(0, 100),
+                reply: generateData.data.reply.substring(0, 100),
+                tone: validated.tone,
+                method: memeTextData.method
+              });
+            }
+            
             var memeRequestBody: any = {
               text: finalMemeText,
               userId: userId
             };
           }
         } else {
-          // Fallback if meme text generation fails
-          finalMemeText = validated.memeText || 'this is fine';
+          // Fallback if meme text generation fails - use tone-based fallback
+          const toneFallback = validated.tone === 'humorous' ? 'plot twist' :
+                              validated.tone === 'sarcastic' ? 'oh really' :
+                              validated.tone === 'professional' ? 'interesting' :
+                              'unexpected';
+          finalMemeText = validated.memeText || toneFallback;
           console.warn('⚠️ Meme text generation failed, using fallback:', finalMemeText);
           
           var memeRequestBody: any = {
@@ -531,7 +550,11 @@ export async function POST(req: NextRequest) {
         }
       } catch (error) {
         console.error('❌ Error generating meme text:', error);
-        finalMemeText = validated.memeText || 'this is fine';
+        const errorFallback = validated.tone === 'humorous' ? 'whoops' :
+                             validated.tone === 'sarcastic' ? 'shocking' :
+                             validated.tone === 'professional' ? 'noted' :
+                             'interesting';
+        finalMemeText = validated.memeText || errorFallback;
         
         var memeRequestBody: any = {
           text: finalMemeText,

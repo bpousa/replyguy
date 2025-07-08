@@ -84,49 +84,42 @@ Reply with ONLY the enhanced meme text, nothing else.`;
 Reply: "${reply.substring(0, 200)}..."`
           : `Reply: "${reply.substring(0, 300)}..."`;
           
-        prompt = `You are a meme text expert. Create a SHORT meme caption for this context:
+        prompt = `You are a meme text expert. Create a contextually appropriate meme caption.
 
 ${contextInfo}
 Tone: ${tone}
 
-IMPORTANT RULES:
-1. Use SIMPLE, COMMON meme phrases that work with Imgflip's automeme
-2. Keep it UNDER 8 WORDS - shorter is better!
-3. Avoid complex sentences or punctuation
-4. ALWAYS prefer these ultra-reliable formats:
-   - "this is fine"
-   - "but why"
-   - "seems legit"
-   - "mind blown"
-   - "wait what"
-   - "not bad"
-   - "challenge accepted"
-   - "why not both"
-   - "shut up and take my money"
-   
-5. If unsure, default to: "this is fine" or "but why"
+ANALYZE THE CONTEXT:
+1. What is the main topic? (AI, tech, business, social, etc.)
+2. What emotion/situation is being expressed? (excitement, frustration, success, confusion, etc.)
+3. What is the purpose of the reply? (helping, disagreeing, celebrating, questioning, etc.)
 
-6. Other formats that often work:
-   - "y u no [action]"
-   - "[noun] everywhere"
-   - "not sure if [x] or [y]"
-   - "one does not simply [action]"
-   - "[emotion] intensifies"
+CREATE MEME TEXT THAT:
+1. RELATES DIRECTLY to the conversation topic or emotion
+2. Is SHORT (under 8 words) and punchy
+3. Uses common meme language when it fits the context
+4. Captures the essence of the reply's message
 
-Examples of GOOD meme text:
-- "this is fine" 
-- "but why"
-- "seems legit"
-- "mind blown"
-- "not bad"
+CONTEXT-BASED EXAMPLES:
+- Tech/AI discussion + helpful tone → "sharing the knowledge" or "spreading ai wisdom"
+- Bug/error discussion + frustrated → "debugging intensifies" or "error 404 sanity not found"
+- Success/achievement + excited → "nailed it" or "achievement unlocked"
+- Learning/education + motivated → "knowledge is power" or "learning mode activated"
+- Disagreement + sarcastic → "sure about that" or "doubt intensifies"
 
-Examples of BAD meme text (avoid these):
-- Complex sentences with multiple clauses
-- Anything over 8 words
-- Specific references that aren't universally known
-- Abstract concepts like "provide evidence"
+GOOD FORMATS FOR DIFFERENT CONTEXTS:
+- Questions/confusion: "but why though", "confused stonks", "visible confusion"
+- Success/wins: "task failed successfully", "winning", "absolute win"
+- Problems/bugs: "it's not a bug it's a feature", "everything is broken"
+- Knowledge sharing: "big brain time", "sharing is caring"
+- Disagreements: "press x to doubt", "gonna have to disagree"
 
-Reply with ONLY the meme text, nothing else.`;
+AVOID:
+- Generic phrases that don't relate to the context
+- Overused fallbacks unless they genuinely fit
+- Complex sentences or abstract concepts
+
+Reply with ONLY the meme text that best fits THIS SPECIFIC conversation.`;
         console.log('[OpenAIMeme] Generating meme from reply');
       }
       
@@ -149,7 +142,7 @@ Reply with ONLY the meme text, nothing else.`;
         frequency_penalty: 0.5 // Avoid repetition
       });
       
-      const memeText = completion.choices[0].message.content?.trim() || 'this is fine';
+      const memeText = completion.choices[0].message.content?.trim() || 'mind blown';
       const processingTime = Date.now() - startTime;
       
       // Calculate cost (GPT-4o pricing)
@@ -175,15 +168,32 @@ Reply with ONLY the meme text, nothing else.`;
         return userText;
       }
       
-      // Basic fallback based on tone
-      const fallbacks: Record<string, string[]> = {
-        sarcastic: ['this is fine', 'sure that will work', 'oh really'],
-        humorous: ['why not both', 'shut up and take my money', 'but why'],
-        professional: ['one does not simply ignore best practices', 'I should document this'],
-        default: ['this is fine', 'not sure if serious', 'y u no work']
+      // Context-aware fallback based on tone and common scenarios
+      const contextualFallbacks: Record<string, string[]> = {
+        sarcastic: ['doubt intensifies', 'sure about that', 'seems totally legit', 'oh really now'],
+        humorous: ['task failed successfully', 'why not both', 'but why though', 'confused stonks'],
+        professional: ['knowledge is power', 'best practices matter', 'documentation needed', 'optimize this'],
+        supportive: ['you got this', 'keep going', 'almost there', 'progress'],
+        empathetic: ['i feel you', 'been there', 'totally understand', 'same energy'],
+        friendly: ['sharing is caring', 'happy to help', 'team work', 'lets go'],
+        witty: ['big brain time', 'galaxy brain', 'mind = blown', '200 iq play'],
+        informative: ['fun fact incoming', 'the more you know', 'knowledge dropped', 'learning time'],
+        default: ['interesting point', 'makes sense', 'good thinking', 'i see']
       };
       
-      const toneOptions = fallbacks[tone] || fallbacks.default;
+      // Try to match reply content to better fallbacks
+      const replyLower = reply?.toLowerCase() || '';
+      if (replyLower.includes('bug') || replyLower.includes('error')) {
+        return 'debugging intensifies';
+      } else if (replyLower.includes('success') || replyLower.includes('work')) {
+        return 'it worked';
+      } else if (replyLower.includes('learn') || replyLower.includes('know')) {
+        return 'knowledge is power';
+      } else if (replyLower.includes('help') || replyLower.includes('tip')) {
+        return 'sharing wisdom';
+      }
+      
+      const toneOptions = contextualFallbacks[tone] || contextualFallbacks.default;
       return toneOptions[Math.floor(Math.random() * toneOptions.length)];
     }
   }
@@ -193,6 +203,90 @@ Reply with ONLY the meme text, nothing else.`;
    */
   isConfigured(): boolean {
     return !!process.env.OPENAI_API_KEY;
+  }
+  
+  /**
+   * Distribute text appropriately for multi-box templates
+   */
+  distributeTextForTemplate(templateName: string, text: string, boxCount: number): { topText?: string; bottomText?: string; text0?: string; text1?: string; text2?: string; text3?: string } {
+    // Handle specific templates with known patterns
+    const lowerName = templateName.toLowerCase();
+    
+    if (lowerName.includes('drake')) {
+      // Drake format: reject X, prefer Y
+      const parts = text.split(/\s+(?:but|prefer|instead|rather)\s+/i);
+      if (parts.length >= 2) {
+        return { topText: parts[0], bottomText: parts[1] };
+      }
+      // Fallback: split in half
+      const mid = Math.floor(text.length / 2);
+      return { topText: text.substring(0, mid), bottomText: text.substring(mid) };
+    }
+    
+    if (lowerName.includes('expanding brain') || lowerName.includes('brain')) {
+      // Progressive levels - split into equal parts
+      const words = text.split(' ');
+      const wordsPerBox = Math.ceil(words.length / boxCount);
+      const result: any = {};
+      
+      for (let i = 0; i < boxCount && i < 4; i++) {
+        const start = i * wordsPerBox;
+        const end = Math.min((i + 1) * wordsPerBox, words.length);
+        result[`text${i}`] = words.slice(start, end).join(' ');
+      }
+      return result;
+    }
+    
+    if (lowerName.includes('distracted boyfriend')) {
+      // Requires 3 distinct labels
+      const parts = text.split(/[,;]|\s+(?:vs|or|not)\s+/i);
+      if (parts.length >= 3) {
+        return { text0: parts[0].trim(), text1: parts[1].trim(), text2: parts[2].trim() };
+      }
+      // Fallback: use generic labels
+      return { text0: 'current', text1: text, text2: 'better option' };
+    }
+    
+    // Generic multi-box handling
+    if (boxCount === 2) {
+      // Try to split at natural break points
+      const breakPoints = [' but ', ' and ', ' vs ', ' or ', ', ', '; '];
+      for (const breakPoint of breakPoints) {
+        if (text.includes(breakPoint)) {
+          const parts = text.split(breakPoint);
+          if (parts.length >= 2) {
+            return { topText: parts[0].trim(), bottomText: parts.slice(1).join(breakPoint).trim() };
+          }
+        }
+      }
+      
+      // Fallback: split in half
+      const mid = Math.floor(text.length / 2);
+      const spaceNearMid = text.lastIndexOf(' ', mid);
+      const splitPoint = spaceNearMid > 0 ? spaceNearMid : mid;
+      return { topText: text.substring(0, splitPoint).trim(), bottomText: text.substring(splitPoint).trim() };
+    }
+    
+    // For templates with more boxes, distribute evenly
+    if (boxCount > 2) {
+      const words = text.split(' ');
+      const wordsPerBox = Math.ceil(words.length / boxCount);
+      const result: any = {};
+      
+      for (let i = 0; i < boxCount && i < 4; i++) {
+        const start = i * wordsPerBox;
+        const end = Math.min((i + 1) * wordsPerBox, words.length);
+        const boxText = words.slice(start, end).join(' ');
+        
+        if (i === 0) result.topText = boxText;
+        else if (i === 1) result.bottomText = boxText;
+        else result[`text${i}`] = boxText;
+      }
+      return result;
+    }
+    
+    // Single box or unknown - return as is
+    return { topText: text };
   }
 
   /**
@@ -218,23 +312,41 @@ Tone: ${tone}
 AVAILABLE MEME TEMPLATES:
 ${templateList}
 
-IMPORTANT RULES:
-1. Select a template that relates to the CONVERSATION TOPIC or the EMOTION/SITUATION being expressed
-2. If the reply is about engagement/goals, pick templates about motivation or action
-3. If the reply disagrees, pick templates about disagreement or confusion
-4. Consider the tone - sarcastic replies need sarcastic memes
-5. Create SHORT, PUNCHY text that works with the chosen template
+CONTEXT ANALYSIS:
+1. Main topic: What is being discussed? (AI, tech, business, social issues, etc.)
+2. Emotional context: What feeling does the reply convey? (helpful, frustrated, excited, confused, etc.)
+3. Reply purpose: What is the reply trying to achieve? (inform, agree, disagree, joke, support, etc.)
 
-EXAMPLES OF GOOD CONTEXT MATCHING:
-- Tweet about deployment + excited reply → Success Kid ("deployed successfully / nothing broke")
-- Tweet about bugs + frustrated reply → This Is Fine (surrounded by bugs)
-- Tweet about learning + motivated reply → Drake (reject: tutorials / prefer: diving in)
+TEMPLATE SELECTION RULES:
+1. Match the template to the SPECIFIC CONTEXT, not just generic emotion
+2. Consider these context-template matches:
+   - Sharing knowledge/tips → Expanding Brain, Drake, One Does Not Simply
+   - Success/Achievement → Success Kid, Leonardo DiCaprio Cheers, Disaster Girl
+   - Confusion/Questions → Confused Math Lady, Is This A Pigeon, Distracted Boyfriend
+   - Problems/Bugs → This Is Fine, Disaster Girl, Hide The Pain Harold
+   - Learning/Growth → Expanding Brain, Drake, Change My Mind
+   - Disagreement → Drake, Woman Yelling At Cat, Change My Mind
+   - Excitement → Excited Kid, Success Kid, Leonardo DiCaprio Cheers
+   - Technical discussions → Expanding Brain, Drake, One Does Not Simply
+   
+3. For multi-box templates, distribute text logically:
+   - Drake: top = reject this, bottom = prefer this
+   - Distracted Boyfriend: requires 3 distinct labels
+   - Expanding Brain: progressive levels of understanding
+   
+4. Keep text SHORT and CONTEXTUAL - reference the actual topic being discussed
+
+EXAMPLES OF EXCELLENT CONTEXT MATCHING:
+- AI tips discussion + helpful reply → Expanding Brain (basic AI use / advanced AI integration / AI-human teamwork)
+- Bug report + frustrated reply → This Is Fine (sitting in bugs / everything crashes)
+- Success story + excited reply → Success Kid (implemented new feature / zero bugs found)
+- Learning discussion + motivated → Drake (learning alone ❌ / learning with community ✓)
 
 Respond in JSON format:
 {
   "templateIndex": <number 1-30>,
   "templateName": "<exact name from list>",
-  "reasoning": "<brief explanation>",
+  "reasoning": "<explain why this template fits the specific context>",
   "topText": "<text for top box if multi-box>",
   "bottomText": "<text for bottom box if multi-box>",
   "text": "<text if single box>"
@@ -297,10 +409,16 @@ Respond in JSON format:
       const fallbackId = fallbackTemplates[tone] || fallbackTemplates.default;
       const fallbackTemplate = templates.find(t => t.id === fallbackId) || templates[0];
       
+      // Generate context-aware text even for fallback
+      const fallbackText = tone === 'sarcastic' ? 'interesting choice' :
+                          tone === 'humorous' ? 'why not' :
+                          tone === 'professional' ? 'lets discuss' :
+                          'good point';
+      
       return {
         templateId: fallbackTemplate.id,
         templateName: fallbackTemplate.name,
-        text: 'this is fine'
+        text: fallbackText
       };
     }
   }

@@ -267,11 +267,21 @@ export class SuggestionsOverlay {
     // Position the overlay
     const rect = this.container.getBoundingClientRect();
     this.overlay.style.position = 'fixed';
-    this.overlay.style.top = `${Math.min(rect.bottom + 8, window.innerHeight - 600)}px`;
+    
+    // Calculate position to ensure overlay stays within viewport
+    const overlayHeight = window.innerHeight * 0.8; // 80% of viewport
+    const availableHeight = window.innerHeight - rect.bottom - 16; // Space below button
+    
+    // If not enough space below, position above the button
+    if (availableHeight < overlayHeight && rect.top > overlayHeight) {
+      this.overlay.style.bottom = `${window.innerHeight - rect.top + 8}px`;
+      this.overlay.style.top = 'auto';
+    } else {
+      this.overlay.style.top = `${Math.min(rect.bottom + 8, window.innerHeight - overlayHeight)}px`;
+    }
+    
     this.overlay.style.left = `${Math.min(rect.left, window.innerWidth - 500)}px`;
     this.overlay.style.width = '480px';
-    this.overlay.style.maxHeight = '600px';
-    this.overlay.style.overflowY = 'auto';
 
     // Add all event listeners
     this.attachEventListeners(onGenerate);
@@ -563,6 +573,9 @@ export class SuggestionsOverlay {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         overflow: hidden;
         animation: slideIn 0.3s ease-out;
+        display: flex;
+        flex-direction: column;
+        max-height: 80vh; /* Limit to 80% of viewport height */
       }
 
       @keyframes slideIn {
@@ -583,6 +596,7 @@ export class SuggestionsOverlay {
         padding: 16px 20px;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
+        flex-shrink: 0; /* Prevent header from shrinking */
       }
 
       .reply-guy-title {
@@ -618,6 +632,9 @@ export class SuggestionsOverlay {
       
       .reply-guy-content {
         padding: 20px;
+        overflow-y: auto;
+        flex: 1;
+        max-height: calc(80vh - 80px); /* Account for header height */
       }
       
       /* Sections */
@@ -981,11 +998,14 @@ export class SuggestionsOverlay {
         }
         .reply-guy-meme-preview {
           margin-bottom: 16px;
+          text-align: center;
         }
         .reply-guy-meme-preview img {
           width: 100%;
           max-width: 300px;
+          max-height: 300px;
           height: auto;
+          object-fit: contain;
           border-radius: 12px;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
@@ -1062,7 +1082,18 @@ export class SuggestionsOverlay {
     // Position the overlay
     const rect = this.container.getBoundingClientRect();
     this.overlay.style.position = 'fixed';
-    this.overlay.style.top = `${Math.min(rect.bottom + 8, window.innerHeight - 400)}px`;
+    
+    // Use same positioning logic for consistency
+    const overlayHeight = window.innerHeight * 0.8; // 80% of viewport
+    const availableHeight = window.innerHeight - rect.bottom - 16;
+    
+    if (availableHeight < overlayHeight && rect.top > overlayHeight) {
+      this.overlay.style.bottom = `${window.innerHeight - rect.top + 8}px`;
+      this.overlay.style.top = 'auto';
+    } else {
+      this.overlay.style.top = `${Math.min(rect.bottom + 8, window.innerHeight - overlayHeight)}px`;
+    }
+    
     this.overlay.style.left = `${Math.min(rect.left, window.innerWidth - 500)}px`;
     this.overlay.style.width = '480px';
 
@@ -1405,7 +1436,18 @@ export class SuggestionsOverlay {
 
     const rect = this.container.getBoundingClientRect();
     this.overlay.style.position = 'fixed';
-    this.overlay.style.top = `${Math.min(rect.bottom + 8, window.innerHeight - 300)}px`;
+    
+    // Use same positioning logic for consistency
+    const overlayHeight = window.innerHeight * 0.8; // 80% of viewport
+    const availableHeight = window.innerHeight - rect.bottom - 16;
+    
+    if (availableHeight < overlayHeight && rect.top > overlayHeight) {
+      this.overlay.style.bottom = `${window.innerHeight - rect.top + 8}px`;
+      this.overlay.style.top = 'auto';
+    } else {
+      this.overlay.style.top = `${Math.min(rect.bottom + 8, window.innerHeight - overlayHeight)}px`;
+    }
+    
     this.overlay.style.left = `${Math.min(rect.left, window.innerWidth - 500)}px`;
     this.overlay.style.width = '400px';
 
@@ -1457,7 +1499,18 @@ export class SuggestionsOverlay {
 
     const rect = this.container.getBoundingClientRect();
     this.overlay.style.position = 'fixed';
-    this.overlay.style.top = `${Math.min(rect.bottom + 8, window.innerHeight - 250)}px`;
+    
+    // Use same positioning logic for consistency
+    const overlayHeight = window.innerHeight * 0.8; // 80% of viewport
+    const availableHeight = window.innerHeight - rect.bottom - 16;
+    
+    if (availableHeight < overlayHeight && rect.top > overlayHeight) {
+      this.overlay.style.bottom = `${window.innerHeight - rect.top + 8}px`;
+      this.overlay.style.top = 'auto';
+    } else {
+      this.overlay.style.top = `${Math.min(rect.bottom + 8, window.innerHeight - overlayHeight)}px`;
+    }
+    
     this.overlay.style.left = `${Math.min(rect.left, window.innerWidth - 500)}px`;
     this.overlay.style.width = '400px';
 

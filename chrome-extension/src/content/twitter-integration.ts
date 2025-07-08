@@ -306,11 +306,17 @@ export class TwitterIntegration {
               data: data
             });
 
+            console.log('[ReplyGuy] Generate reply response:', response);
+            
             if (response.success) {
               // Show the generated reply with optional meme
+              // The API returns { data: { reply, memeUrl, ... } }
+              const replyData = response.data.data || response.data;
+              console.log('[ReplyGuy] Reply data extracted:', replyData);
+              
               overlay.showGeneratedReply(
-                response.data.reply,
-                response.data.memeUrl
+                replyData.reply || 'Failed to generate reply',
+                replyData.memeUrl
               );
             } else {
               overlay.showError(response.error || 'Failed to generate reply');

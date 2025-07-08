@@ -639,10 +639,17 @@ export class SuggestionsOverlay {
         border: 2px solid #e9ecef;
         border-radius: 8px;
         font-size: 14px;
+        color: #212529; /* Explicitly set text color */
         transition: all 0.2s;
         font-family: inherit;
         background: white;
         cursor: pointer;
+        -webkit-appearance: none; /* Remove default styling */
+      }
+      
+      .reply-guy-select option {
+        color: #212529; /* Ensure option text is visible */
+        background: white;
       }
       
       .reply-guy-select:focus {
@@ -1213,18 +1220,59 @@ export class SuggestionsOverlay {
     this.overlay.className = 'reply-guy-overlay';
     this.overlay.innerHTML = `
       <style>
-        ${this.getStyles()}
+        ${this.getComprehensiveStyles()}
+        .reply-guy-loading {
+          padding: 40px;
+          text-align: center;
+          color: #495057;
+        }
+        .reply-guy-spinner {
+          display: inline-block;
+          width: 40px;
+          height: 40px;
+          border: 4px solid #f3f3f3;
+          border-top: 4px solid #667eea;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin-bottom: 16px;
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        .reply-guy-loading-text {
+          font-size: 16px;
+          font-weight: 500;
+          color: #495057;
+        }
       </style>
+      <div class="reply-guy-header">
+        <div class="reply-guy-title">
+          <svg viewBox="0 0 24 24" class="reply-guy-logo-icon">
+            <rect width="24" height="24" rx="4" fill="url(#rg-gradient)"/>
+            <defs>
+              <linearGradient id="rg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#667eea" />
+                <stop offset="100%" style="stop-color:#764ba2" />
+              </linearGradient>
+            </defs>
+            <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" 
+                  font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="white">RG</text>
+          </svg>
+          <span>Reply Guy</span>
+        </div>
+      </div>
       <div class="reply-guy-loading">
         <div class="reply-guy-spinner"></div>
-        <div>Generating suggestions...</div>
+        <div class="reply-guy-loading-text">Crafting the perfect reply...</div>
       </div>
     `;
 
     const rect = this.container.getBoundingClientRect();
     this.overlay.style.position = 'fixed';
-    this.overlay.style.top = `${rect.bottom + window.scrollY}px`;
-    this.overlay.style.left = `${rect.left}px`;
+    this.overlay.style.top = `${Math.min(rect.bottom + 8, window.innerHeight - 300)}px`;
+    this.overlay.style.left = `${Math.min(rect.left, window.innerWidth - 500)}px`;
+    this.overlay.style.width = '400px';
 
     document.body.appendChild(this.overlay);
   }
@@ -1236,29 +1284,47 @@ export class SuggestionsOverlay {
     this.overlay.className = 'reply-guy-overlay';
     this.overlay.innerHTML = `
       <style>
-        ${this.getStyles()}
+        ${this.getComprehensiveStyles()}
         .reply-guy-error {
           padding: 20px;
           text-align: center;
           color: #dc3545;
+          font-size: 14px;
+          line-height: 1.5;
+        }
+        .reply-guy-error-icon {
+          font-size: 48px;
+          margin-bottom: 12px;
         }
       </style>
       <div class="reply-guy-header">
         <div class="reply-guy-title">
-          <div class="reply-guy-logo"></div>
-          Reply Guy
+          <svg viewBox="0 0 24 24" class="reply-guy-logo-icon">
+            <rect width="24" height="24" rx="4" fill="url(#rg-gradient)"/>
+            <defs>
+              <linearGradient id="rg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#667eea" />
+                <stop offset="100%" style="stop-color:#764ba2" />
+              </linearGradient>
+            </defs>
+            <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" 
+                  font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="white">RG</text>
+          </svg>
+          <span>Reply Guy</span>
         </div>
         <button class="reply-guy-close" aria-label="Close">×</button>
       </div>
       <div class="reply-guy-error">
+        <div class="reply-guy-error-icon">⚠️</div>
         ${this.escapeHtml(error)}
       </div>
     `;
 
     const rect = this.container.getBoundingClientRect();
     this.overlay.style.position = 'fixed';
-    this.overlay.style.top = `${rect.bottom + window.scrollY}px`;
-    this.overlay.style.left = `${rect.left}px`;
+    this.overlay.style.top = `${Math.min(rect.bottom + 8, window.innerHeight - 250)}px`;
+    this.overlay.style.left = `${Math.min(rect.left, window.innerWidth - 500)}px`;
+    this.overlay.style.width = '400px';
 
     this.overlay.querySelector('.reply-guy-close')?.addEventListener('click', () => this.remove());
 

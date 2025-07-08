@@ -110,20 +110,25 @@ export async function POST(req: NextRequest) {
 
     // Call Claude 3.5 Sonnet for final generation
     // Calculate appropriate max_tokens based on character limit
-    // More conservative estimation: 1 token ≈ 2 characters for safety
-    // Adding extra buffer when research is included
+    // Token allocation based on typical Twitter writing patterns:
+    // - Short tweets are more compressed (~2.8 chars/token)
+    // - Longer content allows more natural language (~3.6 chars/token)
     let maxTokens;
     const hasResearch = !!validated.perplexityData;
-    const researchBuffer = hasResearch ? 1.2 : 1.0; // 20% extra for research complexity
+    const researchBuffer = hasResearch ? 1.3 : 1.0; // 30% extra for research complexity
     
     if (charLimit >= 2000) {
-      maxTokens = Math.ceil(1800 * researchBuffer); // ~3.3 chars/token with buffer for long content
+      // Extra-long: 2000 chars / ~3.6 chars per token = 550 tokens
+      maxTokens = Math.ceil(550 * researchBuffer);
     } else if (charLimit >= 1000) {
-      maxTokens = Math.ceil(1000 * researchBuffer); // ~3 chars/token with buffer
+      // Long: 1000 chars / ~3.3 chars per token = 300 tokens  
+      maxTokens = Math.ceil(300 * researchBuffer);
     } else if (charLimit >= 560) {
-      maxTokens = Math.ceil(300 * researchBuffer); // 560 chars / 2 chars per token + buffer
+      // Medium: 560 chars / ~3.1 chars per token = 180 tokens
+      maxTokens = Math.ceil(180 * researchBuffer);
     } else {
-      maxTokens = Math.ceil(150 * researchBuffer); // 280 chars / 2 chars per token + buffer
+      // Short: 280 chars / ~2.8 chars per token = 100 tokens
+      maxTokens = Math.ceil(100 * researchBuffer);
     }
     
     console.log(`\n🔢 Token calculation: charLimit=${charLimit}, maxTokens=${maxTokens}, hasResearch=${hasResearch}`);
@@ -132,7 +137,7 @@ export async function POST(req: NextRequest) {
       model: 'claude-3-5-sonnet-20241022',
       max_tokens: maxTokens,
       temperature: 0.8,
-      system: `You are typing a ${replyLength === 'extra-long' ? 'detailed thread-style' : replyLength === 'long' ? 'comprehensive' : 'quick'} reply on Twitter/X. Write exactly like a real person would - casual, direct, sometimes imperfect. The user told you what they want to say, so say it naturally. ${replyLength === 'short' || replyLength === 'medium' ? 'No essay writing, no perfect grammar needed. Just real human replies.' : 'Take the space to fully develop your thoughts while keeping it conversational.'} When stats/research are included, drop them in naturally like you're sharing something you just learned.`,
+      system: `You are typing a ${replyLength === 'extra-long' ? 'detailed thread-style' : replyLength === 'long' ? 'comprehensive' : replyLength === 'medium' ? 'thoughtful' : 'quick'} reply on Twitter/X. Write exactly like a real person would - casual, direct, sometimes imperfect. The user told you what they want to say, so say it naturally. ${replyLength === 'short' ? 'Keep it punchy - one main point.' : replyLength === 'medium' ? 'You have room for 2-3 sentences to develop your thought.' : 'Take the space to fully develop your thoughts while keeping it conversational.'} When stats/research are included, drop them in naturally like you're sharing something you just learned.`,
       messages: [{ role: 'user', content: prompt }],
     });
 
@@ -216,7 +221,7 @@ When sharing facts/stats:
 - Or casual discovery: "just found out [fact] and now i can't stop thinking about it"
 - Or simple share: "fun fact: [stat]"
 
-${replyLength === 'short' || replyLength === 'medium' ? 'BE BRIEF. Most replies should be 1-2 sentences.' : replyLength === 'long' ? 'Take your time to fully express the idea. Use multiple sentences to make your point clear.' : 'This is an extra-long reply. Fully develop your thoughts with detailed explanations, multiple points, and comprehensive coverage of the topic. Use the full character limit available.'}
+${replyLength === 'short' ? 'BE BRIEF. Keep it to 1-2 sentences max. Make your point quickly.' : replyLength === 'medium' ? 'You have space for a thoughtful response. Use 2-4 sentences to properly develop your idea. Don\'t rush - you have 560 characters to work with.' : replyLength === 'long' ? 'Take your time to fully express the idea. Use multiple sentences to make your point clear. You have 1000 characters - enough for a detailed paragraph.' : 'This is an extra-long reply. Fully develop your thoughts with detailed explanations, multiple points, and comprehensive coverage of the topic. Use the full 2000 character limit available.'}
 
 Even if the user's suggestion sounds good, always put it in your own words. Never copy their phrasing exactly.`
 
@@ -273,7 +278,7 @@ REQUIREMENTS (in order of importance):
 4. Make it sound conversational and human
 5. Follow the ${input.selectedType.name} style pattern
 6. Maintain ${input.tone} tone
-7. Stay under ${charLimit} characters
+7. Target length: ${replyLength === 'short' ? '140-280' : replyLength === 'medium' ? '400-560' : replyLength === 'long' ? '700-1000' : '1500-2000'} characters (limit: ${charLimit})
 
 CRITICAL REMINDERS:
 - You are REPLYING TO THE SPECIFIC TWEET ABOVE - acknowledge what they said
@@ -287,7 +292,7 @@ REQUIREMENTS:
 2. Express the user's core message: "${input.responseIdea}" (but rephrase it in your own words)
 3. Use the ${input.selectedType.name} pattern as a style guide
 4. Maintain ${input.tone} tone
-5. Stay under ${charLimit} characters`}
+5. Target length: ${replyLength === 'short' ? '140-280' : replyLength === 'medium' ? '400-560' : replyLength === 'long' ? '700-1000' : '1500-2000'} characters (limit: ${charLimit})`}
 
 Style guidance:
 - Pattern: ${input.selectedType.pattern}

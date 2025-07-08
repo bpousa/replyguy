@@ -53,8 +53,9 @@ export function Popup() {
     }
   };
 
-  const getProgressPercentage = (remaining: number, total: number) => {
-    return Math.round((remaining / total) * 100);
+  const getUsagePercentage = (remaining: number, total: number) => {
+    const used = total - remaining;
+    return Math.round((used / total) * 100);
   };
 
   const getProgressClass = (percentage: number) => {
@@ -87,12 +88,12 @@ export function Popup() {
                 <div className="usage-item">
                   <div className="usage-label">
                     <span>Replies</span>
-                    <span>{limits.repliesRemaining} / {limits.repliesTotal}</span>
+                    <span>{limits.repliesTotal - limits.repliesRemaining} / {limits.repliesTotal}</span>
                   </div>
                   <div className="progress-bar">
                     <div 
-                      className={getProgressClass(getProgressPercentage(limits.repliesRemaining, limits.repliesTotal))}
-                      style={{ width: `${getProgressPercentage(limits.repliesRemaining, limits.repliesTotal)}%` }}
+                      className={getProgressClass(getUsagePercentage(limits.repliesRemaining, limits.repliesTotal))}
+                      style={{ width: `${getUsagePercentage(limits.repliesRemaining, limits.repliesTotal)}%` }}
                     />
                   </div>
                 </div>
@@ -100,12 +101,12 @@ export function Popup() {
                 <div className="usage-item">
                   <div className="usage-label">
                     <span>Suggestions</span>
-                    <span>{limits.suggestionsRemaining} / {limits.suggestionsTotal}</span>
+                    <span>{limits.suggestionsTotal - limits.suggestionsRemaining} / {limits.suggestionsTotal}</span>
                   </div>
                   <div className="progress-bar">
                     <div 
-                      className={getProgressClass(getProgressPercentage(limits.suggestionsRemaining, limits.suggestionsTotal))}
-                      style={{ width: `${getProgressPercentage(limits.suggestionsRemaining, limits.suggestionsTotal)}%` }}
+                      className={getProgressClass(getUsagePercentage(limits.suggestionsRemaining, limits.suggestionsTotal))}
+                      style={{ width: `${getUsagePercentage(limits.suggestionsRemaining, limits.suggestionsTotal)}%` }}
                     />
                   </div>
                 </div>
@@ -113,12 +114,12 @@ export function Popup() {
                 <div className="usage-item">
                   <div className="usage-label">
                     <span>Memes</span>
-                    <span>{limits.memesRemaining} / {limits.memesTotal}</span>
+                    <span>{limits.memesTotal - limits.memesRemaining} / {limits.memesTotal}</span>
                   </div>
                   <div className="progress-bar">
                     <div 
-                      className={getProgressClass(getProgressPercentage(limits.memesRemaining, limits.memesTotal))}
-                      style={{ width: `${getProgressPercentage(limits.memesRemaining, limits.memesTotal)}%` }}
+                      className={getProgressClass(getUsagePercentage(limits.memesRemaining, limits.memesTotal))}
+                      style={{ width: `${getUsagePercentage(limits.memesRemaining, limits.memesTotal)}%` }}
                     />
                   </div>
                 </div>

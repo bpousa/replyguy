@@ -103,6 +103,13 @@ export interface GeneratedReply {
   // Metadata for feedback
   originalTweet?: string;
   responseIdea?: string;
+  // Tracking status
+  trackingStatus?: {
+    success: boolean;
+    error?: string;
+    date?: string;
+    timezone?: string;
+  };
 }
 
 export interface APIResponse<T = any> {

@@ -107,6 +107,7 @@ class APIService {
         suggestionsTotal: limits.suggestion_limit,
         memesRemaining: limits.memesRemaining,
         memesTotal: limits.meme_limit,
+        dailyCount: limits.dailyCount,
         userPlan
       };
     } catch (error) {

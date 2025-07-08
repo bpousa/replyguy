@@ -120,6 +120,40 @@ export async function POST(req: NextRequest) {
     const memesRemaining = memeLimit - currentUsage.total_memes;
     const suggestionsRemaining = plan.suggestion_limit === -1 ? 'unlimited' : plan.suggestion_limit - currentUsage.total_suggestions;
 
+    // Get today's usage for daily goal
+    let dailyCount = 0;
+    try {
+      // Get user's timezone
+      const userTimezone = userData.timezone || 'UTC';
+      const now = new Date();
+      let today: string;
+      
+      try {
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+          timeZone: userTimezone,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        });
+        today = formatter.format(now);
+      } catch (e) {
+        today = now.toISOString().split('T')[0];
+      }
+      
+      const { data: dailyUsage } = await supabase
+        .from('daily_usage')
+        .select('replies_used')
+        .eq('user_id', user.id)
+        .eq('usage_date', today)
+        .maybeSingle();
+      
+      if (dailyUsage) {
+        dailyCount = dailyUsage.replies_used || 0;
+      }
+    } catch (error) {
+      console.error('[check-limits] Failed to fetch daily usage:', error);
+    }
+
     return NextResponse.json({
       canGenerate,
       canGenerateMeme,
@@ -138,6 +172,7 @@ export async function POST(req: NextRequest) {
         repliesRemaining,
         memesRemaining,
         suggestionsRemaining,
+        dailyCount,
         enable_style_matching: plan.enable_style_matching || false,
         enable_write_like_me: plan.enable_write_like_me || false,
         enable_perplexity_guidance: plan.enable_perplexity_guidance || false,

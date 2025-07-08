@@ -29,6 +29,7 @@ export interface UsageLimits {
   suggestionsTotal: number;
   memesRemaining: number;
   memesTotal: number;
+  dailyCount?: number;
   userPlan?: UserPlan;
 }
 

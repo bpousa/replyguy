@@ -259,6 +259,12 @@ export class SuggestionsOverlay {
             <span class="reply-guy-usage-used">${(this.usageLimits.repliesTotal || 0) - (this.usageLimits.repliesRemaining || 0)}</span> / ${this.usageLimits.repliesTotal || 0} replies
             <span class="reply-guy-usage-detail">(${this.usageLimits.repliesRemaining || 0} remaining this billing period)</span>
           </div>
+          ${this.usageLimits.dailyCount !== undefined ? `
+          <div class="reply-guy-daily-goal">
+            <span class="reply-guy-daily-icon">🎯</span>
+            <span class="reply-guy-daily-text">Daily Goal: ${this.usageLimits.dailyCount || 0} / 25</span>
+          </div>
+          ` : ''}
           ` : ''}
         </div>
       </div>
@@ -875,6 +881,26 @@ export class SuggestionsOverlay {
       .reply-guy-usage-detail {
         font-size: 11px;
         color: #adb5bd;
+      }
+      
+      .reply-guy-daily-goal {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 8px;
+        padding: 8px 12px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #495057;
+      }
+      
+      .reply-guy-daily-icon {
+        font-size: 16px;
+      }
+      
+      .reply-guy-daily-text {
+        font-weight: 500;
       }
       
       /* Research suggestions */
@@ -1515,24 +1541,67 @@ export class SuggestionsOverlay {
   }
 
   private insertGeneratedReply(container: Element, reply: string) {
-    const textbox = container.querySelector('[role="textbox"]') as HTMLElement;
+    // Find the X/Twitter compose textbox - it could be in various places
+    const textbox = document.querySelector('[data-testid="tweetTextarea_0"]') as HTMLElement ||
+                   document.querySelector('[role="textbox"][contenteditable="true"]') as HTMLElement ||
+                   container.querySelector('[role="textbox"]') as HTMLElement;
+    
     if (textbox) {
-      // This is a more robust way to set the value and trigger X's internal state updates
-      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
-      if (nativeInputValueSetter) {
-        nativeInputValueSetter.call(textbox, reply);
-
-        const inputEvent = new Event('input', { bubbles: true });
-        textbox.dispatchEvent(inputEvent);
-
+      // Clear existing content
+      textbox.innerHTML = '';
+      
+      // Focus the textbox first
+      textbox.focus();
+      
+      // For contenteditable divs, we need to use execCommand or simulate typing
+      try {
+        // Try the modern way first
+        if (textbox.isContentEditable) {
+          // Create a text node and insert it
+          const textNode = document.createTextNode(reply);
+          const range = document.createRange();
+          const selection = window.getSelection();
+          
+          textbox.appendChild(textNode);
+          range.selectNodeContents(textbox);
+          range.collapse(false);
+          
+          selection?.removeAllRanges();
+          selection?.addRange(range);
+          
+          // Dispatch input event
+          const inputEvent = new InputEvent('input', {
+            bubbles: true,
+            cancelable: true,
+            inputType: 'insertText',
+            data: reply
+          });
+          textbox.dispatchEvent(inputEvent);
+        } else {
+          // For textarea elements
+          const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
+          if (nativeInputValueSetter && textbox instanceof HTMLTextAreaElement) {
+            nativeInputValueSetter.call(textbox, reply);
+            const inputEvent = new Event('input', { bubbles: true });
+            textbox.dispatchEvent(inputEvent);
+          }
+        }
+        
+        // Trigger additional events that X might be listening for
+        const changeEvent = new Event('change', { bubbles: true });
+        textbox.dispatchEvent(changeEvent);
+        
+        // Keep focus on the textbox
         textbox.focus();
-      } else {
-        // Fallback for browsers that don't support the above method
-        textbox.innerText = reply;
-        const inputEvent = new Event('input', { bubbles: true });
-        textbox.dispatchEvent(inputEvent);
-        textbox.focus();
+        
+        console.log('[ReplyGuy] Successfully inserted reply');
+      } catch (error) {
+        console.error('[ReplyGuy] Failed to insert reply:', error);
+        // Final fallback - just set the text
+        textbox.textContent = reply;
       }
+    } else {
+      console.error('[ReplyGuy] Could not find compose textbox');
     }
   }
 }

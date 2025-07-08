@@ -1195,12 +1195,18 @@ export class SuggestionsOverlay {
         ` : ''}
         
         <div class="reply-guy-result-actions">
-          <button class="reply-guy-copy-btn">📋 Copy Reply</button>
+          <button class="reply-guy-copy-btn">${memeUrl ? '📋 Copy Reply & Download Meme' : '📋 Copy Reply'}</button>
         </div>
         
         <div class="reply-guy-copy-notice" style="display: none; margin-top: 16px; padding: 12px 16px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; color: #155724; font-size: 14px; text-align: center;">
           ✅ Reply copied! Click in the reply box and paste with <strong>Ctrl+V</strong> (or <strong>Cmd+V</strong> on Mac)
         </div>
+        
+        ${memeUrl ? `
+        <div class="reply-guy-meme-notice" style="display: none; margin-top: 12px; padding: 12px 16px; background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 8px; color: #0c5460; font-size: 14px; text-align: center;">
+          🖼️ Meme downloaded! Drag it from your downloads into X or use the photo button
+        </div>
+        ` : ''}
       </div>
     `;
 
@@ -1228,12 +1234,47 @@ export class SuggestionsOverlay {
     const copyBtn = this.overlay.querySelector('.reply-guy-copy-btn') as HTMLButtonElement;
     const copyNotice = this.overlay.querySelector('.reply-guy-copy-notice') as HTMLElement;
     
-    copyBtn?.addEventListener('click', () => {
-      navigator.clipboard.writeText(reply).then(() => {
+    copyBtn?.addEventListener('click', async () => {
+      try {
+        // Copy text to clipboard
+        await navigator.clipboard.writeText(reply);
+        
+        // Update button state
         copyBtn.textContent = '✅ Copied!';
         copyBtn.classList.add('copied');
+        
+        // Show copy notice
         if (copyNotice) {
           copyNotice.style.display = 'block';
+        }
+        
+        // Auto-download meme if present
+        if (memeUrl) {
+          try {
+            // Create a temporary anchor element to trigger download
+            const link = document.createElement('a');
+            link.href = memeUrl;
+            
+            // Generate filename with timestamp
+            const timestamp = new Date().getTime();
+            link.download = `replyguy-meme-${timestamp}.jpg`;
+            
+            // Trigger download
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Show meme notice
+            const memeNotice = this.overlay?.querySelector('.reply-guy-meme-notice') as HTMLElement;
+            if (memeNotice) {
+              memeNotice.style.display = 'block';
+            }
+            
+            console.log('[ReplyGuy] Meme auto-downloaded:', link.download);
+          } catch (downloadError) {
+            console.error('[ReplyGuy] Failed to auto-download meme:', downloadError);
+            // Could show a fallback download button here if needed
+          }
         }
         
         // Focus on the reply textbox
@@ -1245,14 +1286,16 @@ export class SuggestionsOverlay {
           replyBox.focus();
         }
         
-        // Auto-close after showing the success message
+        // Auto-close after showing the success message (longer if meme present)
+        const closeDelay = memeUrl ? 3500 : 2500;
         setTimeout(() => {
           this.remove();
-        }, 2500);
-      }).catch(err => {
+        }, closeDelay);
+        
+      } catch (err) {
         console.error('[ReplyGuy] Failed to copy to clipboard:', err);
         alert('Failed to copy. Please select the text and copy manually.');
-      });
+      }
     });
 
     // Close on outside click

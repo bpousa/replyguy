@@ -733,12 +733,42 @@ export async function POST(req: NextRequest) {
     // Track usage for authenticated users
     if (userId !== 'anonymous') {
       try {
+        // Get user's timezone to track in the correct date
+        const { data: userData } = await supabase
+          .from('users')
+          .select('timezone')
+          .eq('id', userId)
+          .single();
+        
+        // Calculate user's current date
+        let userDate: string;
+        if (userData?.timezone) {
+          try {
+            const formatter = new Intl.DateTimeFormat('en-CA', {
+              timeZone: userData.timezone,
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit'
+            });
+            userDate = formatter.format(new Date());
+          } catch (e) {
+            // Fallback to UTC if timezone is invalid
+            userDate = new Date().toISOString().split('T')[0];
+          }
+        } else {
+          // Default to UTC
+          userDate = new Date().toISOString().split('T')[0];
+        }
+        
+        console.log('[process] Tracking usage for user:', userId, 'date:', userDate, 'timezone:', userData?.timezone || 'UTC');
+        
         // Track the reply generation - use throwOnError to ensure we know if it fails
         const { data: trackingData, error: trackingError } = await supabase
           .rpc('track_daily_usage', {
             p_user_id: userId,
             p_usage_type: 'reply',
-            p_count: 1
+            p_count: 1,
+            p_date: userDate
           });
 
         if (trackingError) {
@@ -754,6 +784,14 @@ export async function POST(req: NextRequest) {
           console.log('[process] ✅ Usage tracked successfully for user:', userId);
         }
         
+        // Add tracking status to the response
+        result.trackingStatus = {
+          success: !trackingError,
+          error: trackingError ? trackingError.message : undefined,
+          date: userDate,
+          timezone: userData?.timezone || 'UTC'
+        };
+        
         // Meme tracking is already handled in the /api/meme endpoint
       } catch (trackingError) {
         // Log the full error for debugging but don't fail the request
@@ -763,7 +801,23 @@ export async function POST(req: NextRequest) {
           message: trackingError instanceof Error ? trackingError.message : 'Unknown error',
           stack: trackingError instanceof Error ? trackingError.stack : undefined
         });
+        
+        // Add tracking failure to response
+        result.trackingStatus = {
+          success: false,
+          error: trackingError instanceof Error ? trackingError.message : 'Unknown error',
+          date: userDate || 'unknown',
+          timezone: 'unknown'
+        };
       }
+    } else {
+      // Anonymous users don't get tracked
+      result.trackingStatus = {
+        success: false,
+        error: 'Anonymous user - tracking skipped',
+        date: 'N/A',
+        timezone: 'N/A'
+      };
     }
 
     return NextResponse.json({ data: result });

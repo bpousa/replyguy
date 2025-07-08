@@ -37,5 +37,11 @@
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/replyguy16.png", "icons/reply-guy-loading.gif", "icons/reply_guy_logo.png", "icons/smiling-guy.gif"],
+      "matches": ["*://*.twitter.com/*", "*://*.x.com/*"]
+    }
+  ]
 }

@@ -1567,20 +1567,25 @@ export class SuggestionsOverlay {
     });
   }
 
-  private getStyles(): string {
-    return `
-      .reply-guy-overlay {
-        position: absolute;
-        z-index: 10000;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
-        padding: 16px;
-        max-width: 500px;
-        margin-top: 8px;
-        animation: slideIn 0.2s ease-out;
+  private insertGeneratedReply(container: Element, reply: string) {
+    const textbox = container.querySelector('[role="textbox"]') as HTMLElement;
+    if (textbox) {
+      // This is a more robust way to set the value and trigger X's internal state updates
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
+      if (nativeInputValueSetter) {
+        nativeInputValueSetter.call(textbox, reply);
+
+        const inputEvent = new Event('input', { bubbles: true });
+        textbox.dispatchEvent(inputEvent);
+
+        textbox.focus();
+      } else {
+        // Fallback for browsers that don't support the above method
+        textbox.innerText = reply;
+        const inputEvent = new Event('input', { bubbles: true });
+        textbox.dispatchEvent(inputEvent);
+        textbox.focus();
       }
-      /* ... rest of styles from show() method ... */
-    `;
+    }
   }
 }

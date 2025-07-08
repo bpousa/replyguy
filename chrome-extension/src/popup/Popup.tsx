@@ -6,9 +6,24 @@ export function Popup() {
   const [authState, setAuthState] = useState<AuthState>({ isAuthenticated: false });
   const [limits, setLimits] = useState<UsageLimits | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     checkAuth();
+
+    const handleMessage = (request: any) => {
+      if (request.action === 'generatingReply') {
+        setIsGenerating(true);
+      } else if (request.action === 'replyGenerated') {
+        setIsGenerating(false);
+      }
+    };
+
+    chrome.runtime.onMessage.addListener(handleMessage);
+
+    return () => {
+      chrome.runtime.onMessage.removeListener(handleMessage);
+    };
   }, []);
 
   const checkAuth = async () => {
@@ -56,6 +71,10 @@ export function Popup() {
       {loading ? (
         <div className="loading-container">
           <div className="spinner"></div>
+        </div>
+      ) : isGenerating ? (
+        <div className="loading-container">
+          <img src="icons/smiling-guy.gif" alt="Generating..." />
         </div>
       ) : authState.isAuthenticated ? (
         <>

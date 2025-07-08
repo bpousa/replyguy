@@ -33,10 +33,36 @@ export default function HomePage() {
   const [showReferralWelcome, setShowReferralWelcome] = useState(false);
   const [referralCode, setReferralCode] = useState('');
   const [referralUrl, setReferralUrl] = useState('');
+  const [userTimezone, setUserTimezone] = useState<string | null>(null);
   
   // Function to fetch current daily usage from database
-  const fetchDailyUsage = useCallback(async (userId: string) => {
-    const today = new Date().toISOString().split('T')[0];
+  const fetchDailyUsage = useCallback(async (userId: string, userTimezone?: string) => {
+    // Get today's date in the user's timezone (or default to UTC)
+    const now = new Date();
+    let today: string;
+    
+    if (userTimezone) {
+      try {
+        // Format date in user's timezone
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+          timeZone: userTimezone,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        });
+        today = formatter.format(now);
+      } catch (e) {
+        // Fallback to UTC if timezone is invalid
+        console.warn('[dashboard] Invalid timezone, falling back to UTC:', userTimezone);
+        today = now.toISOString().split('T')[0];
+      }
+    } else {
+      // Default to UTC
+      today = now.toISOString().split('T')[0];
+    }
+    
+    console.log('[dashboard] Fetching daily usage for date:', today, 'timezone:', userTimezone || 'UTC');
+    
     const { data: usage, error: usageError } = await supabase
       .from('daily_usage')
       .select('*')
@@ -50,13 +76,17 @@ export default function HomePage() {
         code: usageError.code,
         message: usageError.message,
         details: usageError.details,
-        hint: usageError.hint
+        hint: usageError.hint,
+        date: today,
+        userId
       });
       return 0;
     } else if (usage) {
+      console.log('[dashboard] Daily usage found:', usage);
       return usage.replies_used || 0;
     } else {
       // No usage record for today yet
+      console.log('[dashboard] No usage record found for date:', today);
       return 0;
     }
   }, [supabase]);
@@ -80,6 +110,7 @@ export default function HomePage() {
         
       if (userData) {
         setDailyGoal(userData.daily_goal || 10);
+        setUserTimezone(userData.timezone || null);
       }
       
       // Get user with active subscription and plan details
@@ -139,7 +170,7 @@ export default function HomePage() {
       }
       
       // Get today's usage
-      const currentUsage = await fetchDailyUsage(user.id);
+      const currentUsage = await fetchDailyUsage(user.id, userData?.timezone || undefined);
       setDailyCount(currentUsage);
       
       // Check if user has seen referral welcome modal
@@ -176,7 +207,7 @@ export default function HomePage() {
     return () => {
       authSubscription?.unsubscribe();
     };
-  }, [supabase, fetchDailyUsage, searchParams]);
+  }, [supabase, fetchDailyUsage, searchParams, userTimezone]);
   
   // Set up periodic refresh of usage data every 30 seconds
   // This ensures data stays in sync if multiple sessions are active
@@ -184,12 +215,12 @@ export default function HomePage() {
     if (!user) return;
     
     const interval = setInterval(async () => {
-      const updatedUsage = await fetchDailyUsage(user.id);
+      const updatedUsage = await fetchDailyUsage(user.id, userTimezone || undefined);
       setDailyCount(updatedUsage);
     }, 30000); // 30 seconds
     
     return () => clearInterval(interval);
-  }, [user, fetchDailyUsage]);
+  }, [user, fetchDailyUsage, userTimezone]);
 
   const handleGenerate = async (input: UserInput) => {
     if (!user) {
@@ -274,6 +305,15 @@ export default function HomePage() {
       }
 
       setGeneratedReply(result.data);
+      
+      // Log tracking status for debugging
+      if (result.data.trackingStatus) {
+        console.log('[dashboard] Tracking status:', result.data.trackingStatus);
+        if (!result.data.trackingStatus.success) {
+          console.error('[dashboard] Failed to track usage:', result.data.trackingStatus.error);
+        }
+      }
+      
       toast.success('Reply generated successfully!');
       
       // Usage tracking is now handled by the backend API
@@ -281,7 +321,7 @@ export default function HomePage() {
       
       // Fetch the actual usage from database to ensure accuracy
       // This will correct any discrepancies from the optimistic update
-      const updatedUsage = await fetchDailyUsage(user.id);
+      const updatedUsage = await fetchDailyUsage(user.id, userTimezone || undefined);
       setDailyCount(updatedUsage);
     } catch (error) {
       // Roll back the optimistic update on error

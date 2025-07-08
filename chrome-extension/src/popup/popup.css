@@ -13,8 +13,10 @@ body {
 
 .popup-container {
   width: 350px;
-  min-height: 400px;
+  min-height: 500px;
+  max-height: 600px;
   background: white;
+  overflow-y: auto;
 }
 
 .popup-header {

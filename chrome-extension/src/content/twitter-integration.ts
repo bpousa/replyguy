@@ -136,60 +136,28 @@ export class TwitterIntegration {
   }
 
   private createReplyGuyIcon(replyButton: Element, tweet: Element): HTMLElement | null {
-    // Create container for Reply Guy icon with all inline styles
     const container = document.createElement('div');
-    container.id = `replyguy-btn-${Date.now()}`; // Unique ID for debugging
+    container.id = `replyguy-btn-${Date.now()}`;
     container.setAttribute('role', 'button');
     container.setAttribute('data-testid', 'replyguy');
     container.setAttribute('tabindex', '0');
-    
-    // Apply all styles inline for maximum compatibility
+
     Object.assign(container.style, {
       display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
-      width: '36px',
-      height: '36px',
+      width: '24px',
+      height: '24px',
       marginLeft: '12px',
       cursor: 'pointer',
       position: 'relative',
       borderRadius: '50%',
       transition: 'transform 0.2s ease',
       zIndex: '1000',
-      // Add a temporary border for debugging
-      border: 'none'
     });
-    
-    // Create button with inline styles
-    container.innerHTML = `
-      <div style="
-        position: relative;
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      ">
-        <svg viewBox="0 0 24 24" style="
-          width: 22px;
-          height: 22px;
-          fill: white;
-        ">
-          <text x="50%" y="50%" 
-                text-anchor="middle" 
-                dominant-baseline="middle" 
-                font-family="Arial, sans-serif" 
-                font-size="11" 
-                font-weight="bold" 
-                fill="white">RG</text>
-        </svg>
-      </div>
-    `;
 
-    // Add hover effect with inline styles
+    container.innerHTML = `<img src="${chrome.runtime.getURL('icons/reply_guy_logo.png')}" style="width: 24px; height: 24px;" />`;
+
     container.addEventListener('mouseenter', () => {
       container.style.transform = 'scale(1.1)';
     });
@@ -346,6 +314,14 @@ export class TwitterIntegration {
               const replyData = response.data.data || response.data;
               console.log('[ReplyGuy] Reply data extracted:', replyData);
               
+              // Log tracking status for debugging
+              if (replyData.trackingStatus) {
+                console.log('[ReplyGuy] Tracking status:', replyData.trackingStatus);
+                if (!replyData.trackingStatus.success) {
+                  console.error('[ReplyGuy] Failed to track usage:', replyData.trackingStatus.error);
+                }
+              }
+              
               overlay.showGeneratedReply(
                 replyData.reply || 'Failed to generate reply',
                 replyData.memeUrl
@@ -379,6 +355,28 @@ export class TwitterIntegration {
       
       // Focus the textbox
       textbox.focus();
+    }
+  }
+
+  private insertGeneratedReply(container: Element, reply: string) {
+    const textbox = container.querySelector('[role="textbox"]') as HTMLElement;
+    if (textbox) {
+      // This is a more robust way to set the value and trigger X's internal state updates
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
+      if (nativeInputValueSetter) {
+        nativeInputValueSetter.call(textbox, reply);
+
+        const inputEvent = new Event('input', { bubbles: true });
+        textbox.dispatchEvent(inputEvent);
+
+        textbox.focus();
+      } else {
+        // Fallback for browsers that don't support the above method
+        textbox.innerText = reply;
+        const inputEvent = new Event('input', { bubbles: true });
+        textbox.dispatchEvent(inputEvent);
+        textbox.focus();
+      }
     }
   }
 }

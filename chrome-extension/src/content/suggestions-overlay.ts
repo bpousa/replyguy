@@ -12,6 +12,7 @@ export class SuggestionsOverlay {
   private memeTextMode: 'exact' | 'enhance' = 'exact';
   private tweet: string = '';
   private userPlan: any = null;
+  private usageLimits: any = null;
   private isSuggestingIdea: boolean = false;
   private isSuggestingResearch: boolean = false;
   private researchSuggestions: string[] = [];
@@ -26,12 +27,25 @@ export class SuggestionsOverlay {
     
     // Get user's plan to show/hide features
     try {
+      if (!chrome.runtime?.id) {
+        console.error('[ReplyGuy] Extension context invalid');
+        return;
+      }
+      
       const response = await chrome.runtime.sendMessage({ action: 'getUsageLimits' });
       if (response.success && response.data) {
+        this.usageLimits = response.data;
         this.userPlan = response.data.userPlan || response.data;
         console.log('[ReplyGuy] User plan loaded:', this.userPlan);
+        console.log('[ReplyGuy] Usage limits:', this.usageLimits);
       }
     } catch (error) {
+      if (error instanceof Error && error.message.includes('Extension context invalidated')) {
+        console.error('[ReplyGuy] Extension context invalidated');
+        alert('Reply Guy extension needs to be refreshed. Please reload this page.');
+        this.remove();
+        return;
+      }
       console.error('[ReplyGuy] Failed to get user plan:', error);
     }
     
@@ -240,9 +254,9 @@ export class SuggestionsOverlay {
           <button class="reply-guy-generate-btn" id="reply-guy-generate">
             Generate Reply
           </button>
-          ${this.userPlan ? `
+          ${this.usageLimits ? `
           <div class="reply-guy-usage">
-            <span>${this.userPlan.repliesRemaining || 0}</span> / <span>${this.userPlan.repliesTotal || 0}</span> replies left
+            <span>${(this.usageLimits.repliesTotal || 0) - (this.usageLimits.repliesRemaining || 0)}</span> of <span>${this.usageLimits.repliesTotal || 0}</span> used today
           </div>
           ` : ''}
         </div>
@@ -327,6 +341,11 @@ export class SuggestionsOverlay {
       suggestBtn.innerHTML = '<svg class="reply-guy-spinner-small" width="14" height="14" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" stroke-dasharray="31.4" stroke-dashoffset="10"></circle></svg> Suggesting...';
       
       try {
+        // Check if extension context is still valid
+        if (!chrome.runtime?.id) {
+          throw new Error('Extension context invalidated');
+        }
+        
         const response = await chrome.runtime.sendMessage({
           action: 'getSuggestions',
           data: {
@@ -353,7 +372,11 @@ export class SuggestionsOverlay {
         }
       } catch (error) {
         console.error('[ReplyGuy] Suggest error:', error);
-        alert('An error occurred. Please try again.');
+        if (error instanceof Error && error.message.includes('Extension context invalidated')) {
+          alert('Reply Guy extension needs to be refreshed. Please reload this page.');
+        } else {
+          alert('An error occurred. Please try again.');
+        }
       } finally {
         if (suggestBtn && this.overlay) {
           suggestBtn.disabled = false;
@@ -399,6 +422,11 @@ export class SuggestionsOverlay {
       }
       
       try {
+        // Check if extension context is still valid
+        if (!chrome.runtime?.id) {
+          throw new Error('Extension context invalidated');
+        }
+        
         const response = await chrome.runtime.sendMessage({
           action: 'getSuggestResearch',
           data: {
@@ -415,6 +443,9 @@ export class SuggestionsOverlay {
         }
       } catch (error) {
         console.error('[ReplyGuy] Research suggest error:', error);
+        if (error instanceof Error && error.message.includes('Extension context invalidated')) {
+          alert('Reply Guy extension needs to be refreshed. Please reload this page.');
+        }
       } finally {
         if (suggestBtn) {
           suggestBtn.disabled = false;

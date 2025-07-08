@@ -10,6 +10,12 @@ export class TwitterIntegration {
     console.log('[ReplyGuy] Initializing X integration');
     console.log('[ReplyGuy] Current URL:', window.location.href);
     
+    // Check if extension context is valid
+    if (!chrome.runtime?.id) {
+      console.error('[ReplyGuy] Extension context invalid during initialization');
+      return;
+    }
+    
     // Check if we're authenticated
     chrome.runtime.sendMessage({ action: 'checkAuth' }).then(response => {
       if (response?.success) {
@@ -17,7 +23,11 @@ export class TwitterIntegration {
         console.log('[ReplyGuy] Auth status:', this.isAuthenticated);
       }
     }).catch(err => {
-      console.error('[ReplyGuy] Failed to check auth:', err);
+      if (err.message?.includes('Extension context invalidated')) {
+        console.error('[ReplyGuy] Extension context invalidated during auth check');
+      } else {
+        console.error('[ReplyGuy] Failed to check auth:', err);
+      }
     });
     
     this.setupObserver();
@@ -253,14 +263,30 @@ export class TwitterIntegration {
   private async handleReplyGuyClick(tweet: Element) {
     console.log('[ReplyGuy] Button clicked');
     
-    // Check if authenticated
-    const authResponse = await chrome.runtime.sendMessage({ action: 'checkAuth' });
-    if (!authResponse?.success || !authResponse.data.isAuthenticated) {
-      console.log('[ReplyGuy] User not authenticated, prompting to login');
-      if (confirm('Please sign in to Reply Guy to use this feature. Would you like to sign in now?')) {
-        chrome.runtime.sendMessage({ action: 'openLogin' });
-      }
+    // Check if extension context is still valid
+    if (!chrome.runtime?.id) {
+      console.error('[ReplyGuy] Extension context invalidated');
+      alert('Reply Guy extension needs to be refreshed. Please reload this page.');
       return;
+    }
+    
+    try {
+      // Check if authenticated
+      const authResponse = await chrome.runtime.sendMessage({ action: 'checkAuth' });
+      if (!authResponse?.success || !authResponse.data.isAuthenticated) {
+        console.log('[ReplyGuy] User not authenticated, prompting to login');
+        if (confirm('Please sign in to Reply Guy to use this feature. Would you like to sign in now?')) {
+          chrome.runtime.sendMessage({ action: 'openLogin' });
+        }
+        return;
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Extension context invalidated')) {
+        console.error('[ReplyGuy] Extension context invalidated');
+        alert('Reply Guy extension needs to be refreshed. Please reload this page.');
+        return;
+      }
+      throw error;
     }
     
     // Get tweet text
@@ -301,6 +327,12 @@ export class TwitterIntegration {
           overlay.showLoading();
           
           try {
+            // Check if extension context is still valid before sending message
+            if (!chrome.runtime?.id) {
+              overlay.showError('Extension needs to be refreshed. Please reload this page.');
+              return;
+            }
+            
             const response = await chrome.runtime.sendMessage({
               action: 'generateReply',
               data: data
@@ -322,7 +354,12 @@ export class TwitterIntegration {
               overlay.showError(response.error || 'Failed to generate reply');
             }
           } catch (error) {
-            overlay.showError('Failed to connect to Reply Guy. Please make sure you are logged in.');
+            if (error instanceof Error && error.message.includes('Extension context invalidated')) {
+              overlay.showError('Extension needs to be refreshed. Please reload this page.');
+            } else {
+              overlay.showError('Failed to connect to Reply Guy. Please make sure you are logged in.');
+            }
+            console.error('[ReplyGuy] Error generating reply:', error);
           }
         });
       }, 500);

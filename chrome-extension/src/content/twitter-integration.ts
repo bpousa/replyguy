@@ -146,24 +146,27 @@ export class TwitterIntegration {
       display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
-      width: '24px',
-      height: '24px',
-      marginLeft: '12px',
+      width: '34px',
+      height: '34px',
+      marginLeft: '8px',
+      marginRight: '8px',
       cursor: 'pointer',
       position: 'relative',
       borderRadius: '50%',
-      transition: 'transform 0.2s ease',
+      transition: 'transform 0.2s ease, background-color 0.2s ease',
       zIndex: '1000',
     });
 
-    container.innerHTML = `<img src="${chrome.runtime.getURL('icons/reply_guy_logo.png')}" style="width: 24px; height: 24px;" />`;
+    container.innerHTML = `<img src="${chrome.runtime.getURL('icons/reply_guy_logo.png')}" style="width: 20px; height: 20px;" />`;
 
     container.addEventListener('mouseenter', () => {
       container.style.transform = 'scale(1.1)';
+      container.style.backgroundColor = 'rgba(102, 126, 234, 0.1)';
     });
     
     container.addEventListener('mouseleave', () => {
       container.style.transform = 'scale(1)';
+      container.style.backgroundColor = 'transparent';
     });
 
     container.addEventListener('click', (e) => {
@@ -204,8 +207,23 @@ export class TwitterIntegration {
     }
     
     if (insertionPoint) {
-      // Try to insert after the reply button
-      if (replyButton.parentElement && replyButton.parentElement.parentElement === insertionPoint) {
+      // For role=group, we want to insert between comment and retweet
+      if (insertionStrategy === 'role=group') {
+        // Find all direct children buttons
+        const buttons = Array.from(insertionPoint.children).filter(child => 
+          child.getAttribute('role') === 'button' || 
+          child.querySelector('[role="button"]')
+        );
+        
+        // Try to insert after the first button (reply) and before the second (retweet)
+        if (buttons.length >= 2) {
+          insertionPoint.insertBefore(container, buttons[1]);
+        } else if (replyButton.parentElement && replyButton.parentElement.parentElement === insertionPoint) {
+          insertionPoint.insertBefore(container, replyButton.parentElement.nextSibling);
+        } else {
+          insertionPoint.appendChild(container);
+        }
+      } else if (replyButton.parentElement && replyButton.parentElement.parentElement === insertionPoint) {
         insertionPoint.insertBefore(container, replyButton.parentElement.nextSibling);
       } else {
         // Fallback: append to the container

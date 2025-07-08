@@ -1142,34 +1142,27 @@ export class SuggestionsOverlay {
           display: flex;
           gap: 12px;
         }
-        .reply-guy-copy-btn,
-        .reply-guy-insert-btn {
+        .reply-guy-copy-btn {
           flex: 1;
-          padding: 12px 20px;
+          max-width: 250px;
+          padding: 14px 24px;
           border: none;
-          border-radius: 8px;
-          font-size: 14px;
-          font-weight: 500;
+          border-radius: 10px;
+          font-size: 15px;
+          font-weight: 600;
           cursor: pointer;
           transition: all 0.2s;
-        }
-        .reply-guy-copy-btn {
-          background: #f8f9fa;
-          border: 2px solid #e9ecef;
-          color: #495057;
-        }
-        .reply-guy-copy-btn:hover {
-          background: #e9ecef;
-          border-color: #dee2e6;
-        }
-        .reply-guy-insert-btn {
           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
           color: white;
           box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+          margin: 0 auto;
         }
-        .reply-guy-insert-btn:hover {
+        .reply-guy-copy-btn:hover {
           transform: translateY(-1px);
           box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+        }
+        .reply-guy-copy-btn.copied {
+          background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
         }
       </style>
       <div class="reply-guy-header">
@@ -1202,8 +1195,11 @@ export class SuggestionsOverlay {
         ` : ''}
         
         <div class="reply-guy-result-actions">
-          <button class="reply-guy-copy-btn">Copy to Clipboard</button>
-          <button class="reply-guy-insert-btn">Insert Reply</button>
+          <button class="reply-guy-copy-btn">📋 Copy Reply</button>
+        </div>
+        
+        <div class="reply-guy-copy-notice" style="display: none; margin-top: 16px; padding: 12px 16px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; color: #155724; font-size: 14px; text-align: center;">
+          ✅ Reply copied! Click in the reply box and paste with <strong>Ctrl+V</strong> (or <strong>Cmd+V</strong> on Mac)
         </div>
       </div>
     `;
@@ -1229,22 +1225,34 @@ export class SuggestionsOverlay {
     // Add event listeners
     this.overlay.querySelector('.reply-guy-close')?.addEventListener('click', () => this.remove());
     
-    this.overlay.querySelector('.reply-guy-copy-btn')?.addEventListener('click', () => {
-      navigator.clipboard.writeText(reply).then(() => {
-        const btn = this.overlay?.querySelector('.reply-guy-copy-btn');
-        if (btn) {
-          btn.textContent = 'Copied!';
-          setTimeout(() => {
-            btn.textContent = 'Copy to Clipboard';
-          }, 2000);
-        }
-      });
-    });
+    const copyBtn = this.overlay.querySelector('.reply-guy-copy-btn') as HTMLButtonElement;
+    const copyNotice = this.overlay.querySelector('.reply-guy-copy-notice') as HTMLElement;
     
-    this.overlay.querySelector('.reply-guy-insert-btn')?.addEventListener('click', () => {
-      // Use the robust insertion method
-      this.insertGeneratedReply(this.container, reply);
-      this.remove();
+    copyBtn?.addEventListener('click', () => {
+      navigator.clipboard.writeText(reply).then(() => {
+        copyBtn.textContent = '✅ Copied!';
+        copyBtn.classList.add('copied');
+        if (copyNotice) {
+          copyNotice.style.display = 'block';
+        }
+        
+        // Focus on the reply textbox
+        const replyBox = document.querySelector('[data-testid="tweetTextarea_0"]') as HTMLElement ||
+                       document.querySelector('[role="textbox"][contenteditable="true"]') as HTMLElement ||
+                       this.container.querySelector('[role="textbox"]') as HTMLElement;
+        
+        if (replyBox) {
+          replyBox.focus();
+        }
+        
+        // Auto-close after showing the success message
+        setTimeout(() => {
+          this.remove();
+        }, 2500);
+      }).catch(err => {
+        console.error('[ReplyGuy] Failed to copy to clipboard:', err);
+        alert('Failed to copy. Please select the text and copy manually.');
+      });
     });
 
     // Close on outside click

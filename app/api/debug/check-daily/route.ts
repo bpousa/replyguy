@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
       .from('daily_usage')
       .select('*')
       .eq('user_id', user.id)
-      .eq('usage_date', userDate)
+      .eq('date', userDate)
       .maybeSingle();
     
     // Get current month usage
@@ -62,8 +62,8 @@ export async function GET(req: NextRequest) {
       .from('daily_usage')
       .select('*')
       .eq('user_id', user.id)
-      .gte('usage_date', sevenDaysAgo.toISOString().split('T')[0])
-      .order('usage_date', { ascending: false });
+      .gte('date', sevenDaysAgo.toISOString().split('T')[0])
+      .order('date', { ascending: false });
     
     return NextResponse.json({
       user: {

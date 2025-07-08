@@ -16,6 +16,8 @@ export class SuggestionsOverlay {
   private isSuggestingIdea: boolean = false;
   private isSuggestingResearch: boolean = false;
   private researchSuggestions: string[] = [];
+  private useCustomStyle: boolean = false;
+  private enableStyleMatching: boolean = false;
 
   constructor(container: Element) {
     this.container = container;
@@ -198,6 +200,28 @@ export class SuggestionsOverlay {
               </div>
             </div>
             ` : ''}
+            
+            ${/* Write Like Me option */''}
+            ${this.userPlan?.enable_write_like_me !== false ? `
+            <div class="reply-guy-option-group">
+              <label class="reply-guy-checkbox">
+                <input type="checkbox" id="reply-guy-write-like-me">
+                <span>Write like me ✍️</span>
+              </label>
+              <p class="reply-guy-option-hint">Use your personal writing style</p>
+            </div>
+            ` : ''}
+            
+            ${/* Match Tweet Style option */''}
+            ${this.userPlan?.enable_style_matching !== false ? `
+            <div class="reply-guy-option-group">
+              <label class="reply-guy-checkbox">
+                <input type="checkbox" id="reply-guy-match-style">
+                <span>Match tweet style 🎨</span>
+              </label>
+              <p class="reply-guy-option-hint">Adapt to the original tweet's tone and style</p>
+            </div>
+            ` : ''}
           </div>
         </details>
         
@@ -262,7 +286,7 @@ export class SuggestionsOverlay {
           ${this.usageLimits.dailyCount !== undefined ? `
           <div class="reply-guy-daily-goal">
             <span class="reply-guy-daily-icon">🎯</span>
-            <span class="reply-guy-daily-text">Daily Goal: ${this.usageLimits.dailyCount || 0} / 25</span>
+            <span class="reply-guy-daily-text">Daily Goal: ${this.usageLimits.dailyCount || 0} / ${this.usageLimits.dailyGoal || 10}</span>
           </div>
           ` : ''}
           ` : ''}
@@ -543,6 +567,18 @@ export class SuggestionsOverlay {
       });
     });
     
+    // Write Like Me checkbox
+    const writeLikeMeCheckbox = this.overlay.querySelector('#reply-guy-write-like-me') as HTMLInputElement;
+    writeLikeMeCheckbox?.addEventListener('change', () => {
+      this.useCustomStyle = writeLikeMeCheckbox.checked;
+    });
+    
+    // Match Tweet Style checkbox
+    const matchStyleCheckbox = this.overlay.querySelector('#reply-guy-match-style') as HTMLInputElement;
+    matchStyleCheckbox?.addEventListener('change', () => {
+      this.enableStyleMatching = matchStyleCheckbox.checked;
+    });
+    
     // Generate button
     this.overlay.querySelector('#reply-guy-generate')?.addEventListener('click', () => {
       // Validate minimum requirements
@@ -562,7 +598,8 @@ export class SuggestionsOverlay {
         includeMeme: this.includeMeme,
         memeText: this.includeMeme && this.memeText ? this.memeText : undefined,
         memeTextMode: this.includeMeme && this.memeText ? this.memeTextMode : undefined,
-        useCustomStyle: false // TODO: Add Write Like Me support
+        useCustomStyle: this.useCustomStyle,
+        enableStyleMatching: this.enableStyleMatching
       };
       
       console.log('[ReplyGuy] Generating with data:', data);
@@ -827,6 +864,13 @@ export class SuggestionsOverlay {
       .reply-guy-checkbox input[type="checkbox"]:disabled + span {
         opacity: 0.5;
         cursor: not-allowed;
+      }
+      
+      .reply-guy-option-hint {
+        font-size: 11px;
+        color: #868e96;
+        margin-top: 4px;
+        margin-left: 24px;
       }
       
       /* Action Buttons */
@@ -1547,61 +1591,130 @@ export class SuggestionsOverlay {
                    container.querySelector('[role="textbox"]') as HTMLElement;
     
     if (textbox) {
-      // Clear existing content
-      textbox.innerHTML = '';
-      
       // Focus the textbox first
       textbox.focus();
       
-      // For contenteditable divs, we need to use execCommand or simulate typing
+      // Clear existing content using React-compatible method
+      const clearEvent = new InputEvent('beforeinput', {
+        bubbles: true,
+        cancelable: true,
+        inputType: 'deleteContentBackward',
+      });
+      textbox.dispatchEvent(clearEvent);
+      textbox.textContent = '';
+      
+      // Method 1: Try using the Clipboard API to simulate paste
+      // This often works better with React-based apps
       try {
-        // Try the modern way first
-        if (textbox.isContentEditable) {
-          // Create a text node and insert it
-          const textNode = document.createTextNode(reply);
-          const range = document.createRange();
-          const selection = window.getSelection();
-          
-          textbox.appendChild(textNode);
-          range.selectNodeContents(textbox);
-          range.collapse(false);
-          
-          selection?.removeAllRanges();
-          selection?.addRange(range);
-          
-          // Dispatch input event
-          const inputEvent = new InputEvent('input', {
-            bubbles: true,
-            cancelable: true,
-            inputType: 'insertText',
-            data: reply
+        if (navigator.clipboard && window.isSecureContext) {
+          // First try to use clipboard API
+          navigator.clipboard.writeText(reply).then(() => {
+            // Focus and select all
+            textbox.focus();
+            const range = document.createRange();
+            range.selectNodeContents(textbox);
+            const selection = window.getSelection();
+            selection?.removeAllRanges();
+            selection?.addRange(range);
+            
+            // Simulate paste event
+            const pasteEvent = new ClipboardEvent('paste', {
+              bubbles: true,
+              cancelable: true,
+              clipboardData: new DataTransfer()
+            });
+            
+            // Some browsers don't allow setting clipboardData, so we use execCommand as backup
+            document.execCommand('insertText', false, reply);
+            
+            console.log('[ReplyGuy] Inserted reply using clipboard method');
+          }).catch(() => {
+            // Fallback to method 2
+            this.insertUsingInputEvents(textbox, reply);
           });
-          textbox.dispatchEvent(inputEvent);
-        } else {
-          // For textarea elements
-          const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
-          if (nativeInputValueSetter && textbox instanceof HTMLTextAreaElement) {
-            nativeInputValueSetter.call(textbox, reply);
-            const inputEvent = new Event('input', { bubbles: true });
-            textbox.dispatchEvent(inputEvent);
-          }
+          return;
         }
-        
-        // Trigger additional events that X might be listening for
-        const changeEvent = new Event('change', { bubbles: true });
-        textbox.dispatchEvent(changeEvent);
-        
-        // Keep focus on the textbox
-        textbox.focus();
-        
-        console.log('[ReplyGuy] Successfully inserted reply');
       } catch (error) {
-        console.error('[ReplyGuy] Failed to insert reply:', error);
-        // Final fallback - just set the text
-        textbox.textContent = reply;
+        console.log('[ReplyGuy] Clipboard API not available, using input events');
       }
+      
+      // Method 2: Simulate typing character by character
+      this.insertUsingInputEvents(textbox, reply);
     } else {
       console.error('[ReplyGuy] Could not find compose textbox');
     }
+  }
+  
+  private insertUsingInputEvents(textbox: HTMLElement, text: string) {
+    // Focus the textbox
+    textbox.focus();
+    
+    // For React-based apps, we need to trigger the proper sequence of events
+    // that mimics actual user typing
+    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype, 
+      'value'
+    )?.set || Object.getOwnPropertyDescriptor(
+      window.HTMLTextAreaElement.prototype, 
+      'value'
+    )?.set;
+    
+    if (nativeInputValueSetter && (textbox instanceof HTMLInputElement || textbox instanceof HTMLTextAreaElement)) {
+      // For input/textarea elements
+      nativeInputValueSetter.call(textbox, text);
+      
+      // Trigger React's onChange
+      const event = new Event('input', { bubbles: true });
+      textbox.dispatchEvent(event);
+    } else {
+      // For contenteditable elements (which X uses)
+      // We need to properly set the text and trigger events
+      
+      // Set the text content
+      textbox.textContent = text;
+      
+      // Create a proper range at the end of the text
+      const range = document.createRange();
+      const textNode = textbox.firstChild || textbox;
+      range.setStart(textNode, textbox.textContent.length);
+      range.setEnd(textNode, textbox.textContent.length);
+      
+      // Update selection
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+      
+      // Dispatch a series of events that React expects
+      const inputEvent = new InputEvent('input', {
+        bubbles: true,
+        cancelable: true,
+        inputType: 'insertText',
+        data: text
+      });
+      
+      const beforeInputEvent = new InputEvent('beforeinput', {
+        bubbles: true,
+        cancelable: true,
+        inputType: 'insertText',
+        data: text
+      });
+      
+      // Fire events in the correct order
+      textbox.dispatchEvent(beforeInputEvent);
+      textbox.dispatchEvent(inputEvent);
+      
+      // Also fire a compositionend event which X sometimes listens for
+      const compositionEvent = new CompositionEvent('compositionend', {
+        bubbles: true,
+        cancelable: true,
+        data: text
+      });
+      textbox.dispatchEvent(compositionEvent);
+    }
+    
+    // Keep focus
+    textbox.focus();
+    
+    console.log('[ReplyGuy] Inserted reply using input events');
   }
 }

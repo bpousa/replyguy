@@ -30,6 +30,7 @@ export interface UsageLimits {
   memesRemaining: number;
   memesTotal: number;
   dailyCount?: number;
+  dailyGoal?: number;
   userPlan?: UserPlan;
 }
 
@@ -45,6 +46,7 @@ export interface GenerateReplyRequest {
   memeText?: string;
   memeTextMode?: 'tweet' | 'reply' | 'custom';
   useCustomStyle?: boolean;
+  enableStyleMatching?: boolean;
 }
 
 export interface GenerateReplyResponse {

@@ -46,6 +46,8 @@ export async function POST(req: NextRequest) {
         *,
         bonus_replies,
         bonus_research,
+        daily_goal,
+        timezone,
         subscriptions!inner(
           status,
           plan_id,
@@ -142,13 +144,13 @@ export async function POST(req: NextRequest) {
       
       const { data: dailyUsage } = await supabase
         .from('daily_usage')
-        .select('replies_used')
+        .select('replies_generated')
         .eq('user_id', user.id)
-        .eq('usage_date', today)
+        .eq('date', today)
         .maybeSingle();
       
       if (dailyUsage) {
-        dailyCount = dailyUsage.replies_used || 0;
+        dailyCount = dailyUsage.replies_generated || 0;
       }
     } catch (error) {
       console.error('[check-limits] Failed to fetch daily usage:', error);
@@ -173,6 +175,7 @@ export async function POST(req: NextRequest) {
         memesRemaining,
         suggestionsRemaining,
         dailyCount,
+        dailyGoal: userData.daily_goal || 10,
         enable_style_matching: plan.enable_style_matching || false,
         enable_write_like_me: plan.enable_write_like_me || false,
         enable_perplexity_guidance: plan.enable_perplexity_guidance || false,

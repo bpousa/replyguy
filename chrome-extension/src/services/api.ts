@@ -108,6 +108,7 @@ class APIService {
         memesRemaining: limits.memesRemaining,
         memesTotal: limits.meme_limit,
         dailyCount: limits.dailyCount,
+        dailyGoal: limits.dailyGoal,
         userPlan
       };
     } catch (error) {

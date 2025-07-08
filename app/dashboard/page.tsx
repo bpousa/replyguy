@@ -67,7 +67,7 @@ export default function HomePage() {
       .from('daily_usage')
       .select('*')
       .eq('user_id', userId)
-      .eq('usage_date', today)
+      .eq('date', today)
       .maybeSingle();
       
     if (usageError) {
@@ -83,7 +83,7 @@ export default function HomePage() {
       return 0;
     } else if (usage) {
       console.log('[dashboard] Daily usage found:', usage);
-      return usage.replies_used || 0;
+      return usage.replies_generated || 0;
     } else {
       // No usage record for today yet
       console.log('[dashboard] No daily usage found for date:', today, 'userId:', userId);

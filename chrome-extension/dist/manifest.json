@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Reply Guy for X",
-  "version": "1.0",
+  "version": "1.0.0",
   "description": "Integrate Reply Guy's writing tools directly into X (formerly Twitter).",
   "permissions": [
     "activeTab",
@@ -40,7 +40,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["icons/replyguy16.png", "icons/reply-guy-loading.gif", "icons/reply_guy_logo.png", "icons/smiling-guy.gif"],
+      "resources": ["icons/reply_guy_logo.png"],
       "matches": ["*://*.twitter.com/*", "*://*.x.com/*"]
     }
   ]

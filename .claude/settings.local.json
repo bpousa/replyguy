@@ -129,7 +129,8 @@
       "mcp__context7__get-library-docs",
       "Bash(git remote set-url:*)",
       "Bash(GIT_TERMINAL_PROMPT=0 git push origin main)",
-      "Bash(git remote get-url:*)"
+      "Bash(git remote get-url:*)",
+      "Bash(git diff:*)"
     ],
     "deny": []
   }

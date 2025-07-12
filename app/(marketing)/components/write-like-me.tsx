@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Zap, User, Sparkles } from 'lucide-react';
+import { ArrowRight, Zap, User, Sparkles, Chrome } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/app/components/ui/button';
 
@@ -151,12 +151,30 @@ export function WriteLikeMe() {
             <p className="text-lg text-gray-600 mb-6">
               Available on <span className="font-semibold text-purple-600">X Pro</span> and <span className="font-semibold text-purple-600">X Business</span> plans
             </p>
-            <Link href="/auth/signup">
-              <Button size="lg" className="text-lg px-8">
-                Start Training Your AI
-                <ArrowRight className="w-5 h-5 ml-2" />
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/auth/signup">
+                <Button size="lg" className="text-lg px-8">
+                  Start Training Your AI
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+              </Link>
+              <Button 
+                size="lg" 
+                variant="outline"
+                className="text-lg px-8"
+                asChild
+              >
+                <a 
+                  href="https://chromewebstore.google.com/detail/reply-guy-for-x-twitter/ggdieefnnmcgnmonbkngnmonoifdgmje?authuser=3&hl=en"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center"
+                >
+                  <Chrome className="w-5 h-5 mr-2" />
+                  Try with Chrome Extension
+                </a>
               </Button>
-            </Link>
+            </div>
           </div>
         </div>
       </div>

@@ -20,6 +20,9 @@ export default function MarketingLayout({
               <Link href="/#features" className="text-sm font-medium text-gray-600 hover:text-gray-900">
                 Features
               </Link>
+              <Link href="/extension" className="text-sm font-medium text-gray-600 hover:text-gray-900">
+                Chrome Extension
+              </Link>
               <Link href="/pricing" className="text-sm font-medium text-gray-600 hover:text-gray-900">
                 Pricing
               </Link>

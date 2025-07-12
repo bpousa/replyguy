@@ -6,7 +6,8 @@ import {
   Target,
   Clock,
   User,
-  Search
+  Search,
+  Chrome
 } from 'lucide-react';
 
 const features = [
@@ -14,6 +15,12 @@ const features = [
     name: 'Write Like Me™',
     description: 'Train AI on your tweets to generate replies in your unique voice and style.',
     icon: User,
+    badge: 'NEW',
+  },
+  {
+    name: 'Chrome Extension',
+    description: 'Generate replies directly from X with our Chrome extension. No tab switching needed.',
+    icon: Chrome,
     badge: 'NEW',
   },
   {

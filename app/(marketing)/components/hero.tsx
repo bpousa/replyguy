@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@/app/components/ui/button';
-import { ArrowRight, CheckCircle } from 'lucide-react';
+import { ArrowRight, CheckCircle, Chrome } from 'lucide-react';
 import Image from 'next/image';
 
 export function Hero() {
@@ -21,8 +21,14 @@ export function Hero() {
           </div>
           
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-full text-sm font-medium mb-6">
-            AI-Powered Reply Generation
+          <div className="flex flex-col sm:flex-row gap-3 items-center justify-center mb-6">
+            <div className="inline-flex items-center gap-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-full text-sm font-medium">
+              AI-Powered Reply Generation
+            </div>
+            <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-medium">
+              <Chrome className="w-4 h-4" />
+              Now with Chrome Extension
+            </div>
           </div>
           
           {/* Main heading */}
@@ -33,7 +39,8 @@ export function Hero() {
           {/* Subheading */}
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
             Create authentic, engaging replies to tweets in seconds. Build your audience, 
-            increase engagement, and save hours every day with AI that sounds genuinely human.
+            increase engagement, and save hours every day with AI that sounds genuinely human. 
+            Now works directly in X with our Chrome extension!
           </p>
           
           {/* CTA buttons */}
@@ -44,8 +51,23 @@ export function Hero() {
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
+            <Button 
+              size="lg" 
+              variant="outline"
+              className="gap-2"
+              asChild
+            >
+              <a 
+                href="https://chromewebstore.google.com/detail/reply-guy-for-x-twitter/ggdieefnnmcgnmonbkngnmonoifdgmje?authuser=3&hl=en"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Chrome className="w-4 h-4" />
+                Add to Chrome
+              </a>
+            </Button>
             <Link href="#features">
-              <Button size="lg" variant="outline">
+              <Button size="lg" variant="ghost">
                 See How It Works
               </Button>
             </Link>

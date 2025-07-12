@@ -126,7 +126,10 @@
       "mcp__github__*",
       "mcp__supabase__*",
       "mcp__context7__resolve-library-id",
-      "mcp__context7__get-library-docs"
+      "mcp__context7__get-library-docs",
+      "Bash(git remote set-url:*)",
+      "Bash(GIT_TERMINAL_PROMPT=0 git push origin main)",
+      "Bash(git remote get-url:*)"
     ],
     "deny": []
   }

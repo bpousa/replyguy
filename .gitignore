@@ -59,3 +59,6 @@ Thumbs.dbSuperClaude-temp/
 chrome-extension/node_modules
 chrome-extension/dist
 chrome-extension/package-lock.json
+
+# md files
+MCP_SERVERS_SETUP_SUMMARY.md

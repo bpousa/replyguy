@@ -129,7 +129,7 @@ function generateTestEvent(eventType: string, userType: string) {
         user: userData,
         metadata: {
           source: 'signup_form',
-          referral_code: userData.referred_by ? 'FRIEND123' : undefined
+          referral_code: 'referred_by' in userData && userData.referred_by ? 'FRIEND123' : undefined
         }
       };
       
@@ -139,9 +139,9 @@ function generateTestEvent(eventType: string, userType: string) {
         timestamp: new Date().toISOString(),
         user: userData,
         metadata: {
-          plan: userData.member_level,
+          plan: 'member_level' in userData ? userData.member_level : 'free',
           billing_cycle: 'monthly',
-          amount: userData.member_level === 'x_basic' ? 19 : userData.member_level === 'x_pro' ? 49 : 99
+          amount: 'member_level' in userData ? (userData.member_level === 'x_basic' ? 19 : userData.member_level === 'x_pro' ? 49 : 99) : 0
         }
       };
       
@@ -165,7 +165,7 @@ function generateTestEvent(eventType: string, userType: string) {
         user: { ...userData, subscription_status: 'trialing', trial_ends: trialEndDate.toISOString() },
         metadata: {
           trial_end_date: trialEndDate.toISOString(),
-          plan_after_trial: userData.member_level
+          plan_after_trial: 'member_level' in userData ? userData.member_level : 'free'
         }
       };
       

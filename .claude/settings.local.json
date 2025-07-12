@@ -98,7 +98,6 @@
       "mcp__puppeteer__puppeteer_evaluate",
       "mcp__puppeteer__puppeteer_click",
       "mcp__puppeteer__puppeteer_fill",
-      "Bash(pkill:*)",
       "Bash(md5sum:*)",
       "Bash(xxd:*)",
       "Bash(timeout 30 vercel logs:*)",
@@ -110,7 +109,6 @@
       "mcp__sequential-thinking__sequentialthinking",
       "Bash(npm info:*)",
       "Bash(npm update:*)",
-      "mcp__sequential-thinking__sequentialthinking",
       "Bash(npx webpack:*)",
       "Bash(git branch:*)",
       "Bash(npx:*)",
@@ -121,7 +119,14 @@
       "Bash(pnpm -C /home/mike/SuperClaude/mcp-servers/chrome run build)",
       "Bash(unzip:*)",
       "Bash(mcp-chrome-bridge:*)",
-      "Bash(npm search:*)"
+      "Bash(npm search:*)",
+      "Bash(psql:*)",
+      "Bash(npm:*)",
+      "mcp__playwright__*",
+      "mcp__github__*",
+      "mcp__supabase__*",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs"
     ],
     "deny": []
   }

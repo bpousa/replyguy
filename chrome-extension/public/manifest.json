@@ -4,9 +4,6 @@
   "version": "1.0.0",
   "description": "Integrate Reply Guy's writing tools directly into X (formerly Twitter).",
   "permissions": [
-    "activeTab",
-    "scripting",
-    "storage",
     "cookies"
   ],
   "host_permissions": [

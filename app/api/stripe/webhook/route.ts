@@ -217,6 +217,32 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   await supabase
     .from('subscriptions')
     .insert(subscriptionData);
+
+  // Send event to GHL
+  if (process.env.GHL_SYNC_ENABLED === 'true') {
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/ghl/webhook`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'subscription_started',
+          userId: userId,
+          data: {
+            planId: plan.id,
+            subscriptionId: subscriptionId,
+            customerId: customerId,
+            status: subscription.status
+          },
+          metadata: {
+            billingCycle: priceId.includes('yearly') ? 'yearly' : 'monthly',
+            trial: !!subscription.trial_end
+          }
+        })
+      });
+    } catch (error) {
+      console.error('Failed to send subscription started event to GHL:', error);
+    }
+  }
 }
 
 async function handleSubscriptionUpdate(subscription: Stripe.Subscription, eventType: string) {
@@ -317,6 +343,32 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription, event
         })
         .eq('id', sub.user_id);
     }
+    
+    // Send event to GHL
+    if (process.env.GHL_SYNC_ENABLED === 'true' && currentSub && (currentSub.status !== subscription.status || currentSub.plan_id !== plan.id)) {
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/ghl/webhook`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: 'subscription_updated',
+            userId: sub.user_id,
+            data: {
+              oldPlanId: currentSub.plan_id,
+              newPlanId: plan.id,
+              oldStatus: currentSub.status,
+              newStatus: subscription.status
+            },
+            metadata: {
+              eventType: eventType,
+              priceId: priceId
+            }
+          })
+        });
+      } catch (error) {
+        console.error('Failed to send subscription update event to GHL:', error);
+      }
+    }
   }
 }
 
@@ -348,6 +400,29 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
       .eq('id', user.id);
 
     console.log(`User ${user.id} moved to free plan after subscription cancellation`);
+    
+    // Send event to GHL
+    if (process.env.GHL_SYNC_ENABLED === 'true') {
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/ghl/webhook`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: 'subscription_canceled',
+            userId: user.id,
+            data: {
+              subscriptionId: subscription.id,
+              customerId: subscription.customer
+            },
+            metadata: {
+              canceledAt: new Date().toISOString()
+            }
+          })
+        });
+      } catch (error) {
+        console.error('Failed to send subscription canceled event to GHL:', error);
+      }
+    }
   }
 }
 
@@ -404,6 +479,32 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
         }
       })
     });
+    
+    // Send event to GHL
+    if (process.env.GHL_SYNC_ENABLED === 'true') {
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/ghl/webhook`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: 'payment_failed',
+            userId: user.id,
+            data: {
+              subscriptionId: subscriptionId,
+              invoiceId: invoice.id,
+              amount: invoice.amount_due / 100
+            },
+            metadata: {
+              failureReason: invoice.last_finalization_error?.message || 'unknown',
+              nextRetryDate: nextRetryDate.toISOString(),
+              retryCount: currentSub?.payment_retry_count || 1
+            }
+          })
+        });
+      } catch (error) {
+        console.error('Failed to send payment failed event to GHL:', error);
+      }
+    }
   }
 }
 
@@ -436,6 +537,30 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
       .from('users')
       .update({ subscription_tier: sub.plan_id })
       .eq('id', sub.user_id);
+      
+    // Send event to GHL
+    if (process.env.GHL_SYNC_ENABLED === 'true') {
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/ghl/webhook`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: 'payment_recovered',
+            userId: sub.user_id,
+            data: {
+              subscriptionId: subscriptionId,
+              invoiceId: invoice.id,
+              amount: invoice.amount_paid / 100
+            },
+            metadata: {
+              recoveredAt: new Date().toISOString()
+            }
+          })
+        });
+      } catch (error) {
+        console.error('Failed to send payment recovered event to GHL:', error);
+      }
+    }
   }
 }
 
@@ -465,5 +590,29 @@ async function handleTrialWillEnd(subscription: Stripe.Subscription) {
         }
       })
     });
+      
+    // Send event to GHL
+    if (process.env.GHL_SYNC_ENABLED === 'true') {
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/ghl/webhook`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: 'trial_ending',
+            userId: user.id,
+            data: {
+              subscriptionId: subscription.id,
+              customerId: subscription.customer
+            },
+            metadata: {
+              trialEndDate: trialEndDate.toISOString(),
+              daysRemaining: 3
+            }
+          })
+        });
+      } catch (error) {
+        console.error('Failed to send trial ending event to GHL:', error);
+      }
+    }
   }
 }

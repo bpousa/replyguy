@@ -1,0 +1,179 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+type EventType = 
+  | 'user_created'
+  | 'subscription_started'
+  | 'subscription_updated'
+  | 'payment_failed'
+  | 'payment_recovered'
+  | 'subscription_canceled'
+  | 'trial_ending';
+
+interface GHLWebhookEvent {
+  event: EventType;
+  userId: string;
+  data: any;
+  metadata?: Record<string, any>;
+}
+
+// Queue for retry logic
+const retryQueue: Map<string, { event: GHLWebhookEvent; attempts: number }> = new Map();
+
+async function sendEventToGHL(event: GHLWebhookEvent): Promise<boolean> {
+  const ghlWebhookUrl = process.env.GHL_WEBHOOK_URL;
+  const ghlApiKey = process.env.GHL_API_KEY;
+  
+  if (!ghlWebhookUrl) {
+    console.error('GHL_WEBHOOK_URL not configured');
+    return false;
+  }
+  
+  try {
+    // First, sync the full user data
+    const syncResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/ghl/sync-user`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: event.userId })
+    });
+    
+    if (!syncResponse.ok) {
+      console.error('Failed to sync user data before sending event');
+      return false;
+    }
+    
+    const syncResult = await syncResponse.json();
+    const userData = syncResult.results?.[0]?.data;
+    
+    if (!userData) {
+      console.error('No user data found for event');
+      return false;
+    }
+    
+    // Send the event with full user data
+    const response = await fetch(ghlWebhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(ghlApiKey && { 'Authorization': `Bearer ${ghlApiKey}` })
+      },
+      body: JSON.stringify({
+        event: event.event,
+        timestamp: new Date().toISOString(),
+        user: userData,
+        metadata: event.metadata
+      })
+    });
+    
+    if (!response.ok) {
+      console.error('GHL webhook failed:', response.status, await response.text());
+      return false;
+    }
+    
+    console.log(`✅ GHL event sent: ${event.event} for user ${event.userId}`);
+    return true;
+    
+  } catch (error) {
+    console.error('Error sending event to GHL:', error);
+    return false;
+  }
+}
+
+async function processEventWithRetry(event: GHLWebhookEvent, eventId: string) {
+  const maxRetries = 3;
+  const retryDelay = 5000; // 5 seconds
+  
+  // Check if already in retry queue
+  const existing = retryQueue.get(eventId);
+  const attempts = existing ? existing.attempts + 1 : 1;
+  
+  const success = await sendEventToGHL(event);
+  
+  if (!success && attempts < maxRetries) {
+    // Add to retry queue
+    retryQueue.set(eventId, { event, attempts });
+    
+    // Schedule retry
+    setTimeout(async () => {
+      console.log(`🔄 Retrying GHL event (attempt ${attempts + 1}/${maxRetries}): ${event.event}`);
+      await processEventWithRetry(event, eventId);
+    }, retryDelay * attempts);
+  } else if (success) {
+    // Remove from retry queue if successful
+    retryQueue.delete(eventId);
+  } else {
+    // Max retries reached
+    console.error(`❌ Failed to send GHL event after ${maxRetries} attempts: ${event.event}`);
+    retryQueue.delete(eventId);
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { event, userId, data, metadata } = body as GHLWebhookEvent;
+    
+    if (!event || !userId) {
+      return NextResponse.json(
+        { error: 'Missing required fields: event, userId' },
+        { status: 400 }
+      );
+    }
+    
+    // Validate event type
+    const validEvents: EventType[] = [
+      'user_created',
+      'subscription_started',
+      'subscription_updated',
+      'payment_failed',
+      'payment_recovered',
+      'subscription_canceled',
+      'trial_ending'
+    ];
+    
+    if (!validEvents.includes(event)) {
+      return NextResponse.json(
+        { error: `Invalid event type: ${event}` },
+        { status: 400 }
+      );
+    }
+    
+    // Check if GHL sync is enabled
+    if (process.env.GHL_SYNC_ENABLED !== 'true') {
+      return NextResponse.json({
+        message: 'GHL sync is disabled',
+        received: true
+      });
+    }
+    
+    // Generate unique event ID for idempotency
+    const eventId = `${event}_${userId}_${Date.now()}`;
+    
+    // Process event asynchronously with retry
+    processEventWithRetry({ event, userId, data, metadata }, eventId)
+      .catch(error => console.error('Error in async event processing:', error));
+    
+    return NextResponse.json({
+      message: 'Event received and queued for processing',
+      eventId,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('GHL webhook error:', error);
+    return NextResponse.json(
+      { error: 'Failed to process webhook' },
+      { status: 500 }
+    );
+  }
+}
+
+// GET endpoint for health check
+export async function GET() {
+  return NextResponse.json({
+    status: 'healthy',
+    ghlConfigured: !!process.env.GHL_WEBHOOK_URL,
+    syncEnabled: process.env.GHL_SYNC_ENABLED === 'true',
+    retryQueueSize: retryQueue.size,
+    timestamp: new Date().toISOString()
+  });
+}

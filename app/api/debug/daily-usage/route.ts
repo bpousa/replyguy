@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
       .from('daily_usage')
       .select('*')
       .eq('user_id', user.id)
-      .order('usage_date', { ascending: false })
+      .order('date', { ascending: false })
       .limit(7);
     
     if (usageError) {
@@ -76,8 +76,8 @@ export async function GET(req: NextRequest) {
       usage_records: usageRecords || [],
       summary: {
         total_records: usageRecords?.length || 0,
-        today_usage: usageRecords?.find(r => r.usage_date === userTimezoneDate) || null,
-        today_utc_usage: usageRecords?.find(r => r.usage_date === utcDate) || null
+        today_usage: usageRecords?.find(r => r.date === userTimezoneDate) || null,
+        today_utc_usage: usageRecords?.find(r => r.date === utcDate) || null
       }
     };
     

@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
       .from('daily_usage')
       .select('*')
       .eq('user_id', user.id)
-      .eq('usage_date', targetDate)
+      .eq('date', targetDate)
       .single();
     
     return NextResponse.json({

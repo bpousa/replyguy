@@ -40,6 +40,17 @@ export default function EstablishingSessionPage() {
           // Clear any auth flow markers
           sessionStorage.removeItem('auth_flow_active');
           
+          // Send post-signup notification for new users
+          try {
+            await fetch('/api/auth/post-signup', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: session.user.id })
+            });
+          } catch (error) {
+            console.error('[establishing-session] Post-signup notification failed:', error);
+          }
+          
           // Determine redirect based on plan
           const userPlan = plan || session.user.user_metadata?.selected_plan;
           console.log('[establishing-session] User plan:', userPlan);
@@ -97,6 +108,17 @@ export default function EstablishingSessionPage() {
             
             // Clear auth flow markers
             sessionStorage.removeItem('auth_flow_active');
+            
+            // Send post-signup notification for new users
+            try {
+              await fetch('/api/auth/post-signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: session.user.id })
+              });
+            } catch (error) {
+              console.error('[establishing-session] Post-signup notification failed:', error);
+            }
             
             // Handle redirect based on plan
             const userPlan = plan || session.user.user_metadata?.selected_plan;

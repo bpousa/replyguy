@@ -18,6 +18,7 @@ function generateDummyUser(type: 'free' | 'x_basic' | 'x_pro' | 'x_business' | '
     daily_goal: 10,
     signup_date: signupDate.toISOString(),
     referral_code: `REF${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+    product_purchased: type === 'free' ? null : type,
   };
   
   switch (type) {
@@ -31,7 +32,9 @@ function generateDummyUser(type: 'free' | 'x_basic' | 'x_pro' | 'x_business' | '
         payment_status: 'current',
         monthly_reply_limit: 10,
         monthly_meme_limit: 0,
-        features: []
+        features: [],
+        referred_by: null,
+        trial_ends: null
       };
       
     case 'x_basic':
@@ -45,7 +48,9 @@ function generateDummyUser(type: 'free' | 'x_basic' | 'x_pro' | 'x_business' | '
         payment_status: 'current',
         monthly_reply_limit: 300,
         monthly_meme_limit: 10,
-        features: ['meme_generation']
+        features: ['meme_generation'],
+        referred_by: Math.random() > 0.7 ? 'referrer@example.com' : null,
+        trial_ends: null
       };
       
     case 'x_pro':
@@ -61,7 +66,8 @@ function generateDummyUser(type: 'free' | 'x_basic' | 'x_pro' | 'x_business' | '
         payment_status: 'trial',
         monthly_reply_limit: 500,
         monthly_meme_limit: 50,
-        features: ['meme_generation', 'write_like_me', 'style_matching']
+        features: ['meme_generation', 'write_like_me', 'style_matching'],
+        referred_by: null
       };
       
     case 'x_business':
@@ -76,7 +82,8 @@ function generateDummyUser(type: 'free' | 'x_basic' | 'x_pro' | 'x_business' | '
         referred_by: 'referrer@example.com',
         monthly_reply_limit: 1000,
         monthly_meme_limit: 100,
-        features: ['meme_generation', 'write_like_me', 'style_matching', 'research', 'long_replies']
+        features: ['meme_generation', 'write_like_me', 'style_matching', 'research', 'long_replies'],
+        trial_ends: null
       };
       
     case 'failed_payment':
@@ -94,7 +101,9 @@ function generateDummyUser(type: 'free' | 'x_basic' | 'x_pro' | 'x_business' | '
         payment_retry_count: 2,
         monthly_reply_limit: 500,
         monthly_meme_limit: 50,
-        features: ['meme_generation', 'write_like_me', 'style_matching']
+        features: ['meme_generation', 'write_like_me', 'style_matching'],
+        referred_by: null,
+        trial_ends: null
       };
       
     case 'canceled':
@@ -109,7 +118,9 @@ function generateDummyUser(type: 'free' | 'x_basic' | 'x_pro' | 'x_business' | '
         payment_status: 'canceled',
         monthly_reply_limit: 10,
         monthly_meme_limit: 0,
-        features: []
+        features: [],
+        referred_by: null,
+        trial_ends: null
       };
       
     default:

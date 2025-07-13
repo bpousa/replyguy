@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { openAIMemeService } from '@/app/lib/services/openai-meme.service';
 import { imgflipService } from '@/app/lib/services/imgflip.service';
 import { memeTemplateTracker } from '@/app/lib/services/meme-template-tracker';
+import { MemeTextValidator } from '@/app/lib/meme-validator';
+import { MemeQualityScorer } from '@/app/lib/meme-quality-scorer';
 import { createServerClient } from '@/app/lib/auth';
 import { cookies } from 'next/headers';
 
@@ -93,20 +95,121 @@ export async function POST(req: NextRequest) {
       
       console.log(`[meme-text] ${candidateTemplates.length} diverse templates for selection`);
       
-      // Step 5: Use GPT-4o to select best template based on context
-      const selection = await openAIMemeService.selectMemeTemplate({
-        originalTweet: validated.originalTweet || validated.reply,
-        reply: validated.reply,
-        tone: validated.tone,
-        templates: candidateTemplates
-      });
+      // Step 5: Use GPT-4o to select best template based on context with retry logic
+      let selection;
+      let retryCount = 0;
+      const maxRetries = 3;
+      let lastValidationError;
+      let workingTemplates = [...candidateTemplates]; // Create a copy for retries
+
+      while (retryCount < maxRetries) {
+        try {
+          selection = await openAIMemeService.selectMemeTemplate({
+            originalTweet: validated.originalTweet || validated.reply,
+            reply: validated.reply,
+            tone: validated.tone,
+            templates: workingTemplates
+          });
+
+          // Validate the selection if validation results are available
+          let shouldRetry = false;
+          let retryReason = '';
+
+          if (selection.validation && !selection.validation.isValid && selection.validation.score < 60) {
+            shouldRetry = true;
+            retryReason = 'validation';
+            lastValidationError = selection.validation;
+            console.warn(`[meme-text] Attempt ${retryCount + 1} validation failed:`, {
+              errors: selection.validation.errors,
+              score: selection.validation.score,
+              suggestions: selection.validation.suggestions
+            });
+          } else {
+            // Additional quality scoring check
+            const memeTexts = [];
+            if (selection.text) memeTexts.push(selection.text);
+            if (selection.topText) memeTexts.push(selection.topText);
+            if (selection.bottomText) memeTexts.push(selection.bottomText);
+
+            const qualityContent = {
+              originalTweet: validated.originalTweet || validated.reply,
+              reply: validated.reply,
+              tone: validated.tone,
+              templateName: selection.templateName,
+              memeTexts
+            };
+
+            const qualityScore = MemeQualityScorer.assessQuality(qualityContent);
+            
+            console.log(`[meme-text] Attempt ${retryCount + 1} quality assessment:`, {
+              overall: qualityScore.overall,
+              breakdown: qualityScore.breakdown,
+              issues: qualityScore.issues,
+              strengths: qualityScore.strengths
+            });
+
+            // Check if quality meets minimum standards
+            if (qualityScore.overall < 50 || qualityScore.breakdown.contextualFit < 40) {
+              shouldRetry = true;
+              retryReason = 'quality';
+              console.warn(`[meme-text] Attempt ${retryCount + 1} quality too low:`, {
+                overall: qualityScore.overall,
+                contextualFit: qualityScore.breakdown.contextualFit,
+                issues: qualityScore.issues
+              });
+            }
+          }
+
+          if (shouldRetry) {
+            retryCount++;
+            if (retryCount < maxRetries) {
+              console.log(`[meme-text] Retrying with attempt ${retryCount + 1}/${maxRetries} (reason: ${retryReason})`);
+              
+              // For retry, filter to simpler templates (fewer boxes, higher success rate)
+              if (retryCount === 2) {
+                // Second retry: prefer 2-box templates
+                workingTemplates = candidateTemplates.filter(t => t.box_count <= 2);
+                console.log(`[meme-text] Retry ${retryCount}: Using ${workingTemplates.length} simpler templates`);
+              } else if (retryCount === 3) {
+                // Third retry: only single-box templates
+                workingTemplates = candidateTemplates.filter(t => t.box_count === 1);
+                console.log(`[meme-text] Retry ${retryCount}: Using ${workingTemplates.length} single-box templates`);
+              }
+              
+              // If no templates left after filtering, break and use what we have
+              if (workingTemplates.length === 0) {
+                console.warn('[meme-text] No templates left after filtering, accepting last result');
+                break;
+              }
+              continue;
+            }
+          }
+
+          // If we get here, validation passed or we're accepting the result
+          break;
+
+        } catch (selectionError) {
+          console.error(`[meme-text] Template selection attempt ${retryCount + 1} failed:`, selectionError);
+          retryCount++;
+          if (retryCount >= maxRetries) {
+            throw selectionError;
+          }
+        }
+      }
+
+      if (!selection) {
+        throw new Error('Failed to select template after all retries');
+      }
       
-      console.log('[meme-text] Template selected:', {
+      console.log('[meme-text] Template selected (after retries):', {
         id: selection.templateId,
         name: selection.templateName,
         hasTopText: !!selection.topText,
         hasBottomText: !!selection.bottomText,
-        hasSingleText: !!selection.text
+        hasSingleText: !!selection.text,
+        attempts: retryCount + 1,
+        validationPassed: !selection.validation || selection.validation.isValid,
+        finalScore: selection.validation?.score || 'N/A'
       });
       
       // Step 6: Record template usage for diversity tracking
@@ -149,25 +252,65 @@ export async function POST(req: NextRequest) {
       });
       
     } catch (templateError) {
-      console.error('[meme-text] Template selection failed:', templateError);
+      console.error('[meme-text] Template selection failed after all retries:', templateError);
       
-      // Fallback to original automeme approach
-      console.log('[meme-text] Falling back to automeme approach');
+      // Enhanced fallback to automeme approach with validation
+      console.log('[meme-text] Falling back to automeme approach with enhanced constraints');
       
-      const memeText = await openAIMemeService.generateMemeText({
-        userText: validated.userText,
-        reply: validated.reply,
-        originalTweet: validated.originalTweet,
-        tone: validated.tone,
-        enhance: validated.enhance
-      });
-      
-      return NextResponse.json({
-        text: memeText,
-        enhanced: validated.enhance || !validated.userText,
-        method: 'automeme-fallback',
-        useAutomeme: true
-      });
+      try {
+        // Generate meme text with stricter constraints for automeme
+        const memeText = await openAIMemeService.generateMemeText({
+          userText: validated.userText,
+          reply: validated.reply,
+          originalTweet: validated.originalTweet,
+          tone: validated.tone,
+          enhance: validated.enhance
+        });
+
+        // Validate the automeme text as well
+        const automemeValidation = MemeTextValidator.validate({
+          templateName: 'Automeme',
+          templateId: 'automeme',
+          boxCount: 1,
+          text: memeText
+        });
+
+        console.log('[meme-text] Automeme fallback generated:', {
+          text: memeText,
+          validation: {
+            isValid: automemeValidation.isValid,
+            score: automemeValidation.score,
+            errors: automemeValidation.errors,
+            warnings: automemeValidation.warnings
+          }
+        });
+
+        return NextResponse.json({
+          text: memeText,
+          enhanced: validated.enhance || !validated.userText,
+          method: 'automeme-fallback',
+          useAutomeme: true,
+          validation: automemeValidation
+        });
+
+      } catch (automemeError) {
+        console.error('[meme-text] Automeme fallback also failed:', automemeError);
+        
+        // Final context-aware fallback
+        const contextFallback = validated.tone === 'humorous' ? 'plot twist incoming' :
+                               validated.tone === 'sarcastic' ? 'this is fine' :
+                               validated.tone === 'professional' ? 'lets optimize this' :
+                               validated.tone === 'supportive' ? 'you got this' :
+                               'interesting development';
+
+        return NextResponse.json({
+          text: contextFallback,
+          enhanced: false,
+          method: 'final-fallback',
+          useAutomeme: true,
+          fallbackReason: 'All generation methods failed'
+        });
+      }
     }
     
   } catch (error) {

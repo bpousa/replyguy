@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { MemeTextValidator } from '../meme-validator';
 
 interface MemeTextOptions {
   userText?: string;
@@ -26,6 +27,7 @@ interface TemplateSelectionResult {
   topText?: string;
   bottomText?: string;
   text?: string; // For single text templates
+  validation?: any; // Validation results for retry logic
 }
 
 export class OpenAIMemeService {
@@ -333,7 +335,16 @@ TEMPLATE SELECTION RULES:
    - Drake: top = reject this, bottom = prefer this
    - Distracted Boyfriend: requires 3 distinct labels
    - Expanding Brain: progressive levels of understanding
-   
+
+TEXT CONSTRAINTS (CRITICAL - MUST FOLLOW):
+- 1-box templates: MAX 80 chars, 12 words per box
+- 2-box templates: MAX 60 chars, 8 words per box  
+- 3-box templates: MAX 30 chars, 5 words per box
+- 4-box templates: MAX 25 chars, 4 words per box
+- Use simple, direct language - avoid complex punctuation
+- No quotes, ellipsis, or multiple exclamation marks
+- Prefer common meme language when appropriate
+
 4. Keep text SHORT and CONTEXTUAL - reference the actual topic being discussed
 
 EXAMPLES OF EXCELLENT CONTEXT MATCHING:
@@ -347,9 +358,9 @@ Respond in JSON format:
   "templateIndex": <number 1-30>,
   "templateName": "<exact name from list>",
   "reasoning": "<explain why this template fits the specific context>",
-  "topText": "<text for top box if multi-box>",
-  "bottomText": "<text for bottom box if multi-box>",
-  "text": "<text if single box>"
+  "topText": "<text for top box if multi-box - MUST be under char/word limits>",
+  "bottomText": "<text for bottom box if multi-box - MUST be under char/word limits>",
+  "text": "<text if single box - MUST be under char/word limits>"
 }`;
 
       const completion = await this.getClient().chat.completions.create({
@@ -379,20 +390,44 @@ Respond in JSON format:
       if (!selectedTemplate) {
         throw new Error('Invalid template selection');
       }
+
+      // Validate the generated text against template constraints
+      const validationOptions = {
+        templateName: selectedTemplate.name,
+        templateId: selectedTemplate.id,
+        boxCount: selectedTemplate.box_count,
+        topText: parsed.topText,
+        bottomText: parsed.bottomText,
+        text: parsed.text
+      };
+
+      const validation = MemeTextValidator.validate(validationOptions);
       
       console.log('[OpenAIMeme] Template selection:', {
         selected: selectedTemplate.name,
         reasoning: parsed.reasoning,
         originalContext: originalTweet.substring(0, 50) + '...',
-        replyContext: reply.substring(0, 50) + '...'
+        replyContext: reply.substring(0, 50) + '...',
+        validation: {
+          isValid: validation.isValid,
+          score: validation.score,
+          errors: validation.errors,
+          warnings: validation.warnings
+        }
       });
+
+      // If validation fails, include suggestions for potential retry
+      if (!validation.isValid && validation.suggestions) {
+        console.warn('[OpenAIMeme] Validation failed, suggestions:', validation.suggestions);
+      }
       
       return {
         templateId: selectedTemplate.id,
         templateName: selectedTemplate.name,
         topText: parsed.topText,
         bottomText: parsed.bottomText,
-        text: parsed.text
+        text: parsed.text,
+        validation // Include validation results for retry logic
       };
       
     } catch (error) {

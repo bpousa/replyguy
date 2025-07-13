@@ -57,7 +57,7 @@ const features = [
   },
   {
     name: 'Match Tweet Style',
-    description: 'Instantly adapt to the original tweets style and tone. Increase getting a reply from the post creator',
+    description: 'Instantly adapt to the original tweets style and tone. Increase getting a reply from the post creator.',
     icon: GitBranch,
   },
 ];

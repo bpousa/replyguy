@@ -131,7 +131,7 @@ export function ChromeExtension() {
                 />
               </div>
               <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl p-6 text-white">
-                <h3 className="text-2xl font-bold mb-3">Join 10,000+ Users</h3>
+                <h3 className="text-2xl font-bold mb-3">Join Other Happy Users</h3>
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-white rounded-full"></div>
@@ -143,7 +143,7 @@ export function ChromeExtension() {
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-white rounded-full"></div>
-                    <p className="text-sm">5-star Chrome Store rating</p>
+                    <p className="text-sm">Powerful Chrome extension makes it easy </p>
                   </div>
                 </div>
                 <Button 

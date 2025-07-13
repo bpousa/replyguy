@@ -7,7 +7,9 @@ import {
   Clock,
   User,
   Search,
-  Chrome
+  Chrome,
+  Image as ImageIcon,
+  GitBranch
 } from 'lucide-react';
 
 const features = [
@@ -40,13 +42,23 @@ const features = [
   },
   {
     name: 'Instant Generation',
-    description: 'Generate multiple reply options in seconds, not minutes.',
+    description: 'Generate a natural sounding reply options in seconds, not minutes.',
     icon: Zap,
   },
   {
     name: 'Daily Goals',
     description: 'Track your reply goals and celebrate your consistency with fun animations.',
     icon: Target,
+  },
+  {
+    name: 'Meme Generation',
+    description: 'Create viral memes instantly with AI. Boost engagement by 2x with perfectly-timed visual humor.',
+    icon: ImageIcon,
+  },
+  {
+    name: 'Match Tweet Style',
+    description: 'Instantly adapt to the original tweets style and tone. Increase getting a reply from the post creator',
+    icon: GitBranch,
   },
 ];
 

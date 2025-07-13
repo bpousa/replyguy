@@ -110,8 +110,8 @@ export function ChromeExtension() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="rounded-xl overflow-hidden shadow-lg">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 rounded-xl overflow-hidden shadow-lg">
               <Image
                 src="/generated-reply1280x800.png"
                 alt="Generated Reply Example"
@@ -120,24 +120,45 @@ export function ChromeExtension() {
                 className="w-full h-auto"
               />
             </div>
-            <div className="grid grid-rows-2 gap-6">
+            <div className="space-y-6">
               <div className="rounded-xl overflow-hidden shadow-lg">
                 <Image
                   src="/feature-showcase640x400.png"
                   alt="Extension Features"
                   width={640}
                   height={400}
-                  className="w-full h-full object-cover"
+                  className="w-full h-auto"
                 />
               </div>
-              <div className="rounded-xl overflow-hidden shadow-lg">
-                <Image
-                  src="/advanced-options640x400.png"
-                  alt="Advanced Options"
-                  width={640}
-                  height={400}
-                  className="w-full h-full object-cover"
-                />
+              <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl p-6 text-white">
+                <h3 className="text-2xl font-bold mb-3">Join 10,000+ Users</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                    <p className="text-sm">Average 3x engagement boost</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                    <p className="text-sm">Save 2+ hours daily</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                    <p className="text-sm">5-star Chrome Store rating</p>
+                  </div>
+                </div>
+                <Button 
+                  size="sm" 
+                  className="w-full mt-4 bg-white text-purple-700 hover:bg-gray-100"
+                  asChild
+                >
+                  <a 
+                    href="https://chromewebstore.google.com/detail/reply-guy-for-x-twitter/ggdieefnnmcgnmonbkngnmonoifdgmje?authuser=3&hl=en"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Install Now →
+                  </a>
+                </Button>
               </div>
             </div>
           </div>

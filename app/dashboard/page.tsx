@@ -14,6 +14,7 @@ import { PlanBadge } from '@/app/components/plan-badge';
 import Image from 'next/image';
 import { ReferralStats } from '@/app/components/referral-stats';
 import { ReferralWelcomeModal } from '@/app/components/referral-welcome-modal';
+import { ChromeExtensionCard } from '@/app/components/chrome-extension-card';
 
 
 export default function HomePage() {
@@ -446,6 +447,11 @@ export default function HomePage() {
             goal={dailyGoal}
             onGoalChange={handleGoalChange}
           />
+        </div>
+
+        {/* Chrome Extension Card */}
+        <div className="mb-8">
+          <ChromeExtensionCard />
         </div>
 
         {/* Main content */}

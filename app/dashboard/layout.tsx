@@ -11,11 +11,13 @@ import {
   CreditCard, 
   LogOut,
   Menu,
-  X
+  X,
+  Chrome
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { Logo } from '@/app/components/logo';
 import { Footer } from '@/app/components/footer';
+import { ChromeExtensionBanner } from '@/app/components/chrome-extension-banner';
 
 export default function DashboardLayout({
   children,
@@ -180,6 +182,19 @@ export default function DashboardLayout({
                 {item.name}
               </Link>
             ))}
+            
+            {/* Chrome Extension Link */}
+            <div className="mt-4 mx-4 pt-4 border-t">
+              <a
+                href="https://chromewebstore.google.com/detail/reply-guy-for-x-twitter/ggdieefnnmcgnmonbkngnmonoifdgmje?authuser=3&hl=en"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-purple-600 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-900/20"
+              >
+                <Chrome className="w-5 h-5 mr-3" />
+                Get Chrome Extension
+              </a>
+            </div>
           </nav>
           
           <div className="p-4 border-t">
@@ -228,6 +243,20 @@ export default function DashboardLayout({
                 {item.name}
               </Link>
             ))}
+            
+            {/* Chrome Extension Link (Mobile) */}
+            <div className="mt-4 mx-4 pt-4 border-t">
+              <a
+                href="https://chromewebstore.google.com/detail/reply-guy-for-x-twitter/ggdieefnnmcgnmonbkngnmonoifdgmje?authuser=3&hl=en"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-purple-600 hover:bg-purple-50"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Chrome className="w-5 h-5 mr-3" />
+                Get Chrome Extension
+              </a>
+            </div>
           </nav>
           
           <div className="absolute bottom-0 left-0 right-0 p-4 border-t">
@@ -251,6 +280,7 @@ export default function DashboardLayout({
       
       {/* Main content */}
       <div className="md:pl-64 flex flex-col min-h-screen">
+        <ChromeExtensionBanner />
         <main className="flex-grow py-6">
           <div className="mx-auto px-4 sm:px-6 md:px-8">
             {children}

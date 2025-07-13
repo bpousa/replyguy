@@ -4,12 +4,14 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@/app/lib/auth';
 import { Loader2 } from 'lucide-react';
+import { startAuthFlow, endAuthFlow, clearAllAuthData } from '@/app/lib/auth-utils';
 
 export default function EstablishingSessionPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState('Establishing session...');
   const [attempts, setAttempts] = useState(0);
+  const [isNewUser, setIsNewUser] = useState<boolean | null>(null);
   const hasRedirected = useRef(false);
   
   const plan = searchParams.get('plan');
@@ -26,8 +28,50 @@ export default function EstablishingSessionPage() {
     const establishSession = async () => {
       console.log('[establishing-session] Starting session establishment process');
       
+      // Mark auth flow as active
+      startAuthFlow();
+      
       // First, wait a bit for any pending auth operations
       await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Check if this is a new user
+      try {
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        if (initialSession?.user) {
+          // More robust check for new user:
+          // 1. Check if user was created in the last 5 minutes
+          // 2. Check for presence of last_sign_in_at metadata
+          // 3. Check if coming from signup flow
+          
+          const createdAt = new Date(initialSession.user.created_at);
+          const now = new Date();
+          const timeSinceCreation = now.getTime() - createdAt.getTime();
+          const isRecentlyCreated = timeSinceCreation < 5 * 60 * 1000; // 5 minutes
+          
+          // Check if user has signed in before
+          const lastSignIn = initialSession.user.last_sign_in_at;
+          const hasSignedInBefore = lastSignIn && new Date(lastSignIn) < createdAt;
+          
+          // Check if coming from signup
+          const fromSignup = from === 'signup' || 
+                           document.referrer.includes('/auth/signup') ||
+                           sessionStorage.getItem('auth_flow_from') === 'signup';
+          
+          const isNew = isRecentlyCreated && !hasSignedInBefore || fromSignup;
+          setIsNewUser(isNew);
+          
+          console.log('[establishing-session] User type check:', {
+            isRecentlyCreated,
+            hasSignedInBefore,
+            fromSignup,
+            isNew
+          });
+        }
+      } catch (e) {
+        console.error('[establishing-session] Error checking user status:', e);
+        // Default to generic message on error
+        setIsNewUser(null);
+      }
       
       // Listen for auth state changes
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -37,8 +81,8 @@ export default function EstablishingSessionPage() {
           hasRedirected.current = true;
           console.log('[establishing-session] Session established via auth state change');
           
-          // Clear any auth flow markers
-          sessionStorage.removeItem('auth_flow_active');
+          // Clear auth flow
+          endAuthFlow();
           
           // Send post-signup notification for new users
           try {
@@ -106,8 +150,8 @@ export default function EstablishingSessionPage() {
             hasRedirected.current = true;
             console.log('[establishing-session] Session found via polling:', session.user?.email);
             
-            // Clear auth flow markers
-            sessionStorage.removeItem('auth_flow_active');
+            // Clear auth flow
+            endAuthFlow();
             
             // Send post-signup notification for new users
             try {
@@ -166,7 +210,15 @@ export default function EstablishingSessionPage() {
           } else {
             // Final timeout
             console.error('[establishing-session] Failed to establish session after all attempts');
-            router.push('/auth/login?error=session_timeout&message=Unable to establish session. Please try logging in manually.');
+            // Clear all auth data before redirecting
+            clearAllAuthData().then(() => {
+              endAuthFlow();
+              router.push('/auth/login?error=session_timeout&message=Unable to establish session. Please try logging in manually.');
+            }).catch(e => {
+              console.error('[establishing-session] Error clearing auth data:', e);
+              endAuthFlow();
+              router.push('/auth/login?error=session_timeout&message=Unable to establish session. Please try logging in manually.');
+            });
           }
         } catch (err) {
           console.error('[establishing-session] Unexpected error:', err);
@@ -183,6 +235,10 @@ export default function EstablishingSessionPage() {
       return () => {
         mounted = false;
         subscription.unsubscribe();
+        // Ensure auth flow is ended if component unmounts
+        if (!hasRedirected.current) {
+          endAuthFlow();
+        }
       };
     };
     
@@ -194,7 +250,7 @@ export default function EstablishingSessionPage() {
       <div className="text-center">
         <Loader2 className="w-12 h-12 animate-spin text-purple-600 mx-auto mb-4" />
         <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-          Setting Up Your Account
+          {isNewUser === false ? 'Signing You In' : 'Setting Up Your Account'}
         </h2>
         <p className="text-gray-600 mb-2">{status}</p>
         <p className="text-sm text-gray-500">

@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { createBrowserClient } from '@/app/lib/auth';
 import { migrateAuthFromLocalStorage, debugAuthCookies } from '@/app/lib/auth-migration';
-import { clearStaleAuthData } from '@/app/lib/auth-utils';
+import { clearStaleAuthData, isInAuthFlow, shouldRetryAuth, incrementAuthRetryCount, endAuthFlow, clearAllAuthData } from '@/app/lib/auth-utils';
 import { toMs, debugTimestamp } from '@/app/lib/utils/time';
 import { User } from '@supabase/supabase-js';
 
@@ -26,19 +26,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [lastRefreshAttempt, setLastRefreshAttempt] = useState<number>(0);
   const supabase = createBrowserClient();
   const mountedRef = useRef(true);
+  const checkingSessionRef = useRef(false);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const checkSession = async (retryCount = 0) => {
-    // Don't check if component is unmounted
-    if (!mountedRef.current) return;
+  const checkSession = async () => {
+    // Don't check if component is unmounted or already checking
+    if (!mountedRef.current || checkingSessionRef.current) {
+      console.log('[auth-context] Skipping session check - unmounted or already checking');
+      return;
+    }
+    
+    // Set mutex to prevent concurrent checks
+    checkingSessionRef.current = true;
     
     try {
-      console.log('[auth-context] Checking session... (attempt', retryCount + 1, ')');
+      const retryCount = incrementAuthRetryCount();
+      console.log('[auth-context] Checking session... (attempt', retryCount, ')');
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
         console.error('[auth-context] Session error:', sessionError);
         setError(sessionError);
         setStatus('error');
+        
+        // Clear auth data on persistent errors
+        if (retryCount > 5) {
+          console.log('[auth-context] Clearing auth data due to persistent errors');
+          await clearAllAuthData().catch(e => console.error('[auth-context] Error clearing auth data:', e));
+          endAuthFlow();
+        }
         return;
       }
       
@@ -66,28 +82,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(session.user);
           setStatus('authenticated');
           setError(null);
+          // Clear auth flow on successful authentication
+          endAuthFlow();
         }
       } else {
         console.log('[auth-context] No session found');
         
-        // If this is the initial check and we're in a browser, try a few more times
-        // This helps with the delay after email verification
-        if (retryCount < 10 && typeof window !== 'undefined') {
-          // Check if we're in an auth flow (e.g., coming from email verification)
-          const isInAuthFlow = sessionStorage.getItem('auth_flow_active') === 'true' ||
-                              window.location.pathname.includes('/auth/verify') ||
-                              window.location.pathname.includes('/auth/callback') ||
-                              window.location.pathname.includes('/auth/email-confirmed'); // Added email-confirmed
-          
-          if (isInAuthFlow) {
-            console.log('[auth-context] In auth flow, retrying session check in 2 seconds...');
-            setTimeout(() => checkSession(retryCount + 1), 2000);
-          } else {
-            setUser(null);
-            setStatus('unauthenticated');
-            setError(null);
+        // Check if we should retry
+        if (shouldRetryAuth() && typeof window !== 'undefined' && mountedRef.current) {
+          console.log('[auth-context] In auth flow, retrying session check in 2 seconds...');
+          // Clear any existing timeout
+          if (retryTimeoutRef.current) {
+            clearTimeout(retryTimeoutRef.current);
           }
+          // Set new timeout with reference
+          retryTimeoutRef.current = setTimeout(() => {
+            if (mountedRef.current) {
+              checkSession();
+            }
+          }, 2000);
         } else {
+          // Max retries reached or not in auth flow
+          if (retryCount >= 15) {
+            console.log('[auth-context] Max retries reached, clearing all auth data');
+            await clearAllAuthData().catch(e => console.error('[auth-context] Error clearing auth data:', e));
+            endAuthFlow();
+          }
           setUser(null);
           setStatus('unauthenticated');
           setError(null);
@@ -97,6 +117,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('[auth-context] Unexpected error checking session:', err);
       setError(err instanceof Error ? err : new Error('Session check failed'));
       setStatus('error');
+      
+      // Clear auth data on unexpected errors after multiple attempts
+      const retryCount = incrementAuthRetryCount();
+      if (retryCount > 5) {
+        console.log('[auth-context] Clearing auth data due to unexpected errors');
+        await clearAllAuthData().catch(e => console.error('[auth-context] Error clearing auth data:', e));
+        endAuthFlow();
+      }
+    } finally {
+      // Always release mutex
+      checkingSessionRef.current = false;
     }
   };
 
@@ -179,11 +210,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setStatus(session ? 'authenticated' : 'unauthenticated');
           setError(null);
           setIsSessionExpired(false);
+          // Clear auth flow on successful sign in
+          endAuthFlow();
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setStatus('unauthenticated');
           setError(null);
           setIsSessionExpired(false);
+          // Clear all auth data on sign out
+          clearAllAuthData().then(() => {
+            endAuthFlow();
+          }).catch(e => {
+            console.error('[auth-context] Error clearing auth data:', e);
+            endAuthFlow();
+          });
         } else if (event === 'USER_UPDATED') {
           setUser(session?.user || null);
         } else if (event === 'PASSWORD_RECOVERY') {
@@ -195,6 +235,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       mountedRef.current = false;
+      checkingSessionRef.current = false;
+      // Clear any pending retry timeout
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
       subscription.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

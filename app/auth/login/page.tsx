@@ -8,6 +8,7 @@ import { toast } from 'react-hot-toast';
 import { Button } from '@/app/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { Logo } from '@/app/components/logo';
+import { startAuthFlow, clearAllAuthData } from '@/app/lib/auth-utils';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -21,6 +22,17 @@ export default function LoginPage() {
   const [resendTimer, setResendTimer] = useState(60);
 
   useEffect(() => {
+    // Clear any stale auth data on login page load
+    const initializeLogin = async () => {
+      try {
+        await clearAllAuthData();
+      } catch (e) {
+        console.error('[login] Error clearing auth data:', e);
+      }
+    };
+    
+    initializeLogin();
+    
     // Check for existing rate limit
     const rateLimitTimestamp = localStorage.getItem('login_rate_limit');
     if (rateLimitTimestamp) {
@@ -144,7 +156,7 @@ export default function LoginPage() {
         console.log('[login] Login successful for:', data.session.user.email);
         
         // Mark auth flow as active so dashboard knows to wait
-        sessionStorage.setItem('auth_flow_active', 'true');
+        startAuthFlow();
         
         // Ensure user exists in database
         try {
@@ -174,6 +186,9 @@ export default function LoginPage() {
       }
     } catch (error: any) {
       console.error('Login error:', error);
+      
+      // Clear auth data on login failure
+      await clearAllAuthData().catch(e => console.error('[login] Error clearing auth data:', e));
       
       // Check for rate limit errors
       if (error.message?.toLowerCase().includes('rate limit') || 

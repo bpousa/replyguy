@@ -9,6 +9,7 @@ import { Button } from '@/app/components/ui/button';
 import { Loader2, CheckCircle } from 'lucide-react';
 import { Logo } from '@/app/components/logo';
 import { Gift } from 'lucide-react';
+import { startAuthFlow, clearAllAuthData } from '@/app/lib/auth-utils';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -25,6 +26,17 @@ export default function SignupPage() {
   
   // Validate referral code on mount and check for incognito
   useEffect(() => {
+    // Clear any stale auth data on signup page load
+    const initializeSignup = async () => {
+      try {
+        await clearAllAuthData();
+      } catch (e) {
+        console.error('[signup] Error clearing auth data:', e);
+      }
+    };
+    
+    initializeSignup();
+    
     // Check for incognito mode / private browsing
     const checkIncognito = async () => {
       try {
@@ -137,6 +149,11 @@ export default function SignupPage() {
           console.log('[signup] Auto sign-in successful in dev mode');
           toast.success('Account created and signed in! (Dev mode)');
           
+          // Start auth flow for proper session handling
+          startAuthFlow();
+          // Mark as coming from signup
+          sessionStorage.setItem('auth_flow_from', 'signup');
+          
           // Redirect based on plan selection
           if (planId) {
             router.push(`/auth/checkout-redirect?plan=${planId}`);
@@ -155,6 +172,8 @@ export default function SignupPage() {
       toast.success('Account created successfully! Please check your email to confirm.');
     } catch (error: any) {
       console.error('Signup error:', error);
+      // Clear auth data on signup failure
+      await clearAllAuthData().catch(e => console.error('[signup] Error clearing auth data:', e));
       toast.error(error.message || 'Failed to sign up');
     } finally {
       setIsLoading(false);

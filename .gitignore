@@ -63,3 +63,14 @@ chrome-extension/package-lock.json
 # md files
 MCP_SERVERS_SETUP_SUMMARY.md
 MCP_SERVERS_SETUP_SUMMARY.md
+
+# Claude settings
+.claude/settings.local.json
+
+# MCP config
+.mcp.json
+
+# Chrome extension build artifacts
+chrome-extension/*.tar.gz
+chrome-extension/*.zip
+chrome-extension/create_zip.py

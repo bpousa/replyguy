@@ -18,6 +18,7 @@ export class SuggestionsOverlay {
   private researchSuggestions: string[] = [];
   private useCustomStyle: boolean = false;
   private enableStyleMatching: boolean = false;
+  private defaultSettings: { responseType?: string; tone?: string } = {};
 
   constructor(container: Element) {
     this.container = container;
@@ -26,6 +27,24 @@ export class SuggestionsOverlay {
   async showOptions(tweet: string, onGenerate: (data: any) => void) {
     this.remove();
     this.tweet = tweet;
+    
+    // Load default settings from Chrome storage
+    try {
+      if (chrome?.storage?.sync) {
+        const settings = await chrome.storage.sync.get(['defaultResponseType', 'defaultTone']);
+        if (settings?.defaultResponseType) {
+          this.responseType = settings.defaultResponseType;
+          this.defaultSettings.responseType = settings.defaultResponseType;
+        }
+        if (settings?.defaultTone) {
+          this.tone = settings.defaultTone;
+          this.defaultSettings.tone = settings.defaultTone;
+        }
+        console.log('[ReplyGuy] Loaded default settings:', this.defaultSettings);
+      }
+    } catch (error) {
+      console.error('[ReplyGuy] Failed to load default settings:', error);
+    }
     
     // Get user's plan to show/hide features
     try {
@@ -59,17 +78,7 @@ export class SuggestionsOverlay {
       </style>
       <div class="reply-guy-header">
         <div class="reply-guy-title">
-          <svg viewBox="0 0 24 24" class="reply-guy-logo-icon">
-            <rect width="24" height="24" rx="4" fill="url(#rg-gradient)"/>
-            <defs>
-              <linearGradient id="rg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#667eea" />
-                <stop offset="100%" style="stop-color:#764ba2" />
-              </linearGradient>
-            </defs>
-            <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" 
-                  font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="white">RG</text>
-          </svg>
+          <img src="${chrome.runtime.getURL('icons/reply_guy_logo.png')}" class="reply-guy-logo-icon" alt="Reply Guy" />
           <span>Reply Guy</span>
         </div>
         <button class="reply-guy-close" aria-label="Close">×</button>
@@ -273,6 +282,14 @@ export class SuggestionsOverlay {
         </details>
         ` : ''}
         
+        <!-- Save Defaults -->
+        <div class="reply-guy-save-defaults">
+          <label class="reply-guy-checkbox">
+            <input type="checkbox" id="reply-guy-save-defaults">
+            <span>Save as default settings</span>
+          </label>
+        </div>
+        
         <!-- Action Buttons -->
         <div class="reply-guy-actions">
           <button class="reply-guy-generate-btn" id="reply-guy-generate">
@@ -335,12 +352,20 @@ export class SuggestionsOverlay {
     responseTypeSelect?.addEventListener('change', () => {
       this.responseType = responseTypeSelect.value;
     });
+    // Set default value if exists
+    if (responseTypeSelect && this.defaultSettings.responseType) {
+      responseTypeSelect.value = this.defaultSettings.responseType;
+    }
     
     // Tone selection
     const toneSelect = this.overlay.querySelector('#reply-guy-tone') as HTMLSelectElement;
     toneSelect?.addEventListener('change', () => {
       this.tone = toneSelect.value;
     });
+    // Set default value if exists
+    if (toneSelect && this.defaultSettings.tone) {
+      toneSelect.value = this.defaultSettings.tone;
+    }
     
     // Response idea input with character counter
     const ideaInput = this.overlay.querySelector('#reply-guy-idea') as HTMLTextAreaElement;
@@ -587,8 +612,14 @@ export class SuggestionsOverlay {
         return;
       }
       
+      // Truncate tweet to respect user plan limits
+      const maxTweetLength = this.userPlan?.max_tweet_length || 280;
+      const truncatedTweet = this.tweet.length > maxTweetLength 
+        ? this.tweet.substring(0, maxTweetLength) + '...'
+        : this.tweet;
+      
       const data = {
-        originalTweet: this.tweet,
+        originalTweet: truncatedTweet,
         responseIdea: this.responseIdea,
         responseType: this.responseType,
         tone: this.tone,
@@ -603,6 +634,22 @@ export class SuggestionsOverlay {
       };
       
       console.log('[ReplyGuy] Generating with data:', data);
+      
+      // Save defaults if checkbox is checked
+      const saveDefaultsCheckbox = this.overlay?.querySelector('#reply-guy-save-defaults') as HTMLInputElement;
+      if (saveDefaultsCheckbox?.checked && chrome?.storage?.sync) {
+        try {
+          chrome.storage.sync.set({
+            defaultResponseType: this.responseType,
+            defaultTone: this.tone
+          }, () => {
+            console.log('[ReplyGuy] Saved default settings');
+          });
+        } catch (error) {
+          console.error('[ReplyGuy] Failed to save default settings:', error);
+        }
+      }
+      
       onGenerate(data);
     });
   }
@@ -655,6 +702,7 @@ export class SuggestionsOverlay {
       .reply-guy-logo-icon {
         width: 28px;
         height: 28px;
+        filter: brightness(0) invert(1);
       }
 
       .reply-guy-close {
@@ -871,6 +919,26 @@ export class SuggestionsOverlay {
         color: #868e96;
         margin-top: 4px;
         margin-left: 24px;
+      }
+      
+      /* Save Defaults */
+      .reply-guy-save-defaults {
+        margin: 16px 0;
+        padding: 12px 16px;
+        background: #f8f9fa;
+        border-radius: 8px;
+      }
+      
+      .reply-guy-checkbox {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        font-size: 14px;
+        color: #495057;
+      }
+      
+      .reply-guy-checkbox input {
+        margin-right: 8px;
       }
       
       /* Action Buttons */
@@ -1200,17 +1268,7 @@ export class SuggestionsOverlay {
       </style>
       <div class="reply-guy-header">
         <div class="reply-guy-title">
-          <svg viewBox="0 0 24 24" class="reply-guy-logo-icon">
-            <rect width="24" height="24" rx="4" fill="url(#rg-gradient)"/>
-            <defs>
-              <linearGradient id="rg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#667eea" />
-                <stop offset="100%" style="stop-color:#764ba2" />
-              </linearGradient>
-            </defs>
-            <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" 
-                  font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="white">RG</text>
-          </svg>
+          <img src="${chrome.runtime.getURL('icons/reply_guy_logo.png')}" class="reply-guy-logo-icon" alt="Reply Guy" />
           <span>Your Reply is Ready!</span>
         </div>
         <button class="reply-guy-close" aria-label="Close">×</button>
@@ -1281,6 +1339,29 @@ export class SuggestionsOverlay {
         // Show copy notice
         if (copyNotice) {
           copyNotice.style.display = 'block';
+        }
+        
+        // Check if daily goal was reached with this reply
+        try {
+          const limitsResponse = await chrome.runtime.sendMessage({ action: 'getUsageLimits' });
+          if (limitsResponse.success && limitsResponse.data) {
+            const { dailyCount, dailyGoal } = limitsResponse.data;
+            if (dailyCount !== undefined && dailyGoal !== undefined && dailyCount >= dailyGoal) {
+              // Check if we should show celebration (once per day)
+              const today = new Date().toDateString();
+              const celebrationKey = `celebration_shown_${today}`;
+              
+              chrome.storage.local.get(celebrationKey, (data) => {
+                if (!data[celebrationKey]) {
+                  // Send message to trigger celebration in popup if it's open
+                  chrome.runtime.sendMessage({ action: 'triggerPopupCelebration' });
+                  chrome.storage.local.set({ [celebrationKey]: true });
+                }
+              });
+            }
+          }
+        } catch (error) {
+          console.error('[ReplyGuy] Failed to check celebration status:', error);
         }
         
         // Open meme in new window if present
@@ -1529,17 +1610,7 @@ export class SuggestionsOverlay {
       </style>
       <div class="reply-guy-header">
         <div class="reply-guy-title">
-          <svg viewBox="0 0 24 24" class="reply-guy-logo-icon">
-            <rect width="24" height="24" rx="4" fill="url(#rg-gradient)"/>
-            <defs>
-              <linearGradient id="rg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#667eea" />
-                <stop offset="100%" style="stop-color:#764ba2" />
-              </linearGradient>
-            </defs>
-            <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" 
-                  font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="white">RG</text>
-          </svg>
+          <img src="${chrome.runtime.getURL('icons/reply_guy_logo.png')}" class="reply-guy-logo-icon" alt="Reply Guy" />
           <span>Reply Guy</span>
         </div>
       </div>
@@ -1598,17 +1669,7 @@ export class SuggestionsOverlay {
       </style>
       <div class="reply-guy-header">
         <div class="reply-guy-title">
-          <svg viewBox="0 0 24 24" class="reply-guy-logo-icon">
-            <rect width="24" height="24" rx="4" fill="url(#rg-gradient)"/>
-            <defs>
-              <linearGradient id="rg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#667eea" />
-                <stop offset="100%" style="stop-color:#764ba2" />
-              </linearGradient>
-            </defs>
-            <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" 
-                  font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="white">RG</text>
-          </svg>
+          <img src="${chrome.runtime.getURL('icons/reply_guy_logo.png')}" class="reply-guy-logo-icon" alt="Reply Guy" />
           <span>Reply Guy</span>
         </div>
         <button class="reply-guy-close" aria-label="Close">×</button>

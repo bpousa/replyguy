@@ -145,6 +145,13 @@ class APIService {
   async getCurrentUser(): Promise<User> {
     return this.fetchWithAuth('/auth/session');
   }
+
+  async updateDailyGoal(goal: number): Promise<{ success: boolean; dailyGoal: number }> {
+    return this.fetchWithAuth('/user/daily-goal', {
+      method: 'POST',
+      body: JSON.stringify({ dailyGoal: goal }),
+    });
+  }
 }
 
 export const apiService = new APIService();

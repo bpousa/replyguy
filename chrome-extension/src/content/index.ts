@@ -1,5 +1,8 @@
+console.log('[ReplyGuy Content] Script loaded at:', new Date().toISOString(), window.location.href);
+
 import { ChromeMessage, AuthState } from '@/types';
 import { TwitterIntegration } from './twitter-integration';
+import confetti from 'canvas-confetti';
 
 let twitterIntegration: TwitterIntegration | null = null;
 let authState: AuthState = { isAuthenticated: false };
@@ -19,36 +22,56 @@ async function initialize() {
       console.log('[ReplyGuy Content] Auth state:', authState);
     }
 
-    // Initialize Twitter integration if authenticated
-    if (authState.isAuthenticated) {
-      console.log('[ReplyGuy Content] User authenticated, initializing Twitter integration');
-      twitterIntegration = new TwitterIntegration();
-      twitterIntegration.initialize();
-    } else {
-      console.log('[ReplyGuy Content] User not authenticated');
-      // Still initialize but show auth prompts instead
-      twitterIntegration = new TwitterIntegration();
-      twitterIntegration.initialize();
-    }
+    // Initialize Twitter integration regardless of auth status
+    // Icons will show and prompt for login if not authenticated
+    console.log('[ReplyGuy Content] Initializing Twitter integration');
+    twitterIntegration = new TwitterIntegration();
+    twitterIntegration.initialize();
   } catch (error) {
     console.error('[ReplyGuy Content] Initialization error:', error);
   }
 }
 
-// Listen for auth state changes
+// Listen for messages from the background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'authStateChanged') {
     authState = message.data;
+    console.log('[ReplyGuy Content] Auth state changed:', authState);
     
-    if (authState.isAuthenticated && !twitterIntegration) {
-      twitterIntegration = new TwitterIntegration();
-      twitterIntegration.initialize();
-    } else if (!authState.isAuthenticated && twitterIntegration) {
+    // Clean up existing integration if any
+    if (twitterIntegration) {
       twitterIntegration.cleanup();
-      twitterIntegration = null;
     }
+    
+    // Always reinitialize TwitterIntegration to update auth status
+    twitterIntegration = new TwitterIntegration();
+    twitterIntegration.initialize();
+  } else if (message.action === 'triggerCelebration') {
+    triggerCelebration();
   }
 });
+
+function triggerCelebration() {
+  const count = 200;
+  const defaults = {
+    origin: { y: 0.7 },
+    zIndex: 9999,
+  };
+
+  function fire(particleRatio: number, opts: any) {
+    confetti({
+      ...defaults,
+      ...opts,
+      particleCount: Math.floor(count * particleRatio),
+    });
+  }
+
+  fire(0.25, { spread: 26, startVelocity: 55 });
+  fire(0.2, { spread: 60 });
+  fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+  fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+  fire(0.1, { spread: 120, startVelocity: 45 });
+}
 
 // Handle navigation changes (Twitter is a SPA)
 let lastUrl = location.href;

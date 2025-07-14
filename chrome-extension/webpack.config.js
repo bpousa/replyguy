@@ -52,7 +52,10 @@ module.exports = {
   ],
   optimization: {
     splitChunks: {
-      chunks: 'all',
+      chunks(chunk) {
+        // Don't split the content script
+        return chunk.name !== 'content';
+      },
     },
   },
 };

@@ -23,6 +23,25 @@ chrome.runtime.onMessage.addListener((message: ChromeMessage, sender, sendRespon
           sendResponse({ success: true, data: reply });
           break;
 
+        case 'checkForCelebration':
+          const limits = await apiService.getUsageLimits();
+          if (limits && limits.dailyCount !== undefined && limits.dailyGoal !== undefined && limits.dailyCount >= limits.dailyGoal) {
+            const today = new Date().toDateString();
+            const celebrationKey = `celebration_shown_${today}`;
+            chrome.storage.local.get(celebrationKey, (data) => {
+              if (!data[celebrationKey]) {
+                chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                  if (tabs[0] && tabs[0].id) {
+                    chrome.tabs.sendMessage(tabs[0].id, { action: 'triggerCelebration' });
+                  }
+                });
+                chrome.storage.local.set({ [celebrationKey]: true });
+              }
+            });
+          }
+          sendResponse({ success: true });
+          break;
+
         case 'getSuggestions':
           const suggestions = await apiService.getSuggestions(message.data);
           sendResponse({ success: true, data: suggestions });
@@ -39,12 +58,25 @@ chrome.runtime.onMessage.addListener((message: ChromeMessage, sender, sendRespon
           break;
 
         case 'getUsageLimits':
-          const limits = await apiService.getUsageLimits();
-          sendResponse({ success: true, data: limits });
+          const usageLimits = await apiService.getUsageLimits();
+          sendResponse({ success: true, data: usageLimits });
           break;
           
         case 'openLogin':
           chrome.tabs.create({ url: 'https://replyguy.appendment.com/auth/login?extension=true' });
+          sendResponse({ success: true });
+          break;
+          
+        case 'updateDailyGoal':
+          const goalResult = await apiService.updateDailyGoal(message.data.goal);
+          sendResponse({ success: true, data: goalResult });
+          break;
+          
+        case 'triggerPopupCelebration':
+          // Forward celebration message to popup if it's open
+          chrome.runtime.sendMessage({ action: 'showCelebration' }).catch(() => {
+            // Popup might not be open, that's ok
+          });
           sendResponse({ success: true });
           break;
 

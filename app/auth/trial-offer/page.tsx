@@ -154,7 +154,7 @@ export default function TrialOfferPage() {
                 The secret? Consistency + Quality replies that spark conversations.
               </p>
               <p className="text-purple-700">
-                That's exactly what ReplyGuy Pro delivers:
+                That&apos;s exactly what ReplyGuy Pro delivers:
               </p>
             </div>
 
@@ -201,7 +201,7 @@ export default function TrialOfferPage() {
                 Today? Just <span className="text-green-600">$1</span> for 30 days
               </p>
               <p className="text-lg text-purple-600 font-semibold">
-                That's $48 OFF your first month
+                That&apos;s $48 OFF your first month
               </p>
               <p className="text-sm text-gray-600 mt-2">Cancel anytime in your portal</p>
             </div>
@@ -296,7 +296,7 @@ export default function TrialOfferPage() {
           {/* Urgency */}
           <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-8">
             <p className="text-orange-900 font-semibold text-center">
-              ⚡ Your competition is using AI to grow. Don't get left behind.
+              ⚡ Your competition is using AI to grow. Don&apos;t get left behind.
             </p>
           </div>
 
@@ -322,7 +322,7 @@ export default function TrialOfferPage() {
               variant="ghost"
               className="px-8 py-6 text-lg text-gray-600 hover:text-gray-800"
             >
-              No Thanks, I'll Stay Small
+              No Thanks, I&apos;ll Stay Small
             </Button>
           </div>
         </div>

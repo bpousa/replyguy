@@ -121,9 +121,23 @@ export default function EstablishingSessionPage() {
               router.push(next || '/dashboard');
             }
           } else {
-            // Free plan - go directly to dashboard
-            console.log('[establishing-session] Free plan, redirecting to dashboard');
-            router.push(next || '/dashboard');
+            // Free plan - check if they should see trial offer
+            console.log('[establishing-session] Free plan, checking trial offer eligibility');
+            
+            // Check if user has seen trial offer
+            const { data: userData } = await supabase
+              .from('users')
+              .select('has_seen_trial_offer')
+              .eq('id', session.user.id)
+              .single();
+            
+            if (userData && !userData.has_seen_trial_offer) {
+              console.log('[establishing-session] User eligible for trial offer, redirecting');
+              router.push('/auth/trial-offer');
+            } else {
+              console.log('[establishing-session] User has seen trial offer or ineligible, redirecting to dashboard');
+              router.push(next || '/dashboard');
+            }
           }
         }
       });
@@ -186,9 +200,23 @@ export default function EstablishingSessionPage() {
                 router.push(next || '/dashboard');
               }
             } else {
-              // Free plan - go directly to dashboard
-              console.log('[establishing-session] Free plan, redirecting to dashboard');
-              router.push(next || '/dashboard');
+              // Free plan - check if they should see trial offer
+              console.log('[establishing-session] Free plan, checking trial offer eligibility');
+              
+              // Check if user has seen trial offer
+              const { data: userData } = await supabase
+                .from('users')
+                .select('has_seen_trial_offer')
+                .eq('id', session.user.id)
+                .single();
+              
+              if (userData && !userData.has_seen_trial_offer) {
+                console.log('[establishing-session] User eligible for trial offer, redirecting');
+                router.push('/auth/trial-offer');
+              } else {
+                console.log('[establishing-session] User has seen trial offer or ineligible, redirecting to dashboard');
+                router.push(next || '/dashboard');
+              }
             }
             return;
           }

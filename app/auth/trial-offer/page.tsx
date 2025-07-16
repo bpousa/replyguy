@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@/app/lib/auth';
 import { Button } from '@/app/components/ui/button';
-import { Loader2, CheckCircle, Zap, TrendingUp, Chrome, Users, Star, Timer } from 'lucide-react';
+import { Loader2, CheckCircle, Zap, TrendingUp, Chrome, Users, Star, Timer, Search } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 export default function TrialOfferPage() {
@@ -51,6 +51,7 @@ export default function TrialOfferPage() {
       const response = await fetch('/api/stripe/create-trial-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Ensure cookies are sent
         body: JSON.stringify({ 
           priceId,
           plan: plan === 'pro' ? 'professional' : 'growth'
@@ -58,6 +59,11 @@ export default function TrialOfferPage() {
       });
       
       const data = await response.json();
+      
+      if (!response.ok) {
+        console.error('Checkout error:', data);
+        throw new Error(data.error || 'Failed to create checkout session');
+      }
       
       if (data.url) {
         // Update user record
@@ -75,7 +81,7 @@ export default function TrialOfferPage() {
       }
     } catch (error) {
       console.error('Error accepting offer:', error);
-      toast.error('Something went wrong. Please try again.');
+      toast.error(error instanceof Error ? error.message : 'Something went wrong. Please try again.');
       setLoading(false);
     }
   };
@@ -84,6 +90,8 @@ export default function TrialOfferPage() {
     if (currentOffer === 'pro') {
       // Show basic offer
       setCurrentOffer('basic');
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       // Both offers declined, go to dashboard
       router.push('/dashboard');
@@ -156,6 +164,9 @@ export default function TrialOfferPage() {
               <p className="text-purple-700">
                 That&apos;s exactly what ReplyGuy Pro delivers:
               </p>
+              <p className="text-sm text-purple-600 mt-2 italic">
+                (Want data-backed replies? Upgrade to Business later for Perplexity research!)
+              </p>
             </div>
 
             {/* Features with Chrome Extension Highlight */}
@@ -183,7 +194,7 @@ export default function TrialOfferPage() {
               <div className="flex items-start gap-3">
                 <TrendingUp className="w-6 h-6 text-purple-600 flex-shrink-0" />
                 <div>
-                  <strong>Long-form replies</strong> up to 1000 chars for deeper engagement
+                  <strong>Medium-length replies</strong> for perfect engagement balance
                 </div>
               </div>
               <div className="flex items-start gap-3">

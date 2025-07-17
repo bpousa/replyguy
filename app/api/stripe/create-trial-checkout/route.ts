@@ -34,10 +34,12 @@ export async function POST(req: NextRequest) {
     }
     
     const user = session.user;
-    console.log('[trial-checkout] Creating trial checkout for user:', user.email);
+    console.log('[trial-checkout] Creating trial checkout for user:', user.email, 'ID:', user.id);
     
     const body = await req.json();
     const { priceId, plan } = requestSchema.parse(body);
+    
+    console.log('[trial-checkout] Request:', { priceId, plan });
 
     // Validate the price ID matches the expected trial price
     if (priceId !== TRIAL_PRICES[plan]) {
@@ -49,14 +51,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if user already has an active subscription
-    const { data: existingSub } = await supabase
+    const { data: existingSubs, error: subError } = await supabase
       .from('subscriptions')
       .select('*')
       .eq('user_id', user.id)
-      .eq('status', 'active')
-      .single();
+      .eq('status', 'active');
 
-    if (existingSub) {
+    // Only check for actual data, not errors from no rows
+    if (existingSubs && existingSubs.length > 0) {
       console.log('[trial-checkout] User already has active subscription');
       return NextResponse.json(
         { error: 'You already have an active subscription' },
@@ -65,11 +67,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if user has already claimed a trial
-    const { data: userData } = await supabase
+    const { data: userData, error: userError } = await supabase
       .from('users')
       .select('trial_offer_accepted')
       .eq('id', user.id)
-      .single();
+      .maybeSingle(); // Use maybeSingle to handle no rows gracefully
 
     if (userData?.trial_offer_accepted) {
       console.log('[trial-checkout] User already claimed trial:', userData.trial_offer_accepted);

@@ -9,10 +9,10 @@ const requestSchema = z.object({
   plan: z.enum(['growth', 'professional']),
 });
 
-// Trial price IDs
+// Trial price IDs (LIVE MODE)
 const TRIAL_PRICES = {
-  growth: 'price_1RlGUQ08qNQAUd0lhSz7IEvB',      // X Basic $1 trial
-  professional: 'price_1RlGV108qNQAUd0l4uxeX34V', // X Pro $1 trial
+  growth: 'price_1Rlhbf08qNQAUd0lbUZR3RwW',      // X Basic $1 trial (LIVE)
+  professional: 'price_1Rlhbg08qNQAUd0lmrEzmJWe', // X Pro $1 trial (LIVE)
 };
 
 export async function POST(req: NextRequest) {

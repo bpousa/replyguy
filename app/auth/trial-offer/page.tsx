@@ -42,10 +42,10 @@ export default function TrialOfferPage() {
     
     setLoading(true);
     try {
-      // Get the trial price ID
+      // Get the trial price ID (LIVE MODE)
       const priceId = plan === 'pro' 
-        ? 'price_1RlGV108qNQAUd0l4uxeX34V' // X Pro $1 trial
-        : 'price_1RlGUQ08qNQAUd0lhSz7IEvB'; // X Basic $1 trial
+        ? 'price_1Rlhbg08qNQAUd0lmrEzmJWe' // X Pro $1 trial (LIVE)
+        : 'price_1Rlhbf08qNQAUd0lbUZR3RwW'; // X Basic $1 trial (LIVE)
       
       // Create checkout session
       const response = await fetch('/api/stripe/create-trial-checkout', {

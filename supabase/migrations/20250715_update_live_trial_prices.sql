@@ -13,15 +13,13 @@ BEGIN
         AND table_name = 'subscription_plans'
     ) THEN
         -- Update X Basic (growth plan) with LIVE $1 trial price
-        -- REPLACE 'price_LIVE_BASIC_TRIAL_ID' with actual live price ID
         UPDATE subscription_plans SET 
-          stripe_trial_price_id_monthly = 'price_LIVE_BASIC_TRIAL_ID'  -- TODO: Replace with actual LIVE price ID
+          stripe_trial_price_id_monthly = 'price_1Rlhbf08qNQAUd0lbUZR3RwW'  -- X Basic $1 trial (LIVE)
         WHERE id = 'growth';
 
         -- Update X Pro (professional plan) with LIVE $1 trial price  
-        -- REPLACE 'price_LIVE_PRO_TRIAL_ID' with actual live price ID
         UPDATE subscription_plans SET 
-          stripe_trial_price_id_monthly = 'price_LIVE_PRO_TRIAL_ID'  -- TODO: Replace with actual LIVE price ID
+          stripe_trial_price_id_monthly = 'price_1Rlhbg08qNQAUd0lmrEzmJWe'  -- X Pro $1 trial (LIVE)
         WHERE id = 'professional';
 
         RAISE NOTICE 'Trial prices updated to LIVE mode';

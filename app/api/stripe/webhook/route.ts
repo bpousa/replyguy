@@ -172,12 +172,25 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
   const priceId = subscription.items.data[0].price.id;
 
-  // Find the plan based on price ID
-  const { data: plan } = await supabase
+  // Find the plan based on price ID (check regular prices first)
+  let { data: plan } = await supabase
     .from('subscription_plans')
     .select('id')
     .or(`stripe_price_id_monthly.eq.${priceId},stripe_price_id_yearly.eq.${priceId}`)
     .single();
+
+  // If not found, check trial price mappings
+  if (!plan) {
+    const { data: trialMapping } = await supabase
+      .from('trial_price_plan_mappings')
+      .select('plan_id')
+      .eq('trial_price_id', priceId)
+      .single();
+      
+    if (trialMapping) {
+      plan = { id: trialMapping.plan_id };
+    }
+  }
 
   if (!plan) {
     console.error('Plan not found for price ID:', priceId);
@@ -218,6 +231,17 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     .from('subscriptions')
     .insert(subscriptionData);
 
+  // Update trial offer accepted if this is a trial subscription
+  if (subscription.trial_end) {
+    await supabase
+      .from('users')
+      .update({ 
+        trial_offer_accepted: true,
+        has_seen_trial_offer: true
+      })
+      .eq('id', userId);
+  }
+
   // Send event to GHL
   if (process.env.GHL_SYNC_ENABLED === 'true') {
     try {
@@ -248,12 +272,25 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 async function handleSubscriptionUpdate(subscription: Stripe.Subscription, eventType: string) {
   const priceId = subscription.items.data[0].price.id;
 
-  // Find the plan based on price ID
-  const { data: plan } = await supabase
+  // Find the plan based on price ID (check regular prices first)
+  let { data: plan } = await supabase
     .from('subscription_plans')
     .select('id')
     .or(`stripe_price_id_monthly.eq.${priceId},stripe_price_id_yearly.eq.${priceId}`)
     .single();
+
+  // If not found, check trial price mappings
+  if (!plan) {
+    const { data: trialMapping } = await supabase
+      .from('trial_price_plan_mappings')
+      .select('plan_id')
+      .eq('trial_price_id', priceId)
+      .single();
+      
+    if (trialMapping) {
+      plan = { id: trialMapping.plan_id };
+    }
+  }
 
   if (!plan) {
     console.error('Plan not found for price ID:', priceId);

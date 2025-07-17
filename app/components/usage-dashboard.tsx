@@ -21,6 +21,25 @@ interface UsageStats {
   next_billing_date: string;
 }
 
+interface UserLimits {
+  reply_limit: number;
+  suggestion_limit: number;
+  meme_limit: number;
+  research_limit: number;
+  replies_used: number;
+  suggestions_used: number;
+  memes_used: number;
+  research_used: number;
+  max_tweet_length: number;
+  max_response_idea_length: number;
+  max_reply_length: number;
+  enable_long_replies: boolean;
+  enable_style_matching: boolean;
+  enable_perplexity_guidance: boolean;
+  enable_memes: boolean;
+  enable_write_like_me: boolean;
+}
+
 export function UsageDashboard({ userId }: { userId: string }) {
   const router = useRouter();
   const supabase = createBrowserClient();
@@ -36,23 +55,22 @@ export function UsageDashboard({ userId }: { userId: string }) {
     try {
       setLoading(true);
       
-      // Get current usage
-      let currentUsage = null;
+      // Get user limits (includes referral bonuses)
+      let userLimits: UserLimits | null = null;
       try {
-        const { data } = await supabase
-          .rpc('get_current_usage', { p_user_id: userId })
+        const { data: limitsData } = await supabase
+          .rpc('get_user_limits', { p_user_id: userId })
           .single()
-          .throwOnError() as { data: { total_replies: number; total_memes: number; total_suggestions: number } | null };
+          .throwOnError() as { data: UserLimits | null };
         
-        currentUsage = data;
-        console.log('[usage-dashboard] Current usage fetched:', currentUsage);
-      } catch (usageError) {
-        console.error('[usage-dashboard] Failed to fetch current usage:', {
-          error: usageError,
+        userLimits = limitsData;
+        console.log('[usage-dashboard] User limits fetched:', userLimits);
+      } catch (limitsError) {
+        console.error('[usage-dashboard] Failed to fetch user limits:', {
+          error: limitsError,
           userId,
-          message: usageError instanceof Error ? usageError.message : 'Unknown error'
+          message: limitsError instanceof Error ? limitsError.message : 'Unknown error'
         });
-        // Continue with null usage - UI will show zeros
       }
       
       // Get user subscription details
@@ -88,17 +106,17 @@ export function UsageDashboard({ userId }: { userId: string }) {
           } | null 
         };
       
-      if (userData && currentUsage) {
+      if (userData && userLimits) {
         const subscription = userData.subscriptions?.[0];
         const plan = subscription?.subscription_plans;
         
         setUsage({
-          replies_used: currentUsage.total_replies || 0,
-          replies_limit: plan?.monthly_limit || 50,
-          memes_used: currentUsage.total_memes || 0,
-          memes_limit: getMemeLimit(userData.subscription_tier),
-          suggestions_used: currentUsage.total_suggestions || 0,
-          suggestions_limit: plan?.suggestion_limit || 0,
+          replies_used: userLimits.replies_used || 0,
+          replies_limit: userLimits.reply_limit || 50,  // This now includes bonuses!
+          memes_used: userLimits.memes_used || 0,
+          memes_limit: userLimits.meme_limit || 0,
+          suggestions_used: userLimits.suggestions_used || 0,
+          suggestions_limit: userLimits.suggestion_limit || 0,
           perplexity_enabled: plan?.enable_perplexity_guidance || false,
           subscription_tier: userData.subscription_tier || 'free',
           billing_cycle: 'monthly',

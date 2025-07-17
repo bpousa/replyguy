@@ -15,6 +15,8 @@ const TRIAL_PRICES = {
   professional: 'price_1Rlhbg08qNQAUd0lmrEzmJWe', // X Pro $1 trial (LIVE)
 };
 
+export const dynamic = 'force-dynamic'; // Prevent caching
+
 export async function POST(req: NextRequest) {
   const cookieStore = cookies();
   const supabase = createServerClient(cookieStore);
@@ -51,15 +53,27 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if user already has an active subscription
+    console.log('[trial-checkout] Checking for existing subscriptions for user_id:', user.id);
+    
     const { data: existingSubs, error: subError } = await supabase
       .from('subscriptions')
       .select('*')
       .eq('user_id', user.id)
       .eq('status', 'active');
 
+    console.log('[trial-checkout] Subscription query result:', {
+      data: existingSubs,
+      error: subError,
+      count: existingSubs?.length || 0
+    });
+
     // Only check for actual data, not errors from no rows
     if (existingSubs && existingSubs.length > 0) {
-      console.log('[trial-checkout] User already has active subscription');
+      console.error('[trial-checkout] USER HAS ACTIVE SUBSCRIPTION!', {
+        user_id: user.id,
+        email: user.email,
+        subscriptions: existingSubs
+      });
       return NextResponse.json(
         { error: 'You already have an active subscription' },
         { status: 400 }

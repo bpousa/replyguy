@@ -259,10 +259,11 @@ export async function POST(req: NextRequest) {
 
     // Get user's active style if requested
     let activeStyle = null;
+    let sampleTweets = null;
     if (validated.useCustomStyle && userId !== 'anonymous') {
       const { data: style, error: styleError } = await supabase
         .from('user_styles')
-        .select('style_analysis')
+        .select('style_analysis, sample_tweets, refinement_examples')
         .eq('user_id', userId)
         .eq('is_active', true)
         .single();
@@ -271,6 +272,17 @@ export async function POST(req: NextRequest) {
         console.error('Error fetching active style:', styleError);
       } else {
         activeStyle = style.style_analysis;
+        sampleTweets = style.sample_tweets;
+        // If refinement examples exist, they're even better to use
+        if (style.refinement_examples && style.refinement_examples.length > 0) {
+          // Extract the user-corrected versions as the best examples
+          sampleTweets = [
+            ...style.refinement_examples
+              .filter((ex: any) => ex.revised)
+              .map((ex: any) => ex.revised),
+            ...style.sample_tweets
+          ].slice(0, 10); // Keep best 10 examples
+        }
       }
     }
 
@@ -423,6 +435,7 @@ export async function POST(req: NextRequest) {
         enableStyleMatching: validated.enableStyleMatching ?? true,
         useCustomStyle: validated.useCustomStyle,
         customStyle: activeStyle, // Pass the active style to the generate API
+        customStyleExamples: sampleTweets, // Pass example tweets
         userId: validated.userId,
       }),
     });

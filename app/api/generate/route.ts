@@ -27,6 +27,7 @@ const requestSchema = z.object({
   enableStyleMatching: z.boolean().optional(),
   useCustomStyle: z.boolean().optional(),
   customStyle: z.any().optional(),
+  customStyleExamples: z.array(z.string()).optional(),
   userId: z.string().optional(),
 });
 
@@ -80,9 +81,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Build generation prompt
-    const prompt = buildGenerationPrompt(validated, charLimit, styleInstructions, replyLength);
+    const prompt = validated.useCustomStyle && validated.customStyle
+      ? buildWriteLikeMePrompt(validated, charLimit, replyLength)
+      : buildGenerationPrompt(validated, charLimit, styleInstructions, replyLength);
     
     console.log('\n📋 === GENERATION PROMPT ===');
+    console.log('Using Write Like Me:', validated.useCustomStyle && validated.customStyle);
     console.log('Has perplexity data in validated:', !!validated.perplexityData);
     console.log('Perplexity data preview:', validated.perplexityData?.substring(0, 200));
     console.log(prompt);
@@ -133,11 +137,16 @@ export async function POST(req: NextRequest) {
     
     console.log(`\n🔢 Token calculation: charLimit=${charLimit}, maxTokens=${maxTokens}, hasResearch=${hasResearch}`);
     
+    // Use different system prompt for Write Like Me
+    const systemPrompt = validated.useCustomStyle && validated.customStyle
+      ? `You are mimicking a specific person's writing style on Twitter/X. Your ONLY job is to write EXACTLY like they do - using their vocabulary, sentence patterns, punctuation habits, and unique quirks. Don't add your own style or try to "improve" their writing. Match their voice perfectly.`
+      : `You are typing a ${replyLength === 'extra-long' ? 'detailed thread-style' : replyLength === 'long' ? 'comprehensive' : replyLength === 'medium' ? 'thoughtful' : 'quick'} reply on Twitter/X. Write exactly like a real person would - casual, direct, sometimes imperfect. The user told you what they want to say, so say it naturally. ${replyLength === 'short' ? 'Keep it punchy - one main point.' : replyLength === 'medium' ? 'You have room for 2-3 sentences to develop your thought.' : 'Take the space to fully develop your thoughts while keeping it conversational.'} When stats/research are included, drop them in naturally like you're sharing something you just learned.`;
+
     const message = await anthropic.messages.create({
       model: 'claude-3-5-sonnet-20241022',
       max_tokens: maxTokens,
       temperature: 0.8,
-      system: `You are typing a ${replyLength === 'extra-long' ? 'detailed thread-style' : replyLength === 'long' ? 'comprehensive' : replyLength === 'medium' ? 'thoughtful' : 'quick'} reply on Twitter/X. Write exactly like a real person would - casual, direct, sometimes imperfect. The user told you what they want to say, so say it naturally. ${replyLength === 'short' ? 'Keep it punchy - one main point.' : replyLength === 'medium' ? 'You have room for 2-3 sentences to develop your thought.' : 'Take the space to fully develop your thoughts while keeping it conversational.'} When stats/research are included, drop them in naturally like you're sharing something you just learned.`,
+      system: systemPrompt,
       messages: [{ role: 'user', content: prompt }],
     });
 
@@ -146,14 +155,19 @@ export async function POST(req: NextRequest) {
     console.log('\n🤖 === CLAUDE GENERATION RESPONSE ===');
     console.log('Raw reply:', reply);
     
-    // Apply anti-AI processing (now async to support dynamic patterns)
-    reply = await AntiAIDetector.process(reply);
-    
-    console.log('\n🔧 === AFTER ANTI-AI PROCESSING ===');
-    console.log('Processed reply:', reply);
+    // Skip anti-AI processing for Write Like Me to preserve user's style
+    if (!validated.useCustomStyle || !validated.customStyle) {
+      // Apply anti-AI processing (now async to support dynamic patterns)
+      reply = await AntiAIDetector.process(reply);
+      
+      console.log('\n🔧 === AFTER ANTI-AI PROCESSING ===');
+      console.log('Processed reply:', reply);
+    } else {
+      console.log('\n🔧 === ANTI-AI PROCESSING SKIPPED (Write Like Me) ===');
+    }
     
     // Clean and validate the reply
-    reply = cleanReply(reply, charLimit);
+    reply = cleanReply(reply, charLimit, validated.useCustomStyle && validated.customStyle);
     
     console.log('\n✨ === FINAL CLEANED REPLY ===');
     console.log('Final reply:', reply);
@@ -202,6 +216,39 @@ export async function POST(req: NextRequest) {
   }
 }
 
+
+function buildWriteLikeMePrompt(input: any, charLimit: number, replyLength: string): string {
+  // Mimic the successful refinement prompt structure
+  const lengthGuide = replyLength === 'short' ? '1-2 sentences max' : 
+                      replyLength === 'medium' ? '2-4 sentences' : 
+                      replyLength === 'long' ? 'a detailed paragraph' : 
+                      'multiple paragraphs';
+  
+  return `Based on this writing style analysis, write a reply that EXACTLY matches this person's voice:
+
+Style Analysis:
+${JSON.stringify(input.customStyle, null, 2)}
+
+${input.customStyleExamples?.length > 0 ? `
+Example tweets in this style:
+${input.customStyleExamples.slice(0, 5).map((t: string, i: number) => `${i + 1}. "${t}"`).join('\n')}
+` : ''}
+
+Context:
+- You're replying to: "${input.originalTweet}"
+- Core message to express: "${input.responseIdea}"
+- Tone: ${input.tone}
+- Length: ${lengthGuide} (max ${charLimit} characters)
+
+${input.perplexityData ? `
+Research to incorporate naturally:
+${input.perplexityData}
+` : ''}
+
+CRITICAL: Write the reply using their EXACT patterns, vocabulary, punctuation, and quirks identified in the style analysis. Make it sound like they wrote it themselves.
+
+Reply (just the text, no quotes):`;
+}
 
 function buildGenerationPrompt(input: any, charLimit: number, styleInstructions: string, replyLength: string): string {
   const antiAIPrompt = `
@@ -328,7 +375,7 @@ Write the reply (just the text, no quotes):`;
 }
 
 
-function cleanReply(reply: string, charLimit: number): string {
+function cleanReply(reply: string, charLimit: number, isWriteLikeMe: boolean = false): string {
   // Basic cleanup
   reply = reply.trim();
   
@@ -360,8 +407,8 @@ function cleanReply(reply: string, charLimit: number): string {
   // Final cleanup
   reply = reply.trim();
   
-  // Ensure first letter is capitalized
-  if (reply.length > 0) {
+  // Skip capitalization for Write Like Me to preserve user's style
+  if (!isWriteLikeMe && reply.length > 0) {
     reply = reply[0].toUpperCase() + reply.substring(1);
   }
 

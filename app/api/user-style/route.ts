@@ -6,25 +6,86 @@ import { cookies } from 'next/headers';
 import { OpenAI } from 'openai';
 
 async function analyzeStyleWithGPT(tweets: string[]): Promise<any> {
+  // Validate inputs
+  if (!tweets || !Array.isArray(tweets)) {
+    throw new Error('Invalid input: tweets must be an array');
+  }
+  
+  if (tweets.length < 10) {
+    throw new Error('At least 10 tweets are required for accurate analysis');
+  }
+  
+  // Filter and validate each tweet
+  const validTweets = tweets.filter(tweet => {
+    return typeof tweet === 'string' && tweet.trim().length > 0 && tweet.trim().length <= 280;
+  });
+  
+  if (validTweets.length < 10) {
+    throw new Error('At least 10 valid tweets (non-empty, under 280 chars) are required');
+  }
+  
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
   const content = `
-    Analyze the writing style from the following tweets and return a JSON object.
+    Analyze the writing style from the following tweets with extreme detail. Extract specific patterns, phrases, and unique characteristics that make this person's writing distinctive.
 
     **Tweets:**
-    ${tweets.map((t, i) => `${i + 1}. ${t}`).join('\n')}
+    ${validTweets.map((t, i) => `${i + 1}. ${t}`).join('\n')}
 
     **JSON Output Format:**
     {
-      "tone": "(e.g., witty, formal, sarcastic, enthusiastic)",
-      "formality": "(e.g., formal, informal, casual)",
-      "vocabulary": "(e.g., simple, sophisticated, technical, slang)",
-      "sentenceStructure": "(e.g., short and punchy, long and complex, varied)",
-      "emojiUsage": "(e.g., none, frequent, occasional, specific emojis)",
-      "capitalization": "(e.g., standard, all lowercase, title case)",
-      "punctuation": "(e.g., standard, minimal, expressive)",
-      "personalityTraits": ["(e.g., humorous", "analytical", "friendly", "direct")]
+      "tone": "(specific tone description)",
+      "formality": "(formal/informal/casual with specific indicators)",
+      "vocabulary": {
+        "level": "(simple/moderate/complex)",
+        "uniqueWords": ["specific words they frequently use"],
+        "avoidedWords": ["words they seem to avoid"],
+        "slang": ["specific slang terms used"]
+      },
+      "sentencePatterns": {
+        "structure": "(short and punchy/long and complex/varied)",
+        "openings": ["common ways they start tweets"],
+        "closings": ["common ways they end tweets"],
+        "transitions": ["how they connect ideas"]
+      },
+      "punctuation": {
+        "style": "(standard/minimal/expressive)",
+        "specificPatterns": ["...", "!!!", "—", "specific uses"],
+        "questionMarks": "(how they use questions)",
+        "exclamations": "(frequency and style)"
+      },
+      "emojiPatterns": {
+        "frequency": "(none/rare/occasional/frequent)",
+        "specific": ["exact emojis they use"],
+        "placement": "(beginning/middle/end of tweets)",
+        "combinations": ["emoji pairs or sequences"]
+      },
+      "capitalization": {
+        "style": "(standard/all lowercase/creative)",
+        "emphasis": "(how they emphasize - CAPS/italics/etc)"
+      },
+      "linguisticFeatures": {
+        "contractions": "(always/sometimes/never uses contractions)",
+        "pronouns": "(I/we/you usage patterns)",
+        "tense": "(present/past/mixed)",
+        "voice": "(active/passive preference)"
+      },
+      "contentPatterns": {
+        "themes": ["recurring topics or interests"],
+        "humor": "(type: dry/sarcastic/punny/self-deprecating)",
+        "references": ["cultural/pop culture references they make"],
+        "storytelling": "(how they structure narratives)"
+      },
+      "uniqueQuirks": [
+        "any distinctive writing habits or patterns"
+      ],
+      "examplePhrases": [
+        "actual phrases that capture their voice"
+      ],
+      "doNotUse": [
+        "patterns to avoid that would seem inauthentic"
+      ]
     }
   `;
 
@@ -77,10 +138,30 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { name, sampleTweets } = await req.json();
+  let name: string;
+  let sampleTweets: string[];
+  
+  try {
+    const body = await req.json();
+    name = body.name;
+    sampleTweets = body.sampleTweets;
+    
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      return NextResponse.json({ error: 'Style name is required' }, { status: 400 });
+    }
 
-  if (!name || !sampleTweets || sampleTweets.length < 3) {
-    return NextResponse.json({ error: 'Name and at least 3 sample tweets are required.' }, { status: 400 });
+    if (!sampleTweets || !Array.isArray(sampleTweets)) {
+      return NextResponse.json({ error: 'Sample tweets must be an array' }, { status: 400 });
+    }
+
+    if (sampleTweets.length < 10) {
+      return NextResponse.json({ 
+        error: 'At least 10 sample tweets are required for accurate analysis',
+        details: { provided: sampleTweets.length, required: 10 }
+      }, { status: 400 });
+    }
+  } catch (parseError) {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
   try {
@@ -90,7 +171,7 @@ export async function POST(req: NextRequest) {
       .from('user_styles')
       .insert({
         user_id: user.id,
-        name,
+        name: name.trim(),
         sample_tweets: sampleTweets,
         style_analysis: styleAnalysis,
         analyzed_at: new Date().toISOString(),
@@ -103,9 +184,28 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ style });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating user style:', error);
-    return NextResponse.json({ error: 'Failed to create style.' }, { status: 500 });
+    
+    if (error.message?.includes('At least 10')) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    
+    if (error.code === '23505') { // Unique constraint violation
+      return NextResponse.json({ 
+        error: 'A style with this name already exists' 
+      }, { status: 409 });
+    }
+    
+    if (error.message?.includes('OpenAI') || error.message?.includes('API')) {
+      return NextResponse.json({ 
+        error: 'Style analysis service is temporarily unavailable. Please try again.' 
+      }, { status: 503 });
+    }
+    
+    return NextResponse.json({ 
+      error: 'Failed to create style. Please try again.' 
+    }, { status: 500 });
   }
 }
 
@@ -118,10 +218,39 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { styleId, name, sampleTweets, isActive } = await req.json();
-
-  if (!styleId) {
-    return NextResponse.json({ error: 'Style ID is required.' }, { status: 400 });
+  let styleId: string;
+  let name: string | undefined;
+  let sampleTweets: string[] | undefined;
+  let isActive: boolean | undefined;
+  
+  try {
+    const body = await req.json();
+    styleId = body.styleId;
+    name = body.name;
+    sampleTweets = body.sampleTweets;
+    isActive = body.isActive;
+    
+    if (!styleId || typeof styleId !== 'string') {
+      return NextResponse.json({ error: 'Valid style ID is required' }, { status: 400 });
+    }
+    
+    if (name !== undefined && (typeof name !== 'string' || name.trim().length === 0)) {
+      return NextResponse.json({ error: 'Style name cannot be empty' }, { status: 400 });
+    }
+    
+    if (sampleTweets !== undefined) {
+      if (!Array.isArray(sampleTweets)) {
+        return NextResponse.json({ error: 'Sample tweets must be an array' }, { status: 400 });
+      }
+      if (sampleTweets.length < 10) {
+        return NextResponse.json({ 
+          error: 'At least 10 sample tweets are required',
+          details: { provided: sampleTweets.length, required: 10 }
+        }, { status: 400 });
+      }
+    }
+  } catch (parseError) {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
   if (isActive) {
@@ -159,9 +288,28 @@ export async function PUT(req: NextRequest) {
     }
 
     return NextResponse.json({ style });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating user style:', error);
-    return NextResponse.json({ error: 'Failed to update style.' }, { status: 500 });
+    
+    if (error.message?.includes('At least 10')) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    
+    if (error.code === '42P01') { // Table not found
+      return NextResponse.json({ 
+        error: 'Style not found' 
+      }, { status: 404 });
+    }
+    
+    if (error.message?.includes('OpenAI') || error.message?.includes('API')) {
+      return NextResponse.json({ 
+        error: 'Style analysis service is temporarily unavailable. Please try again.' 
+      }, { status: 503 });
+    }
+    
+    return NextResponse.json({ 
+      error: 'Failed to update style. Please try again.' 
+    }, { status: 500 });
   }
 }
 

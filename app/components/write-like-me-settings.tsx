@@ -16,8 +16,12 @@ import {
   Check,
   X,
   Loader2,
-  Sparkles
+  Sparkles,
+  Wand2,
+  AlertCircle
 } from 'lucide-react';
+import StyleRefinementDialog from './style-refinement-dialog';
+import StyleAnalysisDisplay from './style-analysis-display';
 
 interface UserStyle {
   id: string;
@@ -26,6 +30,8 @@ interface UserStyle {
   is_active: boolean;
   analyzed_at: string | null;
   style_analysis: any;
+  is_refined?: boolean;
+  refined_at?: string | null;
 }
 
 export function WriteLikeMeSettings() {
@@ -34,8 +40,14 @@ export function WriteLikeMeSettings() {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [newStyleName, setNewStyleName] = useState('');
-  const [newStyleSamples, setNewStyleSamples] = useState(['', '', '']);
+  const [newStyleSamples, setNewStyleSamples] = useState(Array(10).fill(''));
   const [editingStyle, setEditingStyle] = useState<Partial<UserStyle>>({});
+  const [refiningStyleId, setRefiningStyleId] = useState<string | null>(null);
+  const [refiningStyleName, setRefiningStyleName] = useState<string>('');
+  const [updatingStyle, setUpdatingStyle] = useState<string | null>(null);
+  const [togglingActive, setTogglingActive] = useState<string | null>(null);
+  const [deletingStyle, setDeletingStyle] = useState<string | null>(null);
+  const [expandedStyle, setExpandedStyle] = useState<string | null>(null);
 
   useEffect(() => {
     loadStyles();
@@ -62,8 +74,8 @@ export function WriteLikeMeSettings() {
   const handleCreateStyle = async () => {
     const validSamples = newStyleSamples.filter(s => s.trim().length > 0);
     
-    if (validSamples.length < 3) {
-      toast.error('Please provide at least 3 sample tweets');
+    if (validSamples.length < 10) {
+      toast.error('Please provide at least 10 sample tweets for accurate analysis');
       return;
     }
 
@@ -85,7 +97,10 @@ export function WriteLikeMeSettings() {
         toast.success('Style created and analyzed!');
         setStyles([data.style, ...styles]);
         setNewStyleName('');
-        setNewStyleSamples(['', '', '']);
+        setNewStyleSamples(Array(10).fill(''));
+        // Prompt to refine the style
+        setRefiningStyleId(data.style.id);
+        setRefiningStyleName(data.style.name);
       } else {
         throw new Error(data.error);
       }
@@ -100,11 +115,12 @@ export function WriteLikeMeSettings() {
     const style = editingStyle;
     const validSamples = style.sample_tweets?.filter(s => s.trim().length > 0);
     
-    if (validSamples && validSamples.length < 3) {
-      toast.error('Please provide at least 3 sample tweets');
+    if (validSamples && validSamples.length < 10) {
+      toast.error('Please provide at least 10 sample tweets for accurate analysis');
       return;
     }
 
+    setUpdatingStyle(styleId);
     try {
       const response = await fetch('/api/user-style', {
         method: 'PUT',
@@ -128,10 +144,13 @@ export function WriteLikeMeSettings() {
       }
     } catch (error: any) {
       toast.error(error.message || 'Failed to update style');
+    } finally {
+      setUpdatingStyle(null);
     }
   };
 
   const handleToggleActive = async (styleId: string) => {
+    setTogglingActive(styleId);
     try {
       const response = await fetch('/api/user-style', {
         method: 'PUT',
@@ -155,6 +174,8 @@ export function WriteLikeMeSettings() {
       }
     } catch (error: any) {
       toast.error(error.message || 'Failed to update active style');
+    } finally {
+      setTogglingActive(null);
     }
   };
 
@@ -163,6 +184,7 @@ export function WriteLikeMeSettings() {
       return;
     }
 
+    setDeletingStyle(styleId);
     try {
       const response = await fetch(`/api/user-style?styleId=${styleId}`, {
         method: 'DELETE',
@@ -176,6 +198,8 @@ export function WriteLikeMeSettings() {
       }
     } catch (error) {
       toast.error('Failed to delete style');
+    } finally {
+      setDeletingStyle(null);
     }
   };
 
@@ -256,7 +280,19 @@ export function WriteLikeMeSettings() {
           </div>
 
           <div>
-            <Label>Sample Tweets (minimum 3)</Label>
+            <Label>Sample Tweets (minimum 10 for accurate analysis)</Label>
+            <p className="text-xs text-gray-500 mb-2">
+              Provide at least 10 of your actual tweets. The more examples you provide, the better we can capture your unique voice.
+            </p>
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-3">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5" />
+                <div className="text-xs text-blue-700">
+                  <p className="font-medium">Pro tip: After creating your style, you'll go through a refinement process.</p>
+                  <p>We'll generate 10 sample tweets and you'll edit them to match exactly how YOU would write them. This dramatically improves accuracy!</p>
+                </div>
+              </div>
+            </div>
             <p className="text-sm text-gray-500 mb-2">
               Provide examples of your tweets/replies to train the AI
             </p>
@@ -352,7 +388,7 @@ export function WriteLikeMeSettings() {
                           className="flex-1"
                           rows={2}
                         />
-                        {(editingStyle.sample_tweets || []).length > 3 && (
+                        {(editingStyle.sample_tweets || []).length > 10 && (
                           <Button
                             type="button"
                             variant="ghost"
@@ -382,9 +418,19 @@ export function WriteLikeMeSettings() {
                     <Button
                       size="sm"
                       onClick={() => handleUpdateStyle(style.id)}
+                      disabled={updatingStyle === style.id}
                     >
-                      <Check className="w-4 h-4 mr-1" />
-                      Save
+                      {updatingStyle === style.id ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                          Analyzing...
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-4 h-4 mr-1" />
+                          Save
+                        </>
+                      )}
                     </Button>
                     <Button
                       size="sm"
@@ -409,6 +455,12 @@ export function WriteLikeMeSettings() {
                             Active
                           </span>
                         )}
+                        {style.is_refined && (
+                          <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <Sparkles className="w-3 h-3" />
+                            Refined
+                          </span>
+                        )}
                       </h4>
                       {style.analyzed_at && (
                         <p className="text-sm text-gray-500 mt-1">
@@ -424,6 +476,7 @@ export function WriteLikeMeSettings() {
                       <Switch
                         checked={style.is_active}
                         onCheckedChange={() => handleToggleActive(style.id)}
+                        disabled={togglingActive === style.id}
                       />
                       <Button
                         size="icon"
@@ -439,9 +492,27 @@ export function WriteLikeMeSettings() {
                         size="icon"
                         variant="ghost"
                         onClick={() => handleDeleteStyle(style.id)}
+                        disabled={deletingStyle === style.id}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        {deletingStyle === style.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
                       </Button>
+                      {!style.is_refined && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => {
+                            setRefiningStyleId(style.id);
+                            setRefiningStyleName(style.name);
+                          }}
+                          title="Refine this style for better accuracy"
+                        >
+                          <Wand2 className="w-4 h-4 text-purple-600" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                   
@@ -460,12 +531,51 @@ export function WriteLikeMeSettings() {
                       )}
                     </ul>
                   </div>
+                  
+                  {style.analyzed_at && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setExpandedStyle(expandedStyle === style.id ? null : style.id)}
+                      className="mt-3 w-full"
+                    >
+                      {expandedStyle === style.id ? 'Hide' : 'Show'} Analysis
+                    </Button>
+                  )}
                 </>
+              )}
+              
+              {expandedStyle === style.id && style.style_analysis && (
+                <div className="mt-4">
+                  <StyleAnalysisDisplay
+                    analysis={style.style_analysis}
+                    name={style.name}
+                    isRefined={style.is_refined}
+                  />
+                </div>
               )}
             </div>
           ))
         )}
       </div>
+      
+      <StyleRefinementDialog
+        open={!!refiningStyleId}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRefiningStyleId(null);
+            setRefiningStyleName('');
+          }
+        }}
+        styleId={refiningStyleId || ''}
+        styleName={refiningStyleName}
+        onComplete={() => {
+          loadStyles();
+          setRefiningStyleId(null);
+          setRefiningStyleName('');
+          toast.success('Style refined successfully!');
+        }}
+      />
     </Card>
   );
 }

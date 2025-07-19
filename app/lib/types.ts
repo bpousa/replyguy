@@ -103,6 +103,10 @@ export interface GeneratedReply {
   // Metadata for feedback
   originalTweet?: string;
   responseIdea?: string;
+  // Write Like Me tracking
+  usedCustomStyle?: boolean;
+  styleId?: string;
+  tone?: string;
   // Tracking status
   trackingStatus?: {
     success: boolean;

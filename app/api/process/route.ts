@@ -709,7 +709,19 @@ export async function POST(req: NextRequest) {
         memeDecided: validated.includeMeme || false, // Now user-controlled
         memeText: finalMemeText || undefined,
         memeSkipReason
-      }
+      },
+      // Add metadata for feedback
+      originalTweet: validated.originalTweet,
+      responseIdea: validated.responseIdea,
+      tone: validated.tone,
+      // Write Like Me tracking
+      usedCustomStyle: validated.useCustomStyle,
+      styleId: activeStyle ? (await supabase
+        .from('user_styles')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .single()).data?.id : undefined
     };
     
     console.log('🎯 Final Result Citations:', {

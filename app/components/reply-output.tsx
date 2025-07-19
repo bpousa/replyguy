@@ -6,10 +6,11 @@ import { GeneratedReply } from '@/app/lib/types';
 import { formatCost, formatDuration, copyToClipboard } from '@/app/lib/utils';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
-import { Copy, Check, Sparkles, DollarSign, Clock, Info, Link, ExternalLink, AlertCircle, Flag, ThumbsUp, MessageSquare, RefreshCw } from 'lucide-react';
+import { Copy, Check, Sparkles, DollarSign, Clock, Info, Link, ExternalLink, AlertCircle, Flag, ThumbsUp, MessageSquare, RefreshCw, Edit3 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LoadingReplyGuy } from './loading-reply-guy';
+import ReplyEditDialog from './reply-edit-dialog';
 
 interface ReplyOutputProps {
   reply: GeneratedReply | null;
@@ -25,6 +26,7 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280, on
   const [showPhraseReport, setShowPhraseReport] = useState(false);
   const [selectedText, setSelectedText] = useState('');
   const [reportingPhrase, setReportingPhrase] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const searchParams = useSearchParams();
   const debugMode = searchParams.get('debug') === 'true';
 
@@ -166,18 +168,31 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280, on
               {reply.reply}
             </p>
           </div>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="absolute top-2 right-2 sm:top-4 sm:right-4 h-8 w-8 sm:h-10 sm:w-10"
-            onClick={handleCopy}
-          >
-            {copied ? (
-              <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
-            ) : (
-              <Copy className="w-3 h-3 sm:w-4 sm:h-4" />
+          <div className="absolute top-2 right-2 sm:top-4 sm:right-4 flex gap-1">
+            {reply.usedCustomStyle && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 sm:h-10 sm:w-10"
+                onClick={() => setShowEditDialog(true)}
+                title="Edit to improve your writing style"
+              >
+                <Edit3 className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600" />
+              </Button>
             )}
-          </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 sm:h-10 sm:w-10"
+              onClick={handleCopy}
+            >
+              {copied ? (
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
+              ) : (
+                <Copy className="w-3 h-3 sm:w-4 sm:h-4" />
+              )}
+            </Button>
+          </div>
           
           {/* Phrase Report Popup */}
           {showPhraseReport && selectedText && (
@@ -485,6 +500,17 @@ export default function ReplyOutput({ reply, isLoading, maxReplyLength = 280, on
         </div>
       </motion.div>
     </AnimatePresence>
+    
+    {reply && (
+      <ReplyEditDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        reply={reply}
+        onSave={() => {
+          toast.success('Thanks for improving your style!');
+        }}
+      />
+    )}
     </div>
   );
 }

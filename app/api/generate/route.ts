@@ -229,20 +229,43 @@ Even if the user's suggestion sounds good, always put it in your own words. Neve
   
   let customStylePrompt = '';
   if (input.useCustomStyle && input.customStyle) {
+    const style = input.customStyle;
     customStylePrompt = `
 
 --- YOUR CUSTOM STYLE ---
-Your writing style has been analyzed as:
-- Tone: ${input.customStyle.tone}
-- Formality: ${input.customStyle.formality}
-- Vocabulary: ${input.customStyle.vocabulary}
-- Sentence Structure: ${input.customStyle.sentenceStructure}
-- Emoji Usage: ${input.customStyle.emojiUsage}
-- Capitalization: ${input.customStyle.capitalization}
-- Punctuation: ${input.customStyle.punctuation}
-- Personality Traits: ${input.customStyle.personalityTraits.join(', ')}
+Your writing style has been analyzed in detail:
 
-Follow this style closely.
+Tone & Voice: ${style.tone}
+Formality: ${style.formality}
+${style.vocabulary?.level ? `Vocabulary Level: ${style.vocabulary.level}` : ''}
+${style.vocabulary?.uniqueWords?.length > 0 ? `Unique words you use: ${style.vocabulary.uniqueWords.join(', ')}` : ''}
+${style.vocabulary?.slang?.length > 0 ? `Your slang: ${style.vocabulary.slang.join(', ')}` : ''}
+
+Sentence Patterns:
+${style.sentencePatterns?.structure ? `- Structure: ${style.sentencePatterns.structure}` : ''}
+${style.sentencePatterns?.openings?.length > 0 ? `- Common openings: ${style.sentencePatterns.openings.join(', ')}` : ''}
+${style.sentencePatterns?.closings?.length > 0 ? `- Common closings: ${style.sentencePatterns.closings.join(', ')}` : ''}
+
+Punctuation Style:
+${style.punctuation?.style ? `- General style: ${style.punctuation.style}` : ''}
+${style.punctuation?.specificPatterns?.length > 0 ? `- Specific patterns: ${style.punctuation.specificPatterns.join(', ')}` : ''}
+
+${style.emojiPatterns?.frequency !== 'none' ? `Emoji usage: ${style.emojiPatterns.frequency}` : ''}
+${style.emojiPatterns?.specific?.length > 0 ? `Specific emojis: ${style.emojiPatterns.specific.join(' ')}` : ''}
+
+${style.capitalization?.style ? `Capitalization: ${style.capitalization.style}` : ''}
+
+${style.linguisticFeatures?.contractions ? `Contractions: ${style.linguisticFeatures.contractions}` : ''}
+
+${style.contentPatterns?.humor ? `Humor style: ${style.contentPatterns.humor}` : ''}
+
+${style.uniqueQuirks?.length > 0 ? `\nUnique quirks:\n${style.uniqueQuirks.map((q: string) => `- ${q}`).join('\n')}` : ''}
+
+${style.examplePhrases?.length > 0 ? `\nExample phrases that capture your voice:\n${style.examplePhrases.map((p: string) => `"${p}"`).join('\n')}` : ''}
+
+${style.doNotUse?.length > 0 ? `\nNEVER use these patterns (they would seem inauthentic):\n${style.doNotUse.map((d: string) => `- ${d}`).join('\n')}` : ''}
+
+CRITICAL: Match this style EXACTLY. Use the specific patterns, phrases, and quirks identified above.
 --- END CUSTOM STYLE ---
 `;
   }

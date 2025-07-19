@@ -361,11 +361,16 @@ export default function WriteStyleWizard({ onComplete, onCancel }: WriteStyleWiz
                     onChange={(e) => setUserRevision(e.target.value)}
                     placeholder="Edit this to match EXACTLY how you would write it"
                     rows={3}
-                    maxLength={280}
+                    maxLength={500}
                     className="mt-1"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    {userRevision.length}/280 characters
+                    {userRevision.length}/500 characters
+                    {userRevision.length > 280 && (
+                      <span className="text-orange-600 ml-2">
+                        (Twitter limit: 280)
+                      </span>
+                    )}
                   </p>
                 </div>
 

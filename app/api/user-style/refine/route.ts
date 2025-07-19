@@ -67,6 +67,7 @@ ${previousExamplesText}
 
 Generate a tweet that would be a ${exampleType}. Make it sound EXACTLY like this person would write it.
 Use their specific patterns, vocabulary, punctuation, and quirks.
+IMPORTANT: Keep it under 250 characters to leave room for editing.
 Tweet (just the text, no quotes):`;
 
   try {
@@ -74,7 +75,7 @@ Tweet (just the text, no quotes):`;
       model: 'gpt-4o',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.8,
-      max_tokens: 280,
+      max_tokens: 100,
     });
 
     return response.choices[0].message.content?.trim() || '';

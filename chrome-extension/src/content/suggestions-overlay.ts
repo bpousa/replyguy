@@ -1615,6 +1615,12 @@ export class SuggestionsOverlay {
       </div>
       
       <div class="reply-guy-edit-container">
+        <div class="reply-guy-edit-section" style="background: #f0f7ff; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+          <p style="margin: 0; font-size: 14px; color: #536471; line-height: 1.5;">
+            Edit the reply to match how YOU would write it. When you save, your edited reply will be <strong>automatically copied</strong> to the clipboard and your feedback will help improve your writing style.
+          </p>
+        </div>
+        
         <div class="reply-guy-edit-section">
           <label class="reply-guy-edit-label">Original Tweet</label>
           <div class="reply-guy-context-box">
@@ -1658,7 +1664,7 @@ export class SuggestionsOverlay {
         
         <div class="reply-guy-edit-actions">
           <button class="reply-guy-cancel-btn">Cancel</button>
-          <button class="reply-guy-save-btn" id="reply-guy-save-edit">Save & Improve Style</button>
+          <button class="reply-guy-save-btn" id="reply-guy-save-edit">Save & Copy Edited Reply</button>
         </div>
       </div>
     `;
@@ -1732,11 +1738,39 @@ export class SuggestionsOverlay {
         });
         
         if (response.success) {
-          // Show success message
-          saveBtn.textContent = '✅ Saved!';
-          setTimeout(() => {
-            this.remove();
-          }, 1500);
+          // Copy edited reply to clipboard
+          try {
+            await navigator.clipboard.writeText(editedReply);
+            
+            // Show success message with copy confirmation
+            saveBtn.textContent = '✅ Saved & Copied!';
+            
+            // Add copy notice to the UI
+            const editContainer = this.overlay?.querySelector('.reply-guy-edit-container');
+            if (editContainer) {
+              const successNotice = document.createElement('div');
+              successNotice.className = 'reply-guy-copy-notice reply-guy-notice';
+              successNotice.style.marginTop = '16px';
+              successNotice.innerHTML = '✅ Your edited reply has been copied to clipboard and your feedback saved!<br><strong>Paste it with Ctrl+V (or Cmd+V on Mac)</strong>';
+              editContainer.appendChild(successNotice);
+            }
+            
+            // Close after a longer delay to let user see the success
+            setTimeout(() => {
+              this.remove();
+            }, 3000);
+          } catch (copyError) {
+            // If copy fails, still show success but warn about copy
+            console.error('[ReplyGuy] Failed to copy to clipboard:', copyError);
+            saveBtn.textContent = '✅ Saved! (Copy manually)';
+            
+            // Select the text so user can copy manually
+            editTextarea?.select();
+            
+            setTimeout(() => {
+              this.remove();
+            }, 3000);
+          }
         } else {
           throw new Error(response.error || 'Failed to save correction');
         }
@@ -1745,7 +1779,7 @@ export class SuggestionsOverlay {
         saveBtn.textContent = 'Failed - Try Again';
         saveBtn.disabled = false;
         setTimeout(() => {
-          saveBtn.textContent = 'Save & Improve Style';
+          saveBtn.textContent = 'Save & Copy Edited Reply';
         }, 2000);
       }
     });

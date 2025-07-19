@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
     
     // Use different system prompt for Write Like Me
     const systemPrompt = validated.useCustomStyle && validated.customStyle
-      ? `You are mimicking a specific person's writing style on Twitter/X. Your ONLY job is to write EXACTLY like they do - using their vocabulary, sentence patterns, punctuation habits, and unique quirks. Don't add your own style or try to "improve" their writing. Match their voice perfectly.`
+      ? `You are channeling a specific person's writing style on Twitter/X. Your job is to capture their voice authentically while maintaining natural variety. Use their vocabulary, tone, and stylistic patterns, but avoid repetitive phrases. Each reply should feel fresh while still unmistakably theirs. Think of it as the same person writing on different days, in different moods, responding to different situations.`
       : `You are typing a ${replyLength === 'extra-long' ? 'detailed thread-style' : replyLength === 'long' ? 'comprehensive' : replyLength === 'medium' ? 'thoughtful' : 'quick'} reply on Twitter/X. Write exactly like a real person would - casual, direct, sometimes imperfect. The user told you what they want to say, so say it naturally. ${replyLength === 'short' ? 'Keep it punchy - one main point.' : replyLength === 'medium' ? 'You have room for 2-3 sentences to develop your thought.' : 'Take the space to fully develop your thoughts while keeping it conversational.'} When stats/research are included, drop them in naturally like you're sharing something you just learned.`;
 
     const message = await anthropic.messages.create({
@@ -224,7 +224,7 @@ function buildWriteLikeMePrompt(input: any, charLimit: number, replyLength: stri
                       replyLength === 'long' ? 'a detailed paragraph' : 
                       'multiple paragraphs';
   
-  return `Based on this writing style analysis, write a reply that EXACTLY matches this person's voice:
+  return `Based on this writing style analysis, write a reply that captures the SPIRIT and VARIETY of this person's voice:
 
 Style Analysis:
 ${JSON.stringify(input.customStyle, null, 2)}
@@ -245,7 +245,13 @@ Research to incorporate naturally:
 ${input.perplexityData}
 ` : ''}
 
-CRITICAL: Write the reply using their EXACT patterns, vocabulary, punctuation, and quirks identified in the style analysis. Make it sound like they wrote it themselves.
+CRITICAL INSTRUCTIONS:
+1. CAPTURE THE ESSENCE of their style - don't copy exact phrases
+2. VARY YOUR APPROACH - if they sometimes start with "what i ended up doing", also use their other opening patterns
+3. MIX AND MATCH their different stylistic elements naturally
+4. Keep their voice authentic while avoiding repetitive patterns
+5. Draw from their FULL RANGE of expressions, not just one pattern
+6. Make it sound like they wrote it on a different day, in a fresh mood
 
 Reply (just the text, no quotes):`;
 }

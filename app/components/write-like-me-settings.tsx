@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import StyleRefinementDialog from './style-refinement-dialog';
 import StyleAnalysisDisplay from './style-analysis-display';
+import WriteStyleWizard from './write-like-me-wizard';
 
 interface UserStyle {
   id: string;
@@ -37,10 +38,7 @@ interface UserStyle {
 export function WriteLikeMeSettings() {
   const [styles, setStyles] = useState<UserStyle[]>([]);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
-  const [newStyleName, setNewStyleName] = useState('');
-  const [newStyleSamples, setNewStyleSamples] = useState(Array(10).fill(''));
   const [editingStyle, setEditingStyle] = useState<Partial<UserStyle>>({});
   const [refiningStyleId, setRefiningStyleId] = useState<string | null>(null);
   const [refiningStyleName, setRefiningStyleName] = useState<string>('');
@@ -48,6 +46,7 @@ export function WriteLikeMeSettings() {
   const [togglingActive, setTogglingActive] = useState<string | null>(null);
   const [deletingStyle, setDeletingStyle] = useState<string | null>(null);
   const [expandedStyle, setExpandedStyle] = useState<string | null>(null);
+  const [showWizard, setShowWizard] = useState(false);
 
   useEffect(() => {
     loadStyles();
@@ -71,45 +70,6 @@ export function WriteLikeMeSettings() {
     }
   };
 
-  const handleCreateStyle = async () => {
-    const validSamples = newStyleSamples.filter(s => s.trim().length > 0);
-    
-    if (validSamples.length < 10) {
-      toast.error('Please provide at least 10 sample tweets for accurate analysis');
-      return;
-    }
-
-    setCreating(true);
-    
-    try {
-      const response = await fetch('/api/user-style', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newStyleName || 'My Style',
-          sampleTweets: validSamples,
-        }),
-      });
-
-      const data = await response.json();
-      
-      if (response.ok) {
-        toast.success('Style created and analyzed!');
-        setStyles([data.style, ...styles]);
-        setNewStyleName('');
-        setNewStyleSamples(Array(10).fill(''));
-        // Prompt to refine the style
-        setRefiningStyleId(data.style.id);
-        setRefiningStyleName(data.style.name);
-      } else {
-        throw new Error(data.error);
-      }
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create style');
-    } finally {
-      setCreating(false);
-    }
-  };
 
   const handleUpdateStyle = async (styleId: string) => {
     const style = editingStyle;
@@ -205,36 +165,21 @@ export function WriteLikeMeSettings() {
 
 
   const addSampleField = () => {
-    if (editing) {
-      setEditingStyle({
-        ...editingStyle,
-        sample_tweets: [...(editingStyle.sample_tweets || []), ''],
-      });
-    } else {
-      setNewStyleSamples([...newStyleSamples, '']);
-    }
+    setEditingStyle({
+      ...editingStyle,
+      sample_tweets: [...(editingStyle.sample_tweets || []), ''],
+    });
   };
 
   const updateSample = (index: number, value: string) => {
-    if (editing) {
-      const samples = [...(editingStyle.sample_tweets || [])];
-      samples[index] = value;
-      setEditingStyle({ ...editingStyle, sample_tweets: samples });
-    } else {
-      const samples = [...newStyleSamples];
-      samples[index] = value;
-      setNewStyleSamples(samples);
-    }
+    const samples = [...(editingStyle.sample_tweets || [])];
+    samples[index] = value;
+    setEditingStyle({ ...editingStyle, sample_tweets: samples });
   };
 
   const removeSample = (index: number) => {
-    if (editing) {
-      const samples = (editingStyle.sample_tweets || []).filter((_, i) => i !== index);
-      setEditingStyle({ ...editingStyle, sample_tweets: samples });
-    } else {
-      const samples = newStyleSamples.filter((_, i) => i !== index);
-      setNewStyleSamples(samples);
-    }
+    const samples = (editingStyle.sample_tweets || []).filter((_, i) => i !== index);
+    setEditingStyle({ ...editingStyle, sample_tweets: samples });
   };
 
   if (loading) {
@@ -259,103 +204,45 @@ export function WriteLikeMeSettings() {
         Train AI on your writing style by providing sample tweets. The AI will analyze your patterns and generate replies that sound exactly like you.
       </p>
 
+      {/* Wizard */}
+      {showWizard && (
+        <WriteStyleWizard
+          onComplete={() => {
+            setShowWizard(false);
+            loadStyles();
+            toast.success('Style created successfully!');
+          }}
+          onCancel={() => setShowWizard(false)}
+        />
+      )}
+
       {/* Create New Style */}
-      <div className="bg-gray-50 rounded-lg p-6 mb-6">
-        <h3 className="font-medium mb-4 flex items-center gap-2">
-          <Plus className="w-4 h-4" />
-          Create New Style
-        </h3>
-        
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="style-name">Style Name</Label>
-            <input
-              id="style-name"
-              type="text"
-              value={newStyleName}
-              onChange={(e) => setNewStyleName(e.target.value)}
-              placeholder="e.g., Professional, Casual, Witty"
-              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-
-          <div>
-            <Label>Sample Tweets (minimum 10 for accurate analysis)</Label>
-            <p className="text-xs text-gray-500 mb-2">
-              Provide at least 10 of your actual tweets. The more examples you provide, the better we can capture your unique voice.
-            </p>
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-3">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5" />
-                <div className="text-xs text-blue-700">
-                  <p className="font-medium">Pro tip: After creating your style, you&apos;ll go through a refinement process.</p>
-                  <p>We&apos;ll generate 10 sample tweets and you&apos;ll edit them to match exactly how YOU would write them. This dramatically improves accuracy!</p>
-                </div>
-              </div>
-            </div>
-            <p className="text-sm text-gray-500 mb-2">
-              Provide examples of your tweets/replies to train the AI
-            </p>
-            
-            {newStyleSamples.map((sample, index) => (
-              <div key={index} className="flex gap-2 mb-2">
-                <Textarea
-                  value={sample}
-                  onChange={(e) => updateSample(index, e.target.value)}
-                  placeholder={`Example tweet ${index + 1}...`}
-                  className="flex-1"
-                  rows={2}
-                />
-                {newStyleSamples.length > 3 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeSample(index)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-            ))}
-            
-            {newStyleSamples.length < 20 && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addSampleField}
-                className="mt-2"
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Add Sample
-              </Button>
-            )}
-          </div>
-
+      {!showWizard && (
+        <div className="bg-gray-50 rounded-lg p-6 mb-6">
+          <h3 className="font-medium mb-4 flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Create New Style
+          </h3>
+          
+          <p className="text-gray-600 mb-4">
+            Create a personalized writing style through our guided wizard. We&apos;ll analyze your tweets 
+            and work with you to perfectly capture your unique voice.
+          </p>
+          
           <Button
-            onClick={handleCreateStyle}
-            disabled={creating}
+            onClick={() => setShowWizard(true)}
             className="w-full"
           >
-            {creating ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Analyzing Style...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 mr-2" />
-                Create Style
-              </>
-            )}
+            <Wand2 className="w-4 h-4 mr-2" />
+            Start Style Wizard
           </Button>
         </div>
-      </div>
+      )}
 
       {/* Existing Styles */}
-      <div className="space-y-4">
-        <h3 className="font-medium">Your Styles</h3>
+      {!showWizard && (
+        <div className="space-y-4">
+          <h3 className="font-medium">Your Styles</h3>
         
         {styles.length === 0 ? (
           <p className="text-gray-500 text-center py-8">
@@ -557,8 +444,10 @@ export function WriteLikeMeSettings() {
             </div>
           ))
         )}
-      </div>
+        </div>
+      )}
       
+      {/* Refinement Dialog */}
       <StyleRefinementDialog
         open={!!refiningStyleId}
         onOpenChange={(open) => {

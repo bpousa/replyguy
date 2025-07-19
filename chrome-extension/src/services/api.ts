@@ -23,8 +23,15 @@ class APIService {
       if (response.status === 401) {
         throw new Error('Not authenticated');
       }
-      const error = await response.json().catch(() => ({ error: 'Request failed' }));
-      throw new Error(error.error || `HTTP ${response.status}`);
+      const errorData = await response.json().catch(() => ({ error: 'Request failed' }));
+      console.error('[API] Error response:', errorData);
+      
+      // If there are validation details, include them in the error message
+      if (errorData.details) {
+        const detailsStr = JSON.stringify(errorData.details);
+        throw new Error(`${errorData.error}: ${detailsStr}`);
+      }
+      throw new Error(errorData.error || `HTTP ${response.status}`);
     }
 
     return response.json();

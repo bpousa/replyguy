@@ -18,8 +18,8 @@ export class SuggestionsOverlay {
   private isSuggestingIdea: boolean = false;
   private isSuggestingResearch: boolean = false;
   private researchSuggestions: string[] = [];
-  private useCustomStyle: boolean = false;
-  private enableStyleMatching: boolean = false;
+  private useCustomStyle: boolean | undefined = false;
+  private enableStyleMatching: boolean = true; // Default to true like the main dashboard
   private defaultSettings: { responseType?: string; tone?: string } = {};
 
   constructor(container: Element) {
@@ -37,7 +37,8 @@ export class SuggestionsOverlay {
           replyLength: this.replyLength,
           needsResearch: this.needsResearch,
           includeMemes: this.includeMeme,
-          useCustomStyle: this.useCustomStyle
+          useCustomStyle: this.useCustomStyle,
+          enableStyleMatching: this.enableStyleMatching
         }
       });
       console.log('[ReplyGuy] Saved user settings');
@@ -59,6 +60,7 @@ export class SuggestionsOverlay {
         this.needsResearch = settings.needsResearch ?? this.needsResearch;
         this.includeMeme = settings.includeMemes ?? this.includeMeme;
         this.useCustomStyle = settings.useCustomStyle ?? this.useCustomStyle;
+        this.enableStyleMatching = settings.enableStyleMatching ?? this.enableStyleMatching;
         console.log('[ReplyGuy] Loaded user settings:', settings);
       }
     } catch (error) {
@@ -637,17 +639,28 @@ export class SuggestionsOverlay {
     // Write Like Me checkbox
     const writeLikeMeCheckbox = this.overlay.querySelector('#reply-guy-write-like-me') as HTMLInputElement;
     if (writeLikeMeCheckbox) {
-      writeLikeMeCheckbox.checked = this.useCustomStyle;
+      writeLikeMeCheckbox.checked = this.useCustomStyle || false;
       writeLikeMeCheckbox.addEventListener('change', () => {
         this.useCustomStyle = writeLikeMeCheckbox.checked;
       });
+    } else {
+      // If checkbox doesn't exist (user plan doesn't support it), explicitly set to false
+      this.useCustomStyle = false;
     }
     
     // Match Tweet Style checkbox
     const matchStyleCheckbox = this.overlay.querySelector('#reply-guy-match-style') as HTMLInputElement;
-    matchStyleCheckbox?.addEventListener('change', () => {
+    if (matchStyleCheckbox) {
+      // Set initial value and default to true (matching the main dashboard behavior)
+      matchStyleCheckbox.checked = this.enableStyleMatching !== false;
       this.enableStyleMatching = matchStyleCheckbox.checked;
-    });
+      matchStyleCheckbox.addEventListener('change', () => {
+        this.enableStyleMatching = matchStyleCheckbox.checked;
+      });
+    } else {
+      // If checkbox doesn't exist (user plan doesn't support it), explicitly set to false
+      this.enableStyleMatching = false;
+    }
     
     // Generate button
     this.overlay.querySelector('#reply-guy-generate')?.addEventListener('click', async () => {
@@ -671,8 +684,8 @@ export class SuggestionsOverlay {
         replyLength: this.replyLength,
         needsResearch: this.needsResearch,
         includeMeme: this.includeMeme,
-        useCustomStyle: this.useCustomStyle,
-        enableStyleMatching: this.enableStyleMatching
+        useCustomStyle: this.useCustomStyle || false,
+        enableStyleMatching: this.enableStyleMatching || false
       };
       
       // Only add optional fields if they have values
@@ -696,7 +709,23 @@ export class SuggestionsOverlay {
         }
       }
       
-      console.log('[ReplyGuy] Generating with data:', data);
+      // Log each field to debug validation
+      console.log('[ReplyGuy] ===== VALIDATION DEBUG =====');
+      console.log('[ReplyGuy] originalTweet:', data.originalTweet, 'type:', typeof data.originalTweet, 'length:', data.originalTweet?.length);
+      console.log('[ReplyGuy] responseIdea:', data.responseIdea, 'type:', typeof data.responseIdea, 'length:', data.responseIdea?.length);
+      console.log('[ReplyGuy] responseType:', data.responseType, 'type:', typeof data.responseType);
+      console.log('[ReplyGuy] tone:', data.tone, 'type:', typeof data.tone);
+      console.log('[ReplyGuy] needsResearch:', data.needsResearch, 'type:', typeof data.needsResearch);
+      console.log('[ReplyGuy] replyLength:', data.replyLength, 'type:', typeof data.replyLength);
+      console.log('[ReplyGuy] includeMeme:', data.includeMeme, 'type:', typeof data.includeMeme);
+      console.log('[ReplyGuy] useCustomStyle:', data.useCustomStyle, 'type:', typeof data.useCustomStyle);
+      console.log('[ReplyGuy] enableStyleMatching:', data.enableStyleMatching, 'type:', typeof data.enableStyleMatching);
+      console.log('[ReplyGuy] perplexityGuidance:', data.perplexityGuidance, 'type:', typeof data.perplexityGuidance);
+      console.log('[ReplyGuy] memeText:', data.memeText, 'type:', typeof data.memeText);
+      console.log('[ReplyGuy] memeTextMode:', data.memeTextMode, 'type:', typeof data.memeTextMode);
+      console.log('[ReplyGuy] userId:', data.userId, 'type:', typeof data.userId);
+      console.log('[ReplyGuy] Full data object:', JSON.stringify(data, null, 2));
+      console.log('[ReplyGuy] ===== END VALIDATION DEBUG =====');
       
       // Save defaults if checkbox is checked
       const saveDefaultsCheckbox = this.overlay?.querySelector('#reply-guy-save-defaults') as HTMLInputElement;

@@ -169,7 +169,7 @@ export default function StyleAnalysisDisplay({
             <div className="space-y-2">
               {analysis.examplePhrases.slice(0, 3).map((phrase: string, i: number) => (
                 <div key={i} className="p-2 bg-muted rounded-md">
-                  <p className="text-sm italic">"{phrase}"</p>
+                  <p className="text-sm italic">&ldquo;{phrase}&rdquo;</p>
                 </div>
               ))}
             </div>
@@ -211,7 +211,7 @@ export default function StyleAnalysisDisplay({
               <TrendingUp className="h-4 w-4 text-purple-600 mt-0.5" />
               <span>
                 <strong className="text-purple-700 dark:text-purple-400">Tip:</strong>
-                {' '}Use the "Refine" feature to improve accuracy by showing us exactly how you'd write different types of tweets.
+                {' '}Use the &ldquo;Refine&rdquo; feature to improve accuracy by showing us exactly how you&apos;d write different types of tweets.
               </span>
             </p>
           </div>

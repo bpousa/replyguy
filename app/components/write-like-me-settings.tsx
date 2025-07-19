@@ -288,8 +288,8 @@ export function WriteLikeMeSettings() {
               <div className="flex items-start gap-2">
                 <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5" />
                 <div className="text-xs text-blue-700">
-                  <p className="font-medium">Pro tip: After creating your style, you'll go through a refinement process.</p>
-                  <p>We'll generate 10 sample tweets and you'll edit them to match exactly how YOU would write them. This dramatically improves accuracy!</p>
+                  <p className="font-medium">Pro tip: After creating your style, you&apos;ll go through a refinement process.</p>
+                  <p>We&apos;ll generate 10 sample tweets and you&apos;ll edit them to match exactly how YOU would write them. This dramatically improves accuracy!</p>
                 </div>
               </div>
             </div>

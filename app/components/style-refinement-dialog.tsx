@@ -136,14 +136,14 @@ export default function StyleRefinementDialog({
         <DialogHeader>
           <DialogTitle>Refine Your Writing Style</DialogTitle>
           <DialogDescription>
-            We'll show you 10 example tweets. Edit them to match exactly how YOU would write them.
+            We&apos;ll show you 10 example tweets. Edit them to match exactly how YOU would write them.
             This helps us capture your unique voice perfectly.
           </DialogDescription>
         </DialogHeader>
 
         {!sessionId && !isComplete && (
           <div className="py-8 text-center">
-            <h3 className="text-lg font-semibold mb-2">Ready to refine "{styleName}"?</h3>
+            <h3 className="text-lg font-semibold mb-2">Ready to refine &ldquo;{styleName}&rdquo;?</h3>
             <p className="text-sm text-muted-foreground mb-6">
               This process takes about 5-10 minutes and dramatically improves accuracy.
             </p>
@@ -176,7 +176,7 @@ export default function StyleRefinementDialog({
               <CardHeader>
                 <CardTitle className="text-base">AI Generated Example:</CardTitle>
                 <CardDescription>
-                  This is what we think you'd write for: "{getExampleTypeDescription(currentExample.type)}"
+                  This is what we think you&apos;d write for: &ldquo;{getExampleTypeDescription(currentExample.type)}&rdquo;
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -214,7 +214,7 @@ export default function StyleRefinementDialog({
                   id="feedback"
                   value={feedback}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFeedback(e.target.value)}
-                  placeholder="e.g., 'I never use exclamation marks' or 'I always lowercase everything'"
+                  placeholder="e.g., &apos;I never use exclamation marks&apos; or &apos;I always lowercase everything&apos;"
                 />
               </div>
             </div>

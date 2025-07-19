@@ -79,6 +79,14 @@ Tweet (just the text, no quotes):`;
 // Start a new refinement session
 export async function POST(req: NextRequest) {
   try {
+    // Check environment variable first
+    if (!process.env.OPENAI_API_KEY) {
+      console.error('OPENAI_API_KEY is not set in environment');
+      return NextResponse.json({ 
+        error: 'OpenAI API key not configured' 
+      }, { status: 500 });
+    }
+
     const cookieStore = cookies();
     const supabase = createServerClient(cookieStore);
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -92,7 +100,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    try {
     const body = await req.json();
     const { styleId } = startRefinementSchema.parse(body);
 
@@ -173,13 +180,6 @@ export async function POST(req: NextRequest) {
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
-  } catch (error) {
-    console.error('Unexpected error in POST:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
-  }
 }
 
 // Submit feedback and get next example
@@ -198,7 +198,6 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    try {
     const body = await req.json();
     const { sessionId, exampleIndex, originalExample, userRevision, feedback } = 
       submitFeedbackSchema.parse(body);
@@ -294,13 +293,6 @@ export async function PUT(req: NextRequest) {
     }
     return NextResponse.json({ 
       error: 'Failed to submit feedback',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
-  }
-  } catch (error) {
-    console.error('Unexpected error in PUT:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }

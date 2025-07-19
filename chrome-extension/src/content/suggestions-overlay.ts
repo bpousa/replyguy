@@ -650,7 +650,7 @@ export class SuggestionsOverlay {
     });
     
     // Generate button
-    this.overlay.querySelector('#reply-guy-generate')?.addEventListener('click', () => {
+    this.overlay.querySelector('#reply-guy-generate')?.addEventListener('click', async () => {
       // Validate minimum requirements
       if (!this.responseIdea.trim()) {
         alert('Please describe what you want to say');
@@ -663,20 +663,38 @@ export class SuggestionsOverlay {
         ? this.tweet.substring(0, maxTweetLength) + '...'
         : this.tweet;
       
-      const data = {
+      const data: any = {
         originalTweet: truncatedTweet,
         responseIdea: this.responseIdea,
         responseType: this.responseType,
         tone: this.tone,
         replyLength: this.replyLength,
         needsResearch: this.needsResearch,
-        perplexityGuidance: this.needsResearch ? this.perplexityGuidance : undefined,
         includeMeme: this.includeMeme,
-        memeText: this.includeMeme && this.memeText ? this.memeText : undefined,
-        memeTextMode: this.includeMeme && this.memeText ? this.memeTextMode : undefined,
         useCustomStyle: this.useCustomStyle,
         enableStyleMatching: this.enableStyleMatching
       };
+      
+      // Only add optional fields if they have values
+      if (this.needsResearch && this.perplexityGuidance) {
+        data.perplexityGuidance = this.perplexityGuidance;
+      }
+      if (this.includeMeme && this.memeText) {
+        data.memeText = this.memeText;
+        data.memeTextMode = this.memeTextMode;
+      }
+      
+      // Add user ID if available from auth state
+      if (chrome?.runtime?.id) {
+        try {
+          const authResponse = await chrome.runtime.sendMessage({ action: 'checkAuth' });
+          if (authResponse?.success && authResponse.data?.user?.id) {
+            data.userId = authResponse.data.user.id;
+          }
+        } catch (error) {
+          console.error('[ReplyGuy] Failed to get user ID:', error);
+        }
+      }
       
       console.log('[ReplyGuy] Generating with data:', data);
       

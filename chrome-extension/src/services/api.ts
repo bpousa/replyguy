@@ -152,6 +152,22 @@ class APIService {
       body: JSON.stringify({ dailyGoal: goal }),
     });
   }
+
+  async submitCorrection(params: {
+    styleId?: string;
+    originalTweet: string;
+    responseIdea: string;
+    replyType: string;
+    tone: string;
+    generatedReply: string;
+    correctedReply: string;
+    correctionNotes?: string;
+  }): Promise<{ success: boolean; message: string; needsReanalysis?: boolean }> {
+    return this.fetchWithAuth('/user-style/corrections', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  }
 }
 
 export const apiService = new APIService();

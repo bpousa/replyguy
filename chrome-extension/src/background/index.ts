@@ -80,6 +80,11 @@ chrome.runtime.onMessage.addListener((message: ChromeMessage, sender, sendRespon
           sendResponse({ success: true });
           break;
 
+        case 'submitCorrection':
+          const correctionResult = await apiService.submitCorrection(message.data);
+          sendResponse({ success: true, data: correctionResult });
+          break;
+
         default:
           sendResponse({ success: false, error: 'Unknown action' });
       }

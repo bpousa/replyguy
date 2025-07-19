@@ -9,6 +9,8 @@ export class SuggestionsOverlay {
   private perplexityGuidance: string = '';
   private includeMeme: boolean = false;
   private memeText: string = '';
+  private currentReplyData: any = null;
+  private originalTweet: string = '';
   private memeTextMode: 'exact' | 'enhance' = 'exact';
   private tweet: string = '';
   private userPlan: any = null;
@@ -24,27 +26,53 @@ export class SuggestionsOverlay {
     this.container = container;
   }
 
+  private async saveUserSettings() {
+    if (!chrome?.storage?.sync) return;
+    
+    try {
+      await chrome.storage.sync.set({
+        replyGuySettings: {
+          responseType: this.responseType,
+          tone: this.tone,
+          replyLength: this.replyLength,
+          needsResearch: this.needsResearch,
+          includeMemes: this.includeMeme,
+          useCustomStyle: this.useCustomStyle
+        }
+      });
+      console.log('[ReplyGuy] Saved user settings');
+    } catch (error) {
+      console.error('[ReplyGuy] Failed to save settings:', error);
+    }
+  }
+
+  private async loadUserSettings() {
+    if (!chrome?.storage?.sync) return;
+    
+    try {
+      const result = await chrome.storage.sync.get(['replyGuySettings']);
+      if (result.replyGuySettings) {
+        const settings = result.replyGuySettings;
+        this.responseType = settings.responseType || this.responseType;
+        this.tone = settings.tone || this.tone;
+        this.replyLength = settings.replyLength || this.replyLength;
+        this.needsResearch = settings.needsResearch ?? this.needsResearch;
+        this.includeMeme = settings.includeMemes ?? this.includeMeme;
+        this.useCustomStyle = settings.useCustomStyle ?? this.useCustomStyle;
+        console.log('[ReplyGuy] Loaded user settings:', settings);
+      }
+    } catch (error) {
+      console.error('[ReplyGuy] Failed to load settings:', error);
+    }
+  }
+
   async showOptions(tweet: string, onGenerate: (data: any) => void) {
     this.remove();
     this.tweet = tweet;
+    this.originalTweet = tweet;
     
-    // Load default settings from Chrome storage
-    try {
-      if (chrome?.storage?.sync) {
-        const settings = await chrome.storage.sync.get(['defaultResponseType', 'defaultTone']);
-        if (settings?.defaultResponseType) {
-          this.responseType = settings.defaultResponseType;
-          this.defaultSettings.responseType = settings.defaultResponseType;
-        }
-        if (settings?.defaultTone) {
-          this.tone = settings.defaultTone;
-          this.defaultSettings.tone = settings.defaultTone;
-        }
-        console.log('[ReplyGuy] Loaded default settings:', this.defaultSettings);
-      }
-    } catch (error) {
-      console.error('[ReplyGuy] Failed to load default settings:', error);
-    }
+    // Load saved user settings
+    await this.loadUserSettings();
     
     // Get user's plan to show/hide features
     try {
@@ -349,22 +377,20 @@ export class SuggestionsOverlay {
     
     // Response type selection
     const responseTypeSelect = this.overlay.querySelector('#reply-guy-response-type') as HTMLSelectElement;
-    responseTypeSelect?.addEventListener('change', () => {
-      this.responseType = responseTypeSelect.value;
-    });
-    // Set default value if exists
-    if (responseTypeSelect && this.defaultSettings.responseType) {
-      responseTypeSelect.value = this.defaultSettings.responseType;
+    if (responseTypeSelect) {
+      responseTypeSelect.value = this.responseType;
+      responseTypeSelect.addEventListener('change', () => {
+        this.responseType = responseTypeSelect.value;
+      });
     }
     
     // Tone selection
     const toneSelect = this.overlay.querySelector('#reply-guy-tone') as HTMLSelectElement;
-    toneSelect?.addEventListener('change', () => {
-      this.tone = toneSelect.value;
-    });
-    // Set default value if exists
-    if (toneSelect && this.defaultSettings.tone) {
-      toneSelect.value = this.defaultSettings.tone;
+    if (toneSelect) {
+      toneSelect.value = this.tone;
+      toneSelect.addEventListener('change', () => {
+        this.tone = toneSelect.value;
+      });
     }
     
     // Response idea input with character counter
@@ -453,7 +479,11 @@ export class SuggestionsOverlay {
     
     // Reply length selection
     this.overlay.querySelectorAll('input[name="replyLength"]').forEach(input => {
-      input.addEventListener('change', (e) => {
+      const radioInput = input as HTMLInputElement;
+      if (radioInput.value === this.replyLength) {
+        radioInput.checked = true;
+      }
+      radioInput.addEventListener('change', (e) => {
         this.replyLength = (e.target as HTMLInputElement).value;
       });
     });
@@ -463,12 +493,18 @@ export class SuggestionsOverlay {
     const researchSection = this.overlay.querySelector('#reply-guy-research-section') as HTMLElement;
     const perplexityInput = this.overlay.querySelector('#reply-guy-perplexity') as HTMLTextAreaElement;
     
-    researchCheckbox?.addEventListener('change', () => {
-      this.needsResearch = researchCheckbox.checked;
+    if (researchCheckbox) {
+      researchCheckbox.checked = this.needsResearch;
       if (researchSection) {
         researchSection.style.display = this.needsResearch ? 'block' : 'none';
       }
-    });
+      researchCheckbox.addEventListener('change', () => {
+        this.needsResearch = researchCheckbox.checked;
+        if (researchSection) {
+          researchSection.style.display = this.needsResearch ? 'block' : 'none';
+        }
+      });
+    }
     
     perplexityInput?.addEventListener('input', () => {
       this.perplexityGuidance = perplexityInput.value;
@@ -532,7 +568,7 @@ export class SuggestionsOverlay {
     const memeInfoEnhance = this.overlay.querySelector('#meme-info-enhance') as HTMLElement;
     const memePreviewText = this.overlay.querySelector('#meme-preview-text') as HTMLElement;
     
-    // Check if memes are available
+    // Check if memes are available and set initial state
     if (memeCheckbox && this.userPlan) {
       const memesAvailable = this.userPlan.memes_used < this.userPlan.meme_limit;
       memeCheckbox.disabled = !memesAvailable;
@@ -541,6 +577,12 @@ export class SuggestionsOverlay {
         if (label) {
           label.style.opacity = '0.5';
           label.style.cursor = 'not-allowed';
+        }
+      } else {
+        // Set initial checked state if memes are available
+        memeCheckbox.checked = this.includeMeme;
+        if (memeOptions) {
+          memeOptions.style.display = this.includeMeme ? 'block' : 'none';
         }
       }
     }
@@ -594,9 +636,12 @@ export class SuggestionsOverlay {
     
     // Write Like Me checkbox
     const writeLikeMeCheckbox = this.overlay.querySelector('#reply-guy-write-like-me') as HTMLInputElement;
-    writeLikeMeCheckbox?.addEventListener('change', () => {
-      this.useCustomStyle = writeLikeMeCheckbox.checked;
-    });
+    if (writeLikeMeCheckbox) {
+      writeLikeMeCheckbox.checked = this.useCustomStyle;
+      writeLikeMeCheckbox.addEventListener('change', () => {
+        this.useCustomStyle = writeLikeMeCheckbox.checked;
+      });
+    }
     
     // Match Tweet Style checkbox
     const matchStyleCheckbox = this.overlay.querySelector('#reply-guy-match-style') as HTMLInputElement;
@@ -637,17 +682,8 @@ export class SuggestionsOverlay {
       
       // Save defaults if checkbox is checked
       const saveDefaultsCheckbox = this.overlay?.querySelector('#reply-guy-save-defaults') as HTMLInputElement;
-      if (saveDefaultsCheckbox?.checked && chrome?.storage?.sync) {
-        try {
-          chrome.storage.sync.set({
-            defaultResponseType: this.responseType,
-            defaultTone: this.tone
-          }, () => {
-            console.log('[ReplyGuy] Saved default settings');
-          });
-        } catch (error) {
-          console.error('[ReplyGuy] Failed to save default settings:', error);
-        }
+      if (saveDefaultsCheckbox?.checked) {
+        this.saveUserSettings();
       }
       
       onGenerate(data);
@@ -1172,8 +1208,11 @@ export class SuggestionsOverlay {
   }
 
 
-  showGeneratedReply(reply: string, memeUrl?: string) {
+  showGeneratedReply(reply: string, memeUrl?: string, replyData?: any) {
     this.remove();
+    
+    // Store the reply data for potential corrections
+    this.currentReplyData = replyData || {};
     
     this.overlay = document.createElement('div');
     this.overlay.className = 'reply-guy-overlay';
@@ -1225,10 +1264,9 @@ export class SuggestionsOverlay {
           display: flex;
           gap: 12px;
           padding-top: 16px;
+          justify-content: center;
         }
-        .reply-guy-copy-btn {
-          flex: 1;
-          max-width: 250px;
+        .reply-guy-copy-btn, .reply-guy-edit-btn {
           padding: 14px 24px;
           border: none;
           border-radius: 10px;
@@ -1236,10 +1274,12 @@ export class SuggestionsOverlay {
           font-weight: 600;
           cursor: pointer;
           transition: all 0.2s;
+          min-width: 140px;
+        }
+        .reply-guy-copy-btn {
           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
           color: white;
           box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-          margin: 0 auto;
         }
         .reply-guy-copy-btn:hover {
           transform: translateY(-1px);
@@ -1247,6 +1287,17 @@ export class SuggestionsOverlay {
         }
         .reply-guy-copy-btn.copied {
           background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+        .reply-guy-edit-btn {
+          background: white;
+          color: #667eea;
+          border: 2px solid #667eea;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .reply-guy-edit-btn:hover {
+          background: #f8f9ff;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
         }
         .reply-guy-notice {
           margin-top: 12px;
@@ -1288,7 +1339,8 @@ export class SuggestionsOverlay {
       
       <div class="reply-guy-result-footer">
         <div class="reply-guy-result-actions">
-          <button class="reply-guy-copy-btn">${memeUrl ? '📋 Copy Reply & Download Meme' : '📋 Copy Reply'}</button>
+          <button class="reply-guy-copy-btn">${memeUrl ? '📋 Copy & Download' : '📋 Copy Reply'}</button>
+          <button class="reply-guy-edit-btn">✏️ Edit</button>
         </div>
         
         <div class="reply-guy-copy-notice reply-guy-notice" style="display: none;">
@@ -1325,6 +1377,7 @@ export class SuggestionsOverlay {
     this.overlay.querySelector('.reply-guy-close')?.addEventListener('click', () => this.remove());
     
     const copyBtn = this.overlay.querySelector('.reply-guy-copy-btn') as HTMLButtonElement;
+    const editBtn = this.overlay.querySelector('.reply-guy-edit-btn') as HTMLButtonElement;
     const copyNotice = this.overlay.querySelector('.reply-guy-copy-notice') as HTMLElement;
     
     copyBtn?.addEventListener('click', async () => {
@@ -1433,11 +1486,276 @@ export class SuggestionsOverlay {
       }
     });
 
+    // Add edit button listener
+    editBtn?.addEventListener('click', () => {
+      this.showEditMode(reply);
+    });
+
     // Close on outside click
     setTimeout(() => {
       document.addEventListener('click', this.handleOutsideClick);
     }, 0);
 
+    document.body.appendChild(this.overlay);
+  }
+
+  showEditMode(currentReply: string) {
+    this.remove();
+    
+    // Create edit mode overlay
+    this.overlay = document.createElement('div');
+    this.overlay.className = 'reply-guy-overlay';
+    this.overlay.innerHTML = `
+      <style>
+        ${this.getComprehensiveStyles()}
+        /* Edit mode specific styles */
+        .reply-guy-edit-container {
+          padding: 20px;
+        }
+        .reply-guy-edit-section {
+          margin-bottom: 20px;
+        }
+        .reply-guy-edit-label {
+          display: block;
+          font-size: 14px;
+          font-weight: 600;
+          color: #536471;
+          margin-bottom: 8px;
+        }
+        .reply-guy-context-box {
+          background: #f7f9fa;
+          border: 1px solid #e1e8ed;
+          border-radius: 8px;
+          padding: 12px;
+          font-size: 14px;
+          color: #536471;
+          margin-bottom: 8px;
+        }
+        .reply-guy-edit-textarea {
+          width: 100%;
+          padding: 12px;
+          border: 2px solid #e1e8ed;
+          border-radius: 8px;
+          font-size: 15px;
+          line-height: 1.5;
+          resize: vertical;
+          min-height: 100px;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          transition: border-color 0.2s;
+        }
+        .reply-guy-edit-textarea:focus {
+          outline: none;
+          border-color: #667eea;
+        }
+        .reply-guy-edit-input {
+          width: 100%;
+          padding: 10px 12px;
+          border: 2px solid #e1e8ed;
+          border-radius: 8px;
+          font-size: 14px;
+          transition: border-color 0.2s;
+        }
+        .reply-guy-edit-input:focus {
+          outline: none;
+          border-color: #667eea;
+        }
+        .reply-guy-char-count {
+          text-align: right;
+          font-size: 13px;
+          color: #536471;
+          margin-top: 4px;
+        }
+        .reply-guy-edit-actions {
+          display: flex;
+          gap: 12px;
+          justify-content: flex-end;
+          margin-top: 20px;
+        }
+        .reply-guy-save-btn {
+          padding: 10px 24px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .reply-guy-save-btn:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        .reply-guy-save-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+        .reply-guy-cancel-btn {
+          padding: 10px 24px;
+          background: white;
+          color: #536471;
+          border: 2px solid #e1e8ed;
+          border-radius: 8px;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .reply-guy-cancel-btn:hover {
+          background: #f7f9fa;
+          border-color: #d1d5da;
+        }
+      </style>
+      <div class="reply-guy-header">
+        <div class="reply-guy-title">
+          <img src="${chrome.runtime.getURL('icons/reply_guy_logo.png')}" class="reply-guy-logo-icon" alt="Reply Guy" />
+          <span>Improve Your Writing Style</span>
+        </div>
+        <button class="reply-guy-close" aria-label="Close">×</button>
+      </div>
+      
+      <div class="reply-guy-edit-container">
+        <div class="reply-guy-edit-section">
+          <label class="reply-guy-edit-label">Original Tweet</label>
+          <div class="reply-guy-context-box">
+            ${this.escapeHtml(this.originalTweet || 'Tweet content not available')}
+          </div>
+        </div>
+        
+        <div class="reply-guy-edit-section">
+          <label class="reply-guy-edit-label">Your Idea</label>
+          <div class="reply-guy-context-box">
+            ${this.escapeHtml(this.responseIdea || 'Response idea not available')}
+          </div>
+        </div>
+        
+        <div class="reply-guy-edit-section">
+          <label class="reply-guy-edit-label" for="reply-guy-edited-reply">
+            ✨ Edit to match your style
+          </label>
+          <textarea 
+            id="reply-guy-edited-reply" 
+            class="reply-guy-edit-textarea"
+            placeholder="Edit this to match how YOU would write it"
+            maxlength="280"
+          >${this.escapeHtml(currentReply)}</textarea>
+          <div class="reply-guy-char-count">
+            <span id="reply-guy-char-current">${currentReply.length}</span>/280 characters
+          </div>
+        </div>
+        
+        <div class="reply-guy-edit-section">
+          <label class="reply-guy-edit-label" for="reply-guy-correction-notes">
+            What did we get wrong? (Optional)
+          </label>
+          <input 
+            type="text"
+            id="reply-guy-correction-notes" 
+            class="reply-guy-edit-input"
+            placeholder="e.g., 'Too formal' or 'I never use exclamation marks'"
+          />
+        </div>
+        
+        <div class="reply-guy-edit-actions">
+          <button class="reply-guy-cancel-btn">Cancel</button>
+          <button class="reply-guy-save-btn" id="reply-guy-save-edit">Save & Improve Style</button>
+        </div>
+      </div>
+    `;
+    
+    // Position the overlay
+    const rect = this.container.getBoundingClientRect();
+    this.overlay.style.position = 'fixed';
+    
+    // Center the edit overlay
+    const overlayWidth = 520;
+    const overlayHeight = Math.min(window.innerHeight * 0.8, 600);
+    
+    this.overlay.style.top = '50%';
+    this.overlay.style.left = '50%';
+    this.overlay.style.transform = 'translate(-50%, -50%)';
+    this.overlay.style.width = `${overlayWidth}px`;
+    this.overlay.style.maxHeight = `${overlayHeight}px`;
+    this.overlay.style.overflowY = 'auto';
+    
+    // Add event listeners
+    const closeBtn = this.overlay.querySelector('.reply-guy-close');
+    const cancelBtn = this.overlay.querySelector('.reply-guy-cancel-btn');
+    const saveBtn = this.overlay.querySelector('#reply-guy-save-edit') as HTMLButtonElement;
+    const editTextarea = this.overlay.querySelector('#reply-guy-edited-reply') as HTMLTextAreaElement;
+    const charCount = this.overlay.querySelector('#reply-guy-char-current') as HTMLSpanElement;
+    const notesInput = this.overlay.querySelector('#reply-guy-correction-notes') as HTMLInputElement;
+    
+    // Close handlers
+    closeBtn?.addEventListener('click', () => this.remove());
+    cancelBtn?.addEventListener('click', () => this.remove());
+    
+    // Character count update
+    editTextarea?.addEventListener('input', () => {
+      const length = editTextarea.value.length;
+      if (charCount) {
+        charCount.textContent = length.toString();
+      }
+      
+      // Enable/disable save button based on changes
+      if (saveBtn) {
+        saveBtn.disabled = editTextarea.value.trim() === currentReply.trim();
+      }
+    });
+    
+    // Save handler
+    saveBtn?.addEventListener('click', async () => {
+      const editedReply = editTextarea.value.trim();
+      const correctionNotes = notesInput.value.trim();
+      
+      if (editedReply === currentReply.trim()) {
+        return;
+      }
+      
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+      
+      try {
+        // Send correction to background script
+        const response = await chrome.runtime.sendMessage({
+          action: 'submitCorrection',
+          data: {
+            styleId: this.currentReplyData.styleId,
+            originalTweet: this.originalTweet,
+            responseIdea: this.responseIdea,
+            replyType: this.currentReplyData.replyType || this.responseType,
+            tone: this.currentReplyData.tone || this.tone,
+            generatedReply: currentReply,
+            correctedReply: editedReply,
+            correctionNotes: correctionNotes
+          }
+        });
+        
+        if (response.success) {
+          // Show success message
+          saveBtn.textContent = '✅ Saved!';
+          setTimeout(() => {
+            this.remove();
+          }, 1500);
+        } else {
+          throw new Error(response.error || 'Failed to save correction');
+        }
+      } catch (error) {
+        console.error('[ReplyGuy] Failed to save correction:', error);
+        saveBtn.textContent = 'Failed - Try Again';
+        saveBtn.disabled = false;
+        setTimeout(() => {
+          saveBtn.textContent = 'Save & Improve Style';
+        }, 2000);
+      }
+    });
+    
+    // Focus on textarea
+    setTimeout(() => {
+      editTextarea?.focus();
+      editTextarea?.setSelectionRange(editTextarea.value.length, editTextarea.value.length);
+    }, 100);
+    
     document.body.appendChild(this.overlay);
   }
 

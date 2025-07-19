@@ -378,7 +378,8 @@ export class TwitterIntegration {
               
               overlay.showGeneratedReply(
                 replyData.reply || 'Failed to generate reply',
-                replyData.memeUrl
+                replyData.memeUrl,
+                replyData
               );
               // After showing the reply, check for celebration
               chrome.runtime.sendMessage({ action: 'checkForCelebration' });

@@ -59,7 +59,7 @@ export interface SuggestionsResponse {
 }
 
 export interface ChromeMessage {
-  action: 'generateReply' | 'getSuggestions' | 'getSuggestResearch' | 'generateMeme' | 'checkAuth' | 'getUsageLimits' | 'openLogin' | 'authStateChanged' | 'updateDailyGoal' | 'checkForCelebration' | 'triggerPopupCelebration' | 'showCelebration';
+  action: 'generateReply' | 'getSuggestions' | 'getSuggestResearch' | 'generateMeme' | 'checkAuth' | 'getUsageLimits' | 'openLogin' | 'authStateChanged' | 'updateDailyGoal' | 'checkForCelebration' | 'triggerPopupCelebration' | 'showCelebration' | 'submitCorrection';
   data?: any;
 }
 

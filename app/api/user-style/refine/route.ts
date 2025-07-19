@@ -156,6 +156,17 @@ export async function POST(req: NextRequest) {
     if (sessionCheckError && sessionCheckError.code !== 'PGRST116') {
       // PGRST116 is "no rows found" which is expected if no session exists
       console.error('[refine] Error checking for existing session:', sessionCheckError);
+      
+      // Check if table doesn't exist
+      if (sessionCheckError.code === '42P01' || sessionCheckError.message?.includes('relation') || sessionCheckError.message?.includes('does not exist')) {
+        return NextResponse.json({ 
+          error: 'Database migration required', 
+          details: 'The style_refinement_sessions table does not exist. Please run database migrations.',
+          hint: 'Run: npm run db:migrate (locally) or use Supabase dashboard to run migrations in production',
+          code: sessionCheckError.code
+        }, { status: 500 });
+      }
+      
       return NextResponse.json({ 
         error: 'Failed to check for existing session', 
         details: sessionCheckError.message,

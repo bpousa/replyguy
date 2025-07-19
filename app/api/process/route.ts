@@ -435,7 +435,8 @@ export async function POST(req: NextRequest) {
         enableStyleMatching: validated.enableStyleMatching ?? true,
         useCustomStyle: validated.useCustomStyle,
         customStyle: activeStyle, // Pass the active style to the generate API
-        customStyleExamples: sampleTweets, // Pass example tweets
+        // Only include customStyleExamples if we have samples
+        ...(sampleTweets && { customStyleExamples: sampleTweets }),
         userId: validated.userId,
       }),
     });

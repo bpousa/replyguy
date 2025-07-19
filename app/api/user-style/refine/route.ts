@@ -37,6 +37,10 @@ async function generateStyleExample(
   exampleType: string,
   previousExamples: any[] = []
 ): Promise<string> {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY environment variable is not set');
+  }
+  
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
@@ -74,15 +78,21 @@ Tweet (just the text, no quotes):`;
 
 // Start a new refinement session
 export async function POST(req: NextRequest) {
-  const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
+    const cookieStore = cookies();
+    const supabase = createServerClient(cookieStore);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError) {
+      console.error('Auth error:', authError);
+      return NextResponse.json({ error: 'Authentication failed' }, { status: 401 });
+    }
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    try {
     const body = await req.json();
     const { styleId } = startRefinementSchema.parse(body);
 
@@ -155,21 +165,40 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('Error starting refinement:', error);
-    return NextResponse.json({ error: 'Failed to start refinement' }, { status: 500 });
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Invalid input', details: error.errors }, { status: 400 });
+    }
+    return NextResponse.json({ 
+      error: 'Failed to start refinement',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
+  }
+  } catch (error) {
+    console.error('Unexpected error in POST:', error);
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
 
 // Submit feedback and get next example
 export async function PUT(req: NextRequest) {
-  const cookieStore = cookies();
-  const supabase = createServerClient(cookieStore);
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
+    const cookieStore = cookies();
+    const supabase = createServerClient(cookieStore);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError) {
+      console.error('Auth error:', authError);
+      return NextResponse.json({ error: 'Authentication failed' }, { status: 401 });
+    }
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    try {
     const body = await req.json();
     const { sessionId, exampleIndex, originalExample, userRevision, feedback } = 
       submitFeedbackSchema.parse(body);
@@ -260,7 +289,20 @@ export async function PUT(req: NextRequest) {
     });
   } catch (error) {
     console.error('Error submitting feedback:', error);
-    return NextResponse.json({ error: 'Failed to submit feedback' }, { status: 500 });
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Invalid input', details: error.errors }, { status: 400 });
+    }
+    return NextResponse.json({ 
+      error: 'Failed to submit feedback',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
+  }
+  } catch (error) {
+    console.error('Unexpected error in PUT:', error);
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
 
@@ -269,6 +311,10 @@ async function analyzeRefinedStyle(
   originalAnalysis: any,
   refinementExamples: any[]
 ): Promise<any> {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY environment variable is not set');
+  }
+  
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
@@ -302,7 +348,12 @@ Return the same JSON format as the original analysis but with refined, more accu
     });
 
     if (response.choices[0].message.content) {
-      return JSON.parse(response.choices[0].message.content);
+      try {
+        return JSON.parse(response.choices[0].message.content);
+      } catch (parseError) {
+        console.error('Failed to parse JSON response:', response.choices[0].message.content);
+        throw new Error('Failed to parse AI response as JSON');
+      }
     }
     throw new Error('Failed to get valid JSON response');
   } catch (error) {

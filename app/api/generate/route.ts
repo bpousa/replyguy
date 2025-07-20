@@ -106,9 +106,7 @@ export async function POST(req: NextRequest) {
     }
     console.log('Will use Write Like Me:', shouldUseWriteLikeMe);
     
-    const prompt = shouldUseWriteLikeMe
-      ? buildWriteLikeMePrompt(validated, charLimit, replyLength)
-      : buildGenerationPrompt(validated, charLimit, styleInstructions, replyLength);
+    const prompt = buildPrompt(validated, charLimit, replyLength, styleInstructions);
     
     console.log('\n📋 === GENERATION PROMPT ===');
     console.log('Using Write Like Me:', validated.useCustomStyle && validated.customStyle);
@@ -292,21 +290,31 @@ export async function POST(req: NextRequest) {
 }
 
 
-function buildWriteLikeMePrompt(input: any, charLimit: number, replyLength: string): string {
-  // Mimic the successful refinement prompt structure
+function buildPrompt(input: any, charLimit: number, replyLength: string, styleInstructions: string): string {
+  const isWriteLikeMe = input.useCustomStyle && input.customStyle;
+
   const lengthGuide = replyLength === 'short' ? '1-2 sentences max' : 
                       replyLength === 'medium' ? '2-4 sentences' : 
                       replyLength === 'long' ? 'a detailed paragraph' : 
                       'multiple paragraphs';
-  
-  return `Based on this writing style analysis, write a reply that captures the SPIRIT and VARIETY of this person's voice:
+
+  const researchBlock = input.perplexityData ? `
+📊 RESEARCH DATA TO INCLUDE IN YOUR REPLY:
+<<RESEARCH_BLOCK>>
+${input.perplexityData}
+<<RESEARCH_BLOCK>>
+` : ''
+
+  if (isWriteLikeMe) {
+    return `Based on this writing style analysis, write a reply that captures the SPIRIT and VARIETY of this person's voice:
 
 Style Analysis:
 ${JSON.stringify(input.customStyle, null, 2)}
 
 ${input.customStyleExamples?.length > 0 ? `
 Example tweets in this style:
-${input.customStyleExamples.slice(0, input.perplexityData ? 3 : 5).map((t: string, i: number) => `${i + 1}. "${t}"`).join('\n')}
+${input.customStyleExamples.slice(0, input.perplexityData ? 3 : 5).map((t: string, i: number) => `${i + 1}. "${t}"`).join('
+')}
 ` : ''}
 
 Context:
@@ -315,11 +323,7 @@ Context:
 - ⚠️ This is what the user wants to say - express THIS message in their style
 - Tone: ${input.tone}
 - Length: ${lengthGuide} (max ${charLimit} characters)
-
-${input.perplexityData ? `
-Research to incorporate naturally:
-${input.perplexityData}
-` : ''}
+${researchBlock}
 
 CRITICAL INSTRUCTIONS:
 1. EXPRESS THE EXACT MESSAGE: The "REQUIRED MESSAGE TO EXPRESS" is what the user wants to say - deliver THIS specific message, not something thematically similar
@@ -333,10 +337,8 @@ CRITICAL INSTRUCTIONS:
 9. NEVER replace the user's message with a different metaphor or idea, even if it's about the same topic
 
 Reply (just the text, no quotes):`;
-}
-
-function buildGenerationPrompt(input: any, charLimit: number, styleInstructions: string, replyLength: string): string {
-  const antiAIPrompt = `
+  } else {
+    const antiAIPrompt = `
 Write like real people actually write on Twitter:
 - Start mid-thought sometimes: "honestly the worst part is..." or "nah that's not even..."
 - Use casual language: "tbh", "ngl", "idk", "lol" (but sparingly)
@@ -353,16 +355,16 @@ When sharing facts/stats:
 - Or casual discovery: "just found out [fact] and now i can't stop thinking about it"
 - Or simple share: "fun fact: [stat]"
 
-${replyLength === 'short' ? 'BE BRIEF. Keep it to 1-2 sentences max. Make your point quickly.' : replyLength === 'medium' ? 'You have space for a thoughtful response. Use 2-4 sentences to properly develop your idea. Don\'t rush - you have 560 characters to work with.' : replyLength === 'long' ? 'Take your time to fully express the idea. Use multiple sentences to make your point clear. You have 1000 characters - enough for a detailed paragraph.' : 'This is an extra-long reply. Fully develop your thoughts with detailed explanations, multiple points, and comprehensive coverage of the topic. Use the full 2000 character limit available.'}
+${replyLength === 'short' ? 'BE BRIEF. Keep it to 1-2 sentences max. Make your point quickly.' : replyLength === 'medium' ? 'You have space for a thoughtful response. Use 2-4 sentences to properly develop your idea. Don't rush - you have 560 characters to work with.' : replyLength === 'long' ? 'Take your time to fully express the idea. Use multiple sentences to make your point clear. You have 1000 characters - enough for a detailed paragraph.' : 'This is an extra-long reply. Fully develop your thoughts with detailed explanations, multiple points, and comprehensive coverage of the topic. Use the full 2000 character limit available.'}
 
 Even if the user's suggestion sounds good, always put it in your own words. Never copy their phrasing exactly.`
 
-  const currentYear = new Date().getFullYear();
-  
-  let customStylePrompt = '';
-  if (input.useCustomStyle && input.customStyle) {
-    const style = input.customStyle;
-    customStylePrompt = `
+    const currentYear = new Date().getFullYear();
+    
+    let customStylePrompt = '';
+    if (input.useCustomStyle && input.customStyle) {
+      const style = input.customStyle;
+      customStylePrompt = `
 
 --- YOUR CUSTOM STYLE ---
 Your writing style has been analyzed in detail:
@@ -391,18 +393,27 @@ ${style.linguisticFeatures?.contractions ? `Contractions: ${style.linguisticFeat
 
 ${style.contentPatterns?.humor ? `Humor style: ${style.contentPatterns.humor}` : ''}
 
-${style.uniqueQuirks?.length > 0 ? `\nUnique quirks:\n${style.uniqueQuirks.map((q: string) => `- ${q}`).join('\n')}` : ''}
+${style.uniqueQuirks?.length > 0 ? `
+Unique quirks:
+${style.uniqueQuirks.map((q: string) => `- ${q}`).join('
+')}` : ''}
 
-${style.examplePhrases?.length > 0 ? `\nExample phrases that capture your voice:\n${style.examplePhrases.map((p: string) => `"${p}"`).join('\n')}` : ''}
+${style.examplePhrases?.length > 0 ? `
+Example phrases that capture your voice:
+${style.examplePhrases.map((p: string) => `"${p}"`).join('
+')}` : ''}
 
-${style.doNotUse?.length > 0 ? `\nNEVER use these patterns (they would seem inauthentic):\n${style.doNotUse.map((d: string) => `- ${d}`).join('\n')}` : ''}
+${style.doNotUse?.length > 0 ? `
+NEVER use these patterns (they would seem inauthentic):
+${style.doNotUse.map((d: string) => `- ${d}`).join('
+')}` : ''}
 
 CRITICAL: Match this style EXACTLY. Use the specific patterns, phrases, and quirks identified above.
 --- END CUSTOM STYLE ---
 `;
-  }
+    }
 
-  return `
+    return `
 🎯 YOUR MAIN TASK: Write a REPLY to this tweet: "${input.originalTweet}"
 
 The tweet author said: "${input.originalTweet}"
@@ -410,20 +421,7 @@ The tweet author said: "${input.originalTweet}"
 You need to RESPOND TO THEM expressing this idea: "${input.responseIdea}"
 
 IMPORTANT: Never repeat the user's suggested response verbatim. Always rephrase and adapt it to sound natural while preserving the intended message.
-
-${input.perplexityData ? `
-📊 RESEARCH DATA TO INCLUDE IN YOUR REPLY:
-<<RESEARCH_BLOCK>>
-${input.perplexityData}
-<<RESEARCH_BLOCK>>
-
-CRITICAL: You are REPLYING TO THE TWEET ABOVE. The research should support your response, but you must:
-1. Address the tweet author directly (use "you" when appropriate)
-2. Reference what they said in their tweet
-3. Make it clear you're responding to their specific point
-4. Use the research to strengthen YOUR RESPONSE to THEIR TWEET
-5. This is a CONVERSATION, not a blog post or article
-` : ''}
+${researchBlock}
 
 ${input.perplexityData ? `
 REQUIREMENTS (in order of importance):
@@ -457,6 +455,7 @@ ${customStylePrompt ? customStylePrompt : styleInstructions}
 ${antiAIPrompt}
 
 Write the reply (just the text, no quotes):`;
+  }
 }
 
 

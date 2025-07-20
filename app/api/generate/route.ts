@@ -195,7 +195,7 @@ export async function POST(req: NextRequest) {
     }
     
     const systemPrompt = validated.useCustomStyle && validated.customStyle
-      ? `You are helping someone express THEIR SPECIFIC MESSAGE in their unique writing style on Twitter/X. The user has told you exactly what they want to say - your job is to deliver THAT message using their voice, vocabulary, and stylistic patterns. Never replace their message with something else, even if thematically similar. Think of it as the same person saying their intended message but in their natural style.`
+      ? `You are helping someone express THEIR SPECIFIC MESSAGE in their unique writing style on Twitter/X. The user has told you exactly what they want to say - your job is to deliver THAT message using their voice BUT WITH FRESH PHRASING. CRITICAL: Never copy exact phrases from the examples - instead, imagine how they would naturally say this NEW thing. Think of it as the same person expressing their intended message but with original wording that still feels authentic to their style. Paraphrase, reword, and create new expressions while maintaining their tone and energy.`
       : `You are typing a ${replyTypeDesc} reply on Twitter/X. Write exactly like a real person would - casual, direct, sometimes imperfect. The user told you what they want to say, so say it naturally. ${replyLengthInstr} When stats/research are included, drop them in naturally like you're sharing something you just learned.`;
 
     console.log('\n🚀 === CALLING ANTHROPIC API ===');
@@ -210,7 +210,7 @@ export async function POST(req: NextRequest) {
       message = await anthropic.messages.create({
         model: 'claude-3-5-sonnet-20241022',
         max_tokens: maxTokens,
-        temperature: 0.8,
+        temperature: validated.useCustomStyle && validated.customStyle ? 0.85 : 0.8,
         system: systemPrompt,
         messages: [{ role: 'user', content: prompt }],
       });
@@ -229,6 +229,25 @@ export async function POST(req: NextRequest) {
     
     console.log('\n🤖 === CLAUDE GENERATION RESPONSE ===');
     console.log('Raw reply:', reply);
+    
+    // Check for verbatim copying in Write Like Me mode
+    if (validated.useCustomStyle && validated.customStyle && validated.customStyleExamples) {
+      const replyLower = reply.toLowerCase();
+      const commonPatterns = [
+        'what i ended up doing was',
+        'i tell people that',
+        'life is like',
+        'ever think about how',
+        'ever feel like'
+      ];
+      
+      for (const pattern of commonPatterns) {
+        if (replyLower.startsWith(pattern)) {
+          console.warn('⚠️ WARNING: Reply starts with common pattern from examples:', pattern);
+          console.warn('This suggests verbatim copying is occurring despite instructions');
+        }
+      }
+    }
     
     // Skip anti-AI processing for Write Like Me to preserve user's style
     if (!validated.useCustomStyle || !validated.customStyle) {
@@ -316,6 +335,46 @@ export async function POST(req: NextRequest) {
 }
 
 
+// Helper function to ensure diversity in examples
+function diversifyExamples(examples: string[], maxExamples: number): string[] {
+  if (!examples || examples.length === 0) return [];
+  
+  // Group examples by their opening pattern (first 5-10 words)
+  const patternGroups = new Map<string, string[]>();
+  
+  examples.forEach(example => {
+    const words = example.toLowerCase().split(' ');
+    const opening = words.slice(0, Math.min(5, words.length)).join(' ');
+    if (!patternGroups.has(opening)) {
+      patternGroups.set(opening, []);
+    }
+    patternGroups.get(opening)!.push(example);
+  });
+  
+  // Select diverse examples, avoiding repetitive openings
+  const diverse: string[] = [];
+  const usedPatterns = new Set<string>();
+  
+  // First pass: get one example from each unique pattern
+  for (const [pattern, examplesInGroup] of patternGroups) {
+    if (diverse.length >= maxExamples) break;
+    diverse.push(examplesInGroup[0]);
+    usedPatterns.add(pattern);
+  }
+  
+  // Second pass: if we need more examples, add from groups with different patterns
+  if (diverse.length < maxExamples) {
+    for (const example of examples) {
+      if (diverse.length >= maxExamples) break;
+      if (!diverse.includes(example)) {
+        diverse.push(example);
+      }
+    }
+  }
+  
+  return diverse.slice(0, maxExamples);
+}
+
 function buildPrompt(input: any, charLimit: number, replyLength: string, styleInstructions: string): string {
   const isWriteLikeMe = input.useCustomStyle && input.customStyle;
 
@@ -344,12 +403,16 @@ ${input.perplexityData}
 ` : ''
 
   if (isWriteLikeMe) {
+    // Use fewer examples when multiple features are enabled to reduce cognitive load
+    const maxExamples = input.perplexityData ? 3 : 5;
+    const diverseExamples = input.customStyleExamples ? diversifyExamples(input.customStyleExamples, maxExamples) : [];
+    
     return `Based on this writing style analysis, write a reply that captures the SPIRIT and VARIETY of this person's voice:
 
 Style Analysis:
 ${JSON.stringify(input.customStyle, null, 2)}
 
-${input.customStyleExamples?.length > 0 ? `\nExample tweets in this style:\n${input.customStyleExamples.slice(0, input.perplexityData ? 3 : 5).map((t: string, i: number) => `${i + 1}. "${t}"`).join('\n')}\n` : ''}
+${diverseExamples.length > 0 ? `\nExample tweets in this style (showing variety):\n${diverseExamples.map((t: string, i: number) => `${i + 1}. "${t}"`).join('\n')}\n` : ''}
 
 Context:
 - You're replying to: "${input.originalTweet}"
@@ -359,18 +422,30 @@ Context:
 - Length: ${lengthGuide} (max ${charLimit} characters)
 ${researchBlock}
 
-CRITICAL INSTRUCTIONS:
-1. EXPRESS THE EXACT MESSAGE: The "REQUIRED MESSAGE TO EXPRESS" is what the user wants to say - deliver THIS specific message, not something thematically similar
-2. CAPTURE THE ESSENCE of their style - don't copy exact phrases
-3. VARY YOUR APPROACH - if they sometimes start with "what i ended up doing", also use their other opening patterns
-4. MIX AND MATCH their different stylistic elements naturally
-5. Keep their voice authentic while avoiding repetitive patterns
-6. Draw from their FULL RANGE of expressions, not just one pattern
-7. Make it sound like they wrote it on a different day, in a fresh mood
-8. EMOJI RULE: Even if they use emojis in their style, use them VERY SPARINGLY - only about 1 in 10 replies should have an emoji. Most replies should have ZERO emojis
-9. NEVER replace the user's message with a different metaphor or idea, even if it's about the same topic
+${(input.perplexityData && input.includeMeme) ? `SIMPLIFIED INSTRUCTIONS (Multi-feature mode):
+1. PRIORITY: Express "${input.responseIdea}" in their style
+2. NO COPYING: Create fresh phrasing - don't copy from examples
+3. INCLUDE: Weave in the research data naturally
+4. STYLE: Match their energy/tone but with original words
+5. LENGTH: Keep it concise - ${lengthGuide}
 
-Reply (just the text, no quotes):`;
+Reply (just the text, no quotes):` : `CRITICAL INSTRUCTIONS:
+1. EXPRESS THE EXACT MESSAGE: The "REQUIRED MESSAGE TO EXPRESS" is what the user wants to say - deliver THIS specific message, not something thematically similar
+2. FORBIDDEN - DO NOT COPY: Never use exact phrases from the examples. If you see "what I ended up doing was" in multiple examples, you MUST use different wording
+3. PARAPHRASE AND REWORD: Capture their style's ESSENCE without copying. Think "How would they say this NEW thing?" not "What exact words did they use before?"
+4. VARY YOUR APPROACH - if examples show repetitive openings, deliberately choose different ways to start
+5. Examples of what NOT to do:
+   ❌ "what I ended up doing was realizing..." (copying exact opening)
+   ❌ "i tell people that the wild part about..." (copying exact pattern)
+   ✅ Instead: Use their tone/energy but with fresh phrasing for THIS specific message
+6. MIX AND MATCH their different stylistic elements naturally
+7. Keep their voice authentic while creating ORIGINAL phrasing
+8. Draw from their FULL RANGE of expressions, not just one pattern
+9. Make it sound like they wrote it on a different day, with fresh words
+10. EMOJI RULE: Even if they use emojis in their style, use them VERY SPARINGLY - only about 1 in 10 replies should have an emoji. Most replies should have ZERO emojis
+11. NEVER replace the user's message with a different metaphor or idea, even if it's about the same topic
+
+Reply (just the text, no quotes):`}`;
   } else {
     // Extract length guidance to avoid complex expressions in template literal
     let lengthGuidance = '';

@@ -97,40 +97,40 @@ export async function POST(req: NextRequest) {
     // Generate suggestion using GPT-4o
     const examples = {
       agree: [
-        "Build on their point with evidence",
-        "Provide supporting data or statistics",
-        "Validate their feelings",
-        "Add another perspective that agrees",
-        "Express enthusiastic agreement",
-        "Ask follow-up questions to learn more",
-        "Suggest related resources or solutions"
+        "The 2024 data backs this up - remote work productivity increased by...",
+        "This explains why [major company] just announced...",
+        "You're spot on - especially the part about...",
+        "Finally someone said it! The [specific industry] has been...",
+        "Exactly why [recent trend] is accelerating...",
+        "The [specific metric] proves your point perfectly...",
+        "This + [related development] = game changer for..."
       ],
       disagree: [
-        "Present a counter-argument politely",
-        "Question their assumptions respectfully",
-        "Offer alternative viewpoint",
-        "Challenge with facts",
-        "Point out a different angle",
-        "Suggest reconsidering the stance",
-        "Provide contradicting evidence"
+        "Actually, [recent study/event] showed the opposite...",
+        "Counterpoint: What happened with [specific example]...",
+        "The [specific data/trend] tells a different story...",
+        "Missing a key factor here - [specific element]...",
+        "[Country/Company] tried this and it backfired because...",
+        "The flaw in this logic is [specific issue]...",
+        "Plot twist: [contradicting fact or angle]..."
       ],
       neutral: [
-        "Ask for clarification",
-        "Add context or background",
-        "Share relevant information",
-        "Pose a thoughtful question",
-        "Suggest a resource",
-        "Expand on the topic",
-        "Connect to related ideas"
+        "Curious how this compares to [specific alternative]...",
+        "What's your take on the [specific aspect] part?",
+        "This raises questions about [related topic]...",
+        "Wonder if [specific factor] plays a role here...",
+        "How does this square with [recent development]?",
+        "The [specific detail] is interesting because...",
+        "Would love to see data on [specific metric]..."
       ],
       other: [
-        "Make a witty observation",
-        "Use humor to engage",
-        "Create a clever analogy",
-        "Reference pop culture",
-        "Make a playful comment",
-        "Use wordplay or puns",
-        "Add unexpected twist"
+        "Plot twist: [unexpected but relevant angle]",
+        "This is giving major [relatable comparison] vibes",
+        "[Specific detail] is doing all the heavy lifting here",
+        "Tell me you're [observation] without telling me you're...",
+        "The [specific thing] to [other thing] pipeline is real",
+        "[This trend] walked so [new trend] could run",
+        "Not the [unexpected element] making an appearance..."
       ]
     };
     
@@ -138,32 +138,45 @@ export async function POST(req: NextRequest) {
     const relevantExamples = examples[validated.responseType as keyof typeof examples] || examples.neutral;
     const shuffled = [...relevantExamples].sort(() => Math.random() - 0.5).slice(0, 3);
     
-    const prompt = `Given this tweet: "${validated.tweet}"
+    const prompt = `Analyze this tweet and generate a specific reply starter: "${validated.tweet}"
 
-Generate a creative and specific response idea for a ${validated.responseType} reply with a ${validated.tone} tone.
-The suggestion should be 5-15 words that describes what the reply should convey.
-Be specific and avoid generic suggestions.
-IMPORTANT: Do not suggest replies that require sharing a personal story or experience, as the user wants to avoid making up fake anecdotes.
+You need to create a ${validated.responseType} reply starter with a ${validated.tone} tone.
 
-Examples of ${validated.responseType} responses:
+Your task is to generate a SPECIFIC content hook or reply starter (5-20 words) that:
+1. Directly engages with the tweet's actual content/topic
+2. Provides a concrete angle, fact, comparison, or observation
+3. Gives the user a strong starting point they can expand on
+4. Sounds natural and conversational for Twitter
+5. ${validated.responseType === 'agree' ? 'Amplifies or supports their point with specifics' : 
+   validated.responseType === 'disagree' ? 'Challenges or counters with a specific angle' :
+   validated.responseType === 'neutral' ? 'Explores or questions a specific aspect' :
+   'Adds humor or wit related to the specific content'}
+
+Examples of good ${validated.responseType} reply starters:
 ${shuffled.map(ex => `- "${ex}"`).join('\n')}
 
-Create something unique and contextual to this specific tweet.
-Return only the suggestion, nothing else.`;
+IMPORTANT: 
+- Don't give instructions like "share statistics" or "use humor"
+- Don't suggest personal anecdotes
+- Generate an actual content hook the user can build on
+- Be specific to the tweet's topic, not generic
+- Make it feel like the beginning of an engaging Twitter reply
+
+Reply starter:`;
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [
         {
           role: 'system',
-          content: 'You are a helpful assistant that suggests response ideas for tweets. Keep suggestions brief and descriptive.'
+          content: 'You are a Twitter reply expert who understands what makes replies engaging and likely to get attention. You generate specific content hooks and reply starters that sound natural, conversational, and directly engage with the tweet\'s content. You know Twitter culture, current trends, and how to craft replies that spark conversation.'
         },
         {
           role: 'user',
           content: prompt
         }
       ],
-      temperature: 0.9,
+      temperature: 0.7,
       max_tokens: 50
     });
 

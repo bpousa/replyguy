@@ -107,6 +107,9 @@ export interface GeneratedReply {
   usedCustomStyle?: boolean;
   styleId?: string;
   tone?: string;
+  // Write Like Me style data (for caching)
+  activeStyle?: any;
+  sampleTweets?: string[];
   // Tracking status
   trackingStatus?: {
     success: boolean;

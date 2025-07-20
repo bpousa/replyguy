@@ -47,6 +47,7 @@ export interface GenerateReplyRequest {
   memeTextMode?: 'tweet' | 'reply' | 'custom';
   useCustomStyle?: boolean;
   enableStyleMatching?: boolean;
+  userId?: string;
 }
 
 export interface GenerateReplyResponse {

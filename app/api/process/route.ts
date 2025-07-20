@@ -43,7 +43,8 @@ const requestSchema = z.object({
   memeText: z.string().max(100).optional(),
   memeTextMode: z.enum(['exact', 'enhance']).optional(),
   useCustomStyle: z.boolean().optional(),
-  userId: z.string().optional()
+  userId: z.string().optional(),
+  cachedStyle: z.any().optional()
 });
 
 export async function POST(req: NextRequest) {
@@ -264,7 +265,12 @@ export async function POST(req: NextRequest) {
     // Create promise for style fetching
     const stylePromise = (validated.useCustomStyle && userId !== 'anonymous') ?
       (async () => {
-        console.log(`\n🎨 ============ STYLE FETCH [${requestId}] ============`);
+        if (validated.cachedStyle) {
+          console.log('✅ USING CACHED STYLE');
+          return { activeStyle: validated.cachedStyle.activeStyle, sampleTweets: validated.cachedStyle.sampleTweets };
+        }
+        console.log(`
+🎨 ============ STYLE FETCH [${requestId}] ============`);
         const { data: style, error: styleError } = await supabase
           .from('user_styles')
           .select('style_analysis, sample_tweets, refinement_examples')
@@ -817,7 +823,9 @@ export async function POST(req: NextRequest) {
         .select('id')
         .eq('user_id', userId)
         .eq('is_active', true)
-        .single()).data?.id : undefined
+        .single()).data?.id : undefined,
+      activeStyle,
+      sampleTweets
     };
     
     console.log('🎯 Final Result Citations:', {

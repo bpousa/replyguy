@@ -38,10 +38,44 @@ class APIService {
   }
 
   async generateReply(request: GenerateReplyRequest): Promise<GenerateReplyResponse> {
-    return this.fetchWithAuth('/process', {
+    const requestBody: any = { ...request };
+
+    if (request.useCustomStyle && request.userId) {
+      const cacheKey = `style_cache_${request.userId}`;
+      try {
+        const cachedData = await new Promise<{ [key: string]: any; }>((resolve) => chrome.storage.local.get(cacheKey, resolve));
+        if (cachedData[cacheKey]) {
+          const { style, timestamp } = cachedData[cacheKey];
+          if (Date.now() - timestamp < 24 * 60 * 60 * 1000) { // 24 hour TTL
+            console.log('[API] Using cached style for user:', request.userId);
+            requestBody.cachedStyle = style;
+          }
+        }
+      } catch (e) {
+        console.error('[API] Error reading from local storage:', e);
+      }
+    }
+
+    const response = await this.fetchWithAuth('/process', {
       method: 'POST',
-      body: JSON.stringify(request),
+      body: JSON.stringify(requestBody),
     });
+
+    if (response.data && response.data.activeStyle && request.userId) {
+      const cacheKey = `style_cache_${request.userId}`;
+      const styleToCache = {
+        activeStyle: response.data.activeStyle,
+        sampleTweets: response.data.sampleTweets,
+      };
+      try {
+        await chrome.storage.local.set({ [cacheKey]: { style: styleToCache, timestamp: Date.now() } });
+        console.log('[API] Cached new style for user:', request.userId);
+      } catch (e) {
+        console.error('[API] Error writing to local storage:', e);
+      }
+    }
+
+    return response;
   }
 
   async getSuggestions(params: { 

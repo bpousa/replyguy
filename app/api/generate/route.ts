@@ -171,7 +171,7 @@ export async function POST(req: NextRequest) {
     
     // Use different system prompt for Write Like Me
     const systemPrompt = validated.useCustomStyle && validated.customStyle
-      ? `You are channeling a specific person's writing style on Twitter/X. Your job is to capture their voice authentically while maintaining natural variety. Use their vocabulary, tone, and stylistic patterns, but avoid repetitive phrases. Each reply should feel fresh while still unmistakably theirs. Think of it as the same person writing on different days, in different moods, responding to different situations.`
+      ? `You are helping someone express THEIR SPECIFIC MESSAGE in their unique writing style on Twitter/X. The user has told you exactly what they want to say - your job is to deliver THAT message using their voice, vocabulary, and stylistic patterns. Never replace their message with something else, even if thematically similar. Think of it as the same person saying their intended message but in their natural style.`
       : `You are typing a ${replyLength === 'extra-long' ? 'detailed thread-style' : replyLength === 'long' ? 'comprehensive' : replyLength === 'medium' ? 'thoughtful' : 'quick'} reply on Twitter/X. Write exactly like a real person would - casual, direct, sometimes imperfect. The user told you what they want to say, so say it naturally. ${replyLength === 'short' ? 'Keep it punchy - one main point.' : replyLength === 'medium' ? 'You have room for 2-3 sentences to develop your thought.' : 'Take the space to fully develop your thoughts while keeping it conversational.'} When stats/research are included, drop them in naturally like you're sharing something you just learned.`;
 
     console.log('\n🚀 === CALLING ANTHROPIC API ===');
@@ -311,7 +311,8 @@ ${input.customStyleExamples.slice(0, input.perplexityData ? 3 : 5).map((t: strin
 
 Context:
 - You're replying to: "${input.originalTweet}"
-- Core message to express: "${input.responseIdea}"
+- 🎯 REQUIRED MESSAGE TO EXPRESS: "${input.responseIdea}"
+- ⚠️ This is what the user wants to say - express THIS message in their style
 - Tone: ${input.tone}
 - Length: ${lengthGuide} (max ${charLimit} characters)
 
@@ -321,13 +322,15 @@ ${input.perplexityData}
 ` : ''}
 
 CRITICAL INSTRUCTIONS:
-1. CAPTURE THE ESSENCE of their style - don't copy exact phrases
-2. VARY YOUR APPROACH - if they sometimes start with "what i ended up doing", also use their other opening patterns
-3. MIX AND MATCH their different stylistic elements naturally
-4. Keep their voice authentic while avoiding repetitive patterns
-5. Draw from their FULL RANGE of expressions, not just one pattern
-6. Make it sound like they wrote it on a different day, in a fresh mood
-7. EMOJI RULE: Even if they use emojis in their style, use them VERY SPARINGLY - only about 1 in 10 replies should have an emoji. Most replies should have ZERO emojis
+1. EXPRESS THE EXACT MESSAGE: The "REQUIRED MESSAGE TO EXPRESS" is what the user wants to say - deliver THIS specific message, not something thematically similar
+2. CAPTURE THE ESSENCE of their style - don't copy exact phrases
+3. VARY YOUR APPROACH - if they sometimes start with "what i ended up doing", also use their other opening patterns
+4. MIX AND MATCH their different stylistic elements naturally
+5. Keep their voice authentic while avoiding repetitive patterns
+6. Draw from their FULL RANGE of expressions, not just one pattern
+7. Make it sound like they wrote it on a different day, in a fresh mood
+8. EMOJI RULE: Even if they use emojis in their style, use them VERY SPARINGLY - only about 1 in 10 replies should have an emoji. Most replies should have ZERO emojis
+9. NEVER replace the user's message with a different metaphor or idea, even if it's about the same topic
 
 Reply (just the text, no quotes):`;
 }

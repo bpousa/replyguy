@@ -47,38 +47,52 @@ export async function POST(req: NextRequest) {
     const replyLength = validated.replyLength || 'short';
     const charLimit = REPLY_LENGTHS.find(l => l.value === replyLength)?.maxChars || 280;
     
-    // Analyze style if enabled
+    // Concurrently fetch style analysis and custom style
     let styleInstructions = '';
+    let customStyleInstructions = '';
+
+    const promises = [];
+
+    // Style analysis promise
     if (validated.enableStyleMatching && process.env.OPENAI_API_KEY) {
-      try {
-        const styleAnalyzer = new StyleAnalyzer(process.env.OPENAI_API_KEY);
-        const tweetStyle = await styleAnalyzer.analyzeTweetStyle(validated.originalTweet);
-        styleInstructions = StyleAnalyzer.generateStyleInstructions(tweetStyle, 0.5);
-      } catch (error) {
-        console.error('Style analysis failed:', error);
-      }
+      promises.push(
+        (async () => {
+          try {
+            const styleAnalyzer = new StyleAnalyzer(process.env.OPENAI_API_KEY!);
+            const tweetStyle = await styleAnalyzer.analyzeTweetStyle(validated.originalTweet);
+            styleInstructions = StyleAnalyzer.generateStyleInstructions(tweetStyle, 0.5);
+          } catch (error) {
+            console.error('Style analysis failed:', error);
+          }
+        })()
+      );
     }
 
-    // Get custom style if enabled
-    let customStyleInstructions = '';
+    // Custom style promise
     if (validated.useCustomStyle && validated.userId) {
-      try {
-        const { createServerClient } = await import('@/app/lib/auth');
-        const { cookies } = await import('next/headers');
-        const cookieStore = cookies();
-        const supabase = createServerClient(cookieStore);
-        
-        const { data: activeStyle } = await supabase
-          .rpc('get_user_active_style', { p_user_id: validated.userId })
-          .single() as { data: { style_instructions?: string } | null };
-          
-        if (activeStyle?.style_instructions) {
-          customStyleInstructions = activeStyle.style_instructions;
-        }
-      } catch (error) {
-        console.error('Failed to get custom style:', error);
-      }
+      promises.push(
+        (async () => {
+          try {
+            const { createServerClient } = await import('@/app/lib/auth');
+            const { cookies } = await import('next/headers');
+            const cookieStore = cookies();
+            const supabase = createServerClient(cookieStore);
+            
+            const { data: activeStyle } = await supabase
+              .rpc('get_user_active_style', { p_user_id: validated.userId })
+              .single() as { data: { style_instructions?: string } | null };
+              
+            if (activeStyle?.style_instructions) {
+              customStyleInstructions = activeStyle.style_instructions;
+            }
+          } catch (error) {
+            console.error('Failed to get custom style:', error);
+          }
+        })()
+      );
     }
+
+    await Promise.all(promises);
 
     // Build generation prompt
     const shouldUseWriteLikeMe = validated.useCustomStyle && validated.customStyle;

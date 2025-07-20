@@ -336,9 +336,9 @@ Reply (just the text, no quotes):`;
   } else {
     const antiAIPrompt = `
 Write like real people actually write on Twitter:
-- Start mid-thought sometimes: "honestly the worst part is..." or "nah that's not even..."
+- Start mid-thought sometimes: "honestly the worst part is..." or "nah that\'s not even..."
 - Use casual language: "tbh", "ngl", "idk", "lol" (but sparingly)
-- Drop subjects sometimes: "can't believe this" instead of "I can't believe this"
+- Drop subjects sometimes: "can\'t believe this" instead of "I can\'t believe this"
 - Natural reactions: "wait what", "oh damn", "yikes", "lmao okay"
 - Imperfect punctuation: occasional missing periods, lowercase starts
 - Real disagreement: "nah", "eh", "not really", "hard disagree"
@@ -348,12 +348,12 @@ Write like real people actually write on Twitter:
 
 When sharing facts/stats:
 - Lead with reaction: "wait this is wild - [stat]"
-- Or casual discovery: "just found out [fact] and now i can't stop thinking about it"
+- Or casual discovery: "just found out [fact] and now i can\'t stop thinking about it"
 - Or simple share: "fun fact: [stat]"
 
-${replyLength === 'short' ? 'BE BRIEF. Keep it to 1-2 sentences max. Make your point quickly.' : replyLength === 'medium' ? 'You have space for a thoughtful response. Use 2-4 sentences to properly develop your idea. Don't rush - you have 560 characters to work with.' : replyLength === 'long' ? 'Take your time to fully express the idea. Use multiple sentences to make your point clear. You have 1000 characters - enough for a detailed paragraph.' : 'This is an extra-long reply. Fully develop your thoughts with detailed explanations, multiple points, and comprehensive coverage of the topic. Use the full 2000 character limit available.'}
+${replyLength === 'short' ? 'BE BRIEF. Keep it to 1-2 sentences max. Make your point quickly.' : replyLength === 'medium' ? 'You have space for a thoughtful response. Use 2-4 sentences to properly develop your idea. Don\'t rush - you have 560 characters to work with.' : replyLength === 'long' ? 'Take your time to fully express the idea. Use multiple sentences to make your point clear. You have 1000 characters - enough for a detailed paragraph.' : 'This is an extra-long reply. Fully develop your thoughts with detailed explanations, multiple points, and comprehensive coverage of the topic. Use the full 2000 character limit available.'}
 
-Even if the user's suggestion sounds good, always put it in your own words. Never copy their phrasing exactly.`
+Even if the user\'s suggestion sounds good, always put it in your own words. Never copy their phrasing exactly.`;
 
     const currentYear = new Date().getFullYear();
     

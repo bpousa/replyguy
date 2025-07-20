@@ -114,230 +114,201 @@ export class SuggestionsOverlay {
         <button class="reply-guy-close" aria-label="Close">×</button>
       </div>
       
-      <div class="reply-guy-content">
+      <div class="reply-guy-content-scroll">
         <!-- Tweet Preview -->
-        <details class="reply-guy-tweet-section" open>
-          <summary>Replying to...</summary>
+        <div class="reply-guy-tweet-section">
           <div class="reply-guy-tweet-preview">
             ${this.escapeHtml(tweet)}
           </div>
-        </details>
+        </div>
         
-        <!-- Main Options -->
-        <div class="reply-guy-main-section">
-          <div class="reply-guy-row">
-            <!-- Response Type -->
-            <div class="reply-guy-option-group reply-guy-half">
-              <label class="reply-guy-option-label" for="reply-guy-response-type">Response Type</label>
-              <select class="reply-guy-select" id="reply-guy-response-type">
-                <option value="agree">👍 Agree</option>
-                <option value="disagree">🤔 Disagree</option>
-                <option value="neutral" selected>💭 Neutral</option>
-                <option value="other">✨ Creative</option>
-              </select>
-            </div>
-            
-            <!-- Tone -->
-            <div class="reply-guy-option-group reply-guy-half">
-              <label class="reply-guy-option-label" for="reply-guy-tone">Tone</label>
-              <select class="reply-guy-select" id="reply-guy-tone">
-                <option value="friendly">😊 Friendly</option>
-                <option value="professional">💼 Professional</option>
-                <option value="casual">👋 Casual</option>
-                <option value="humorous">😄 Humorous</option>
-                <option value="empathetic">❤️ Empathetic</option>
-                <option value="witty">🎯 Witty</option>
-                <option value="sarcastic">😏 Sarcastic</option>
-                <option value="supportive">🤝 Supportive</option>
-                <option value="informative">📚 Informative</option>
-                <option value="formal">🎩 Formal</option>
-              </select>
-            </div>
+        <!-- Response Idea -->
+        <div class="reply-guy-option-group">
+          <div class="reply-guy-label-with-action">
+            <label class="reply-guy-option-label" for="reply-guy-idea">What do you want to say?</label>
+            <button class="reply-guy-suggest-btn" id="reply-guy-suggest">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L13.09 8.26L19 7L15.45 11.82L21 16L14.5 16.5L15 23L10.18 17.45L5 21L5.5 14.5L0 16L5.55 11.18L2 7L7.91 8.26L9 2L12 2Z" fill="currentColor"/>
+              </svg>
+              Suggest
+            </button>
+          </div>
+          <textarea 
+            id="reply-guy-idea" 
+            class="reply-guy-idea-input" 
+            placeholder="Describe your response (e.g., 'Sympathize and share a similar experience')"
+            rows="3"
+            maxlength="${this.userPlan?.max_response_idea_length || 200}"
+          >${this.responseIdea}</textarea>
+          <div class="reply-guy-char-count">
+            <span id="idea-char-count">0</span> / <span id="idea-char-limit">${this.userPlan?.max_response_idea_length || 200}</span>
+          </div>
+        </div>
+        
+        <!-- Core Controls: Type, Tone, Length -->
+        <div class="reply-guy-grid-3-col">
+          <!-- Response Type -->
+          <div class="reply-guy-option-group">
+            <label class="reply-guy-option-label" for="reply-guy-response-type">Type</label>
+            <select class="reply-guy-select" id="reply-guy-response-type">
+              <option value="agree">👍 Agree</option>
+              <option value="disagree">🤔 Disagree</option>
+              <option value="neutral" selected>💭 Neutral</option>
+              <option value="other">✨ Creative</option>
+            </select>
           </div>
           
-          <!-- Response Idea -->
+          <!-- Tone -->
           <div class="reply-guy-option-group">
-            <div class="reply-guy-label-with-action">
-              <label class="reply-guy-option-label" for="reply-guy-idea">What do you want to say?</label>
-              <button class="reply-guy-suggest-btn" id="reply-guy-suggest">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 2L13.09 8.26L19 7L15.45 11.82L21 16L14.5 16.5L15 23L10.18 17.45L5 21L5.5 14.5L0 16L5.55 11.18L2 7L7.91 8.26L9 2L12 2Z" fill="currentColor"/>
-                </svg>
-                Suggest
-              </button>
-            </div>
-            <textarea 
-              id="reply-guy-idea" 
-              class="reply-guy-idea-input" 
-              placeholder="Describe your response (e.g., 'Sympathize and share a similar experience')"
-              rows="3"
-              maxlength="${this.userPlan?.max_response_idea_length || 200}"
-            >${this.responseIdea}</textarea>
-            <div class="reply-guy-char-count">
-              <span id="idea-char-count">0</span> / <span id="idea-char-limit">${this.userPlan?.max_response_idea_length || 200}</span>
-            </div>
+            <label class="reply-guy-option-label" for="reply-guy-tone">Tone</label>
+            <select class="reply-guy-select" id="reply-guy-tone">
+              <option value="friendly">😊 Friendly</option>
+              <option value="professional">💼 Professional</option>
+              <option value="casual">👋 Casual</option>
+              <option value="humorous">😄 Humorous</option>
+              <option value="empathetic">❤️ Empathetic</option>
+              <option value="witty">🎯 Witty</option>
+              <option value="sarcastic">😏 Sarcastic</option>
+              <option value="supportive">🤝 Supportive</option>
+              <option value="informative">📚 Informative</option>
+              <option value="formal">🎩 Formal</option>
+            </select>
+          </div>
           
           <!-- Reply Length -->
           <div class="reply-guy-option-group">
-            <label class="reply-guy-option-label">Reply Length</label>
-            <div class="reply-guy-length-options">
-              <label class="reply-guy-radio">
-                <input type="radio" name="replyLength" value="short" checked>
-                <span>Short (280)</span>
-              </label>
-              <label class="reply-guy-radio">
-                <input type="radio" name="replyLength" value="medium" ${!this.userPlan?.enable_long_replies ? 'disabled' : ''}>
-                <span>Medium (560) ${!this.userPlan?.enable_long_replies ? '🔒' : ''}</span>
-              </label>
-              <label class="reply-guy-radio">
-                <input type="radio" name="replyLength" value="long" ${!this.userPlan?.enable_long_replies ? 'disabled' : ''}>
-                <span>Long (1000) ${!this.userPlan?.enable_long_replies ? '🔒' : ''}</span>
-              </label>
-              <label class="reply-guy-radio">
-                <input type="radio" name="replyLength" value="extra-long" ${!this.userPlan?.enable_long_replies || this.userPlan?.max_reply_length < 2000 ? 'disabled' : ''}>
-                <span>Extra Long (2000) ${!this.userPlan?.enable_long_replies || this.userPlan?.max_reply_length < 2000 ? '🔒' : ''}</span>
-              </label>
-            </div>
+            <label class="reply-guy-option-label" for="reply-guy-length">Length</label>
+            <select class="reply-guy-select" id="reply-guy-length">
+              <option value="short">Short (280)</option>
+              <option value="medium" ${!this.userPlan?.enable_long_replies ? 'disabled' : ''}>Medium (560) ${!this.userPlan?.enable_long_replies ? '🔒' : ''}</option>
+              <option value="long" ${!this.userPlan?.enable_long_replies ? 'disabled' : ''}>Long (1000) ${!this.userPlan?.enable_long_replies ? '🔒' : ''}</option>
+              <option value="extra-long" ${!this.userPlan?.enable_long_replies || this.userPlan?.max_reply_length < 2000 ? 'disabled' : ''}>Extra Long (2000) ${!this.userPlan?.enable_long_replies || this.userPlan?.max_reply_length < 2000 ? '🔒' : ''}</option>
+            </select>
           </div>
         </div>
         
-        <!-- Advanced Options -->
-        <details class="reply-guy-advanced-section">
-          <summary>Advanced Options</summary>
-          <div class="reply-guy-advanced-content">
-            
-            <!-- Perplexity Research -->
-            ${this.userPlan?.enable_perplexity_guidance !== false ? `
-            <div class="reply-guy-option-group">
-              <label class="reply-guy-checkbox">
-                <input type="checkbox" id="reply-guy-research">
-                <span>Use real-time research 🔍</span>
-              </label>
-              <div id="reply-guy-research-section" style="display: none; margin-top: 12px;">
-                <div class="reply-guy-label-with-action">
-                  <label class="reply-guy-option-label" for="reply-guy-perplexity" style="margin-bottom: 4px;">
-                    Research Guidance (Optional)
-                  </label>
-                  <button class="reply-guy-suggest-btn" id="reply-guy-suggest-research" type="button">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                      <path d="M12 2L13.09 8.26L19 7L15.45 11.82L21 16L14.5 16.5L15 23L10.18 17.45L5 21L5.5 14.5L0 16L5.55 11.18L2 7L7.91 8.26L9 2L12 2Z" fill="currentColor"/>
-                    </svg>
-                    Suggest
-                  </button>
-                </div>
-                <textarea
-                  id="reply-guy-perplexity" 
-                  class="reply-guy-text-input" 
-                  placeholder="What specific facts, stats, or current events should we look for?"
-                  rows="2"
-                  maxlength="200"
-                ></textarea>
-                <div id="reply-guy-research-suggestions" style="display: none; margin-top: 8px;">
-                  <p class="reply-guy-suggestion-label">Suggestions:</p>
-                  <div class="reply-guy-suggestion-chips"></div>
-                </div>
-              </div>
-            </div>
-            ` : ''}
-            
-            ${/* Write Like Me option */''}
-            ${this.userPlan?.enable_write_like_me !== false ? `
-            <div class="reply-guy-option-group">
-              <label class="reply-guy-checkbox">
-                <input type="checkbox" id="reply-guy-write-like-me">
-                <span>Write like me ✍️</span>
-              </label>
-              <p class="reply-guy-option-hint">Use your personal writing style</p>
-            </div>
-            ` : ''}
-            
-            ${/* Match Tweet Style option */''}
-            ${this.userPlan?.enable_style_matching !== false ? `
-            <div class="reply-guy-option-group">
-              <label class="reply-guy-checkbox">
-                <input type="checkbox" id="reply-guy-match-style">
-                <span>Match tweet style 🎨</span>
-              </label>
-              <p class="reply-guy-option-hint">Adapt to the original tweet's tone and style</p>
-            </div>
-            ` : ''}
+        <!-- Feature Toggles -->
+        <div class="reply-guy-features-grid">
+          ${this.userPlan?.enable_write_like_me !== false ? `
+          <div class="reply-guy-option-group">
+            <label class="reply-guy-checkbox">
+              <input type="checkbox" id="reply-guy-write-like-me">
+              <span>Write like me ✍️</span>
+            </label>
           </div>
-        </details>
-        
-        <!-- Fun Extras -->
-        ${this.userPlan?.enable_memes !== false ? `
-        <details class="reply-guy-extras-section">
-          <summary>Fun Extras</summary>
-          <div class="reply-guy-extras-content">
-            <div class="reply-guy-option-group">
-              <label class="reply-guy-checkbox">
-                <input type="checkbox" id="reply-guy-meme">
-                <span>Add a meme 🎭</span>
-                <span class="reply-guy-meme-usage">${this.userPlan?.memes_used || 0}/${this.userPlan?.meme_limit || 0} used</span>
-              </label>
-              <div id="reply-guy-meme-options" style="display: none; margin-top: 12px;">
-                <div class="reply-guy-option-group">
-                  <label class="reply-guy-option-label" style="font-size: 11px;">Meme text (optional)</label>
-                  <input 
-                    type="text"
-                    id="reply-guy-meme-text" 
-                    class="reply-guy-text-input" 
-                    placeholder="e.g., 'this is fine' or 'bugs everywhere'"
-                    maxlength="100"
-                  />
-                </div>
-                
-                <!-- Show mode selector only when user has typed text -->
-                <div id="reply-guy-meme-mode-section" style="display: none; margin-top: 12px;">
-                  <div class="reply-guy-meme-mode">
-                    <label class="reply-guy-radio">
-                      <input type="radio" name="memeTextMode" value="exact" checked>
-                      <span>Use my exact text</span>
-                    </label>
-                    <label class="reply-guy-radio">
-                      <input type="radio" name="memeTextMode" value="enhance">
-                      <span>Make it more creative with AI ✨</span>
-                    </label>
-                  </div>
-                </div>
-                
-                <div class="reply-guy-meme-info">
-                  <p id="meme-info-empty">💡 <strong>Leave blank</strong> = AI creates meme text from your reply</p>
-                  <p id="meme-info-exact" style="display: none;">✏️ Your exact text will be used: "<span id="meme-preview-text"></span>"</p>
-                  <p id="meme-info-enhance" style="display: none;">✨ AI will enhance your idea to make it funnier</p>
-                </div>
-              </div>
-            </div>
+          ` : ''}
+          
+          ${this.userPlan?.enable_style_matching !== false ? `
+          <div class="reply-guy-option-group">
+            <label class="reply-guy-checkbox">
+              <input type="checkbox" id="reply-guy-match-style">
+              <span>Match tweet style 🎨</span>
+            </label>
           </div>
-        </details>
-        ` : ''}
-        
-        <!-- Save Defaults -->
-        <div class="reply-guy-save-defaults">
-          <label class="reply-guy-checkbox">
-            <input type="checkbox" id="reply-guy-save-defaults">
-            <span>Save as default settings</span>
-          </label>
+          ` : ''}
+          
+          ${this.userPlan?.enable_perplexity_guidance !== false ? `
+          <div class="reply-guy-option-group">
+            <label class="reply-guy-checkbox">
+              <input type="checkbox" id="reply-guy-research">
+              <span>Add research 🔍</span>
+            </label>
+          </div>
+          ` : ''}
+          
+          ${this.userPlan?.enable_memes !== false ? `
+          <div class="reply-guy-option-group">
+            <label class="reply-guy-checkbox">
+              <input type="checkbox" id="reply-guy-meme">
+              <span>Add a meme 🎭</span>
+            </label>
+          </div>
+          ` : ''}
         </div>
         
-        <!-- Action Buttons -->
+        <!-- Conditional Sections for Research and Meme -->
+        <div id="reply-guy-research-section" class="reply-guy-collapsible-section" style="display: none;">
+          <div class="reply-guy-label-with-action">
+            <label class="reply-guy-option-label" for="reply-guy-perplexity">Research Guidance (Optional)</label>
+            <button class="reply-guy-suggest-btn" id="reply-guy-suggest-research" type="button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L13.09 8.26L19 7L15.45 11.82L21 16L14.5 16.5L15 23L10.18 17.45L5 21L5.5 14.5L0 16L5.55 11.18L2 7L7.91 8.26L9 2L12 2Z" fill="currentColor"/>
+              </svg>
+              Suggest
+            </button>
+          </div>
+          <textarea
+            id="reply-guy-perplexity" 
+            class="reply-guy-text-input" 
+            placeholder="What specific facts, stats, or current events should we look for?"
+            rows="2"
+            maxlength="200"
+          ></textarea>
+          <div id="reply-guy-research-suggestions" style="display: none; margin-top: 8px;">
+            <p class="reply-guy-suggestion-label">Suggestions:</p>
+            <div class="reply-guy-suggestion-chips"></div>
+          </div>
+        </div>
+        
+        <div id="reply-guy-meme-options" class="reply-guy-collapsible-section" style="display: none;">
+          <div class="reply-guy-option-group">
+            <label class="reply-guy-option-label" style="font-size: 11px;">Meme text (optional)</label>
+            <input 
+              type="text"
+              id="reply-guy-meme-text" 
+              class="reply-guy-text-input" 
+              placeholder="e.g., 'this is fine' or 'bugs everywhere'"
+              maxlength="100"
+            />
+          </div>
+          
+          <div id="reply-guy-meme-mode-section" style="display: none; margin-top: 12px;">
+            <div class="reply-guy-meme-mode">
+              <label class="reply-guy-radio">
+                <input type="radio" name="memeTextMode" value="exact" checked>
+                <span>Use my exact text</span>
+              </label>
+              <label class="reply-guy-radio">
+                <input type="radio" name="memeTextMode" value="enhance">
+                <span>Make it more creative with AI ✨</span>
+              </label>
+            </div>
+          </div>
+          
+          <div class="reply-guy-meme-info">
+            <p id="meme-info-empty">💡 <strong>Leave blank</strong> = AI creates meme text from your reply</p>
+            <p id="meme-info-exact" style="display: none;">✏️ Your exact text will be used: "<span id="meme-preview-text"></span>"</p>
+            <p id="meme-info-enhance" style="display: none;">✨ AI will enhance your idea to make it funnier</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Footer Actions and Usage -->
+      <div class="reply-guy-footer">
         <div class="reply-guy-actions">
           <button class="reply-guy-generate-btn" id="reply-guy-generate">
             Generate Reply
           </button>
-          ${this.usageLimits ? `
-          <div class="reply-guy-usage">
-            <span class="reply-guy-usage-used">${(this.usageLimits.repliesTotal || 0) - (this.usageLimits.repliesRemaining || 0)}</span> / ${this.usageLimits.repliesTotal || 0} replies
-            <span class="reply-guy-usage-detail">(${this.usageLimits.repliesRemaining || 0} remaining this billing period)</span>
+        </div>
+        <label class="reply-guy-checkbox reply-guy-save-defaults-checkbox">
+          <input type="checkbox" id="reply-guy-save-defaults">
+          <span>Save as default settings</span>
+        </label>
+        
+        ${this.usageLimits ? `
+        <div class="reply-guy-usage-stats">
+          <div class="reply-guy-usage-item">
+            <span>Replies:</span>
+            <span class="reply-guy-usage-value">${(this.usageLimits.repliesTotal || 0) - (this.usageLimits.repliesRemaining || 0)} / ${this.usageLimits.repliesTotal || 0}</span>
           </div>
           ${this.usageLimits.dailyCount !== undefined ? `
-          <div class="reply-guy-daily-goal">
-            <span class="reply-guy-daily-icon">🎯</span>
-            <span class="reply-guy-daily-text">Daily Goal: ${this.usageLimits.dailyCount || 0} / ${this.usageLimits.dailyGoal || 10}</span>
+          <div class="reply-guy-usage-item">
+            <span>Daily Goal:</span>
+            <span class="reply-guy-usage-value">${this.usageLimits.dailyCount || 0} / ${this.usageLimits.dailyGoal || 10}</span>
           </div>
           ` : ''}
-          ` : ''}
         </div>
+        ` : ''}
       </div>
     `;
 

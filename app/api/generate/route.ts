@@ -311,11 +311,7 @@ ${input.perplexityData}
 Style Analysis:
 ${JSON.stringify(input.customStyle, null, 2)}
 
-${input.customStyleExamples?.length > 0 ? `
-Example tweets in this style:
-${input.customStyleExamples.slice(0, input.perplexityData ? 3 : 5).map((t: string, i: number) => `${i + 1}. "${t}"`).join('
-')}
-` : ''}
+${input.customStyleExamples?.length > 0 ? `\nExample tweets in this style:\n${input.customStyleExamples.slice(0, input.perplexityData ? 3 : 5).map((t: string, i: number) => `${i + 1}. "${t}"`).join('\n')}\n` : ''}
 
 Context:
 - You're replying to: "${input.originalTweet}"
@@ -393,20 +389,11 @@ ${style.linguisticFeatures?.contractions ? `Contractions: ${style.linguisticFeat
 
 ${style.contentPatterns?.humor ? `Humor style: ${style.contentPatterns.humor}` : ''}
 
-${style.uniqueQuirks?.length > 0 ? `
-Unique quirks:
-${style.uniqueQuirks.map((q: string) => `- ${q}`).join('
-')}` : ''}
+${style.uniqueQuirks?.length > 0 ? `\nUnique quirks:\n${style.uniqueQuirks.map((q: string) => `- ${q}`).join('\n')}` : ''}
 
-${style.examplePhrases?.length > 0 ? `
-Example phrases that capture your voice:
-${style.examplePhrases.map((p: string) => `"${p}"`).join('
-')}` : ''}
+${style.examplePhrases?.length > 0 ? `\nExample phrases that capture your voice:\n${style.examplePhrases.map((p: string) => `"${p}"`).join('\n')}` : ''}
 
-${style.doNotUse?.length > 0 ? `
-NEVER use these patterns (they would seem inauthentic):
-${style.doNotUse.map((d: string) => `- ${d}`).join('
-')}` : ''}
+${style.doNotUse?.length > 0 ? `\nNEVER use these patterns (they would seem inauthentic):\n${style.doNotUse.map((d: string) => `- ${d}`).join('\n')}` : ''}
 
 CRITICAL: Match this style EXACTLY. Use the specific patterns, phrases, and quirks identified above.
 --- END CUSTOM STYLE ---

@@ -168,9 +168,35 @@ export async function POST(req: NextRequest) {
     console.log(`\n🔢 Token calculation: charLimit=${charLimit}, maxTokens=${maxTokens}, hasResearch=${hasResearch}, hasCustomStyle=${hasCustomStyle}`);
     
     // Use different system prompt for Write Like Me
+    // Extract complex expressions to avoid template literal parsing issues
+    let replyTypeDesc = '';
+    let replyLengthInstr = '';
+    
+    if (!validated.useCustomStyle || !validated.customStyle) {
+      // Determine reply type description
+      if (replyLength === 'extra-long') {
+        replyTypeDesc = 'detailed thread-style';
+      } else if (replyLength === 'long') {
+        replyTypeDesc = 'comprehensive';
+      } else if (replyLength === 'medium') {
+        replyTypeDesc = 'thoughtful';
+      } else {
+        replyTypeDesc = 'quick';
+      }
+      
+      // Determine reply length instruction
+      if (replyLength === 'short') {
+        replyLengthInstr = 'Keep it punchy - one main point.';
+      } else if (replyLength === 'medium') {
+        replyLengthInstr = 'You have room for 2-3 sentences to develop your thought.';
+      } else {
+        replyLengthInstr = 'Take the space to fully develop your thoughts while keeping it conversational.';
+      }
+    }
+    
     const systemPrompt = validated.useCustomStyle && validated.customStyle
       ? `You are helping someone express THEIR SPECIFIC MESSAGE in their unique writing style on Twitter/X. The user has told you exactly what they want to say - your job is to deliver THAT message using their voice, vocabulary, and stylistic patterns. Never replace their message with something else, even if thematically similar. Think of it as the same person saying their intended message but in their natural style.`
-      : `You are typing a ${replyLength === 'extra-long' ? 'detailed thread-style' : replyLength === 'long' ? 'comprehensive' : replyLength === 'medium' ? 'thoughtful' : 'quick'} reply on Twitter/X. Write exactly like a real person would - casual, direct, sometimes imperfect. The user told you what they want to say, so say it naturally. ${replyLength === 'short' ? 'Keep it punchy - one main point.' : replyLength === 'medium' ? 'You have room for 2-3 sentences to develop your thought.' : 'Take the space to fully develop your thoughts while keeping it conversational.'} When stats/research are included, drop them in naturally like you're sharing something you just learned.`;
+      : `You are typing a ${replyTypeDesc} reply on Twitter/X. Write exactly like a real person would - casual, direct, sometimes imperfect. The user told you what they want to say, so say it naturally. ${replyLengthInstr} When stats/research are included, drop them in naturally like you're sharing something you just learned.`;
 
     console.log('\n🚀 === CALLING ANTHROPIC API ===');
     console.log('Model:', 'claude-3-5-sonnet-20241022');
@@ -297,6 +323,18 @@ function buildPrompt(input: any, charLimit: number, replyLength: string, styleIn
                       replyLength === 'medium' ? '2-4 sentences' : 
                       replyLength === 'long' ? 'a detailed paragraph' : 
                       'multiple paragraphs';
+                      
+  // Extract target length range to avoid complex ternary in template literal
+  let targetLengthRange = '';
+  if (replyLength === 'short') {
+    targetLengthRange = '140-280';
+  } else if (replyLength === 'medium') {
+    targetLengthRange = '400-560';
+  } else if (replyLength === 'long') {
+    targetLengthRange = '700-1000';
+  } else {
+    targetLengthRange = '1500-2000';
+  }
 
   const researchBlock = input.perplexityData ? `
 📊 RESEARCH DATA TO INCLUDE IN YOUR REPLY:
@@ -334,6 +372,18 @@ CRITICAL INSTRUCTIONS:
 
 Reply (just the text, no quotes):`;
   } else {
+    // Extract length guidance to avoid complex expressions in template literal
+    let lengthGuidance = '';
+    if (replyLength === 'short') {
+      lengthGuidance = 'BE BRIEF. Keep it to 1-2 sentences max. Make your point quickly.';
+    } else if (replyLength === 'medium') {
+      lengthGuidance = 'You have space for a thoughtful response. Use 2-4 sentences to properly develop your idea. Don\'t rush - you have 560 characters to work with.';
+    } else if (replyLength === 'long') {
+      lengthGuidance = 'Take your time to fully express the idea. Use multiple sentences to make your point clear. You have 1000 characters - enough for a detailed paragraph.';
+    } else {
+      lengthGuidance = 'This is an extra-long reply. Fully develop your thoughts with detailed explanations, multiple points, and comprehensive coverage of the topic. Use the full 2000 character limit available.';
+    }
+
     const antiAIPrompt = `
 Write like real people actually write on Twitter:
 - Start mid-thought sometimes: "honestly the worst part is..." or "nah that\'s not even..."
@@ -351,7 +401,7 @@ When sharing facts/stats:
 - Or casual discovery: "just found out [fact] and now i can\'t stop thinking about it"
 - Or simple share: "fun fact: [stat]"
 
-${replyLength === 'short' ? 'BE BRIEF. Keep it to 1-2 sentences max. Make your point quickly.' : replyLength === 'medium' ? 'You have space for a thoughtful response. Use 2-4 sentences to properly develop your idea. Don\'t rush - you have 560 characters to work with.' : replyLength === 'long' ? 'Take your time to fully express the idea. Use multiple sentences to make your point clear. You have 1000 characters - enough for a detailed paragraph.' : 'This is an extra-long reply. Fully develop your thoughts with detailed explanations, multiple points, and comprehensive coverage of the topic. Use the full 2000 character limit available.'}
+${lengthGuidance}
 
 Even if the user\'s suggestion sounds good, always put it in your own words. Never copy their phrasing exactly.`;
 
@@ -418,7 +468,7 @@ REQUIREMENTS (in order of importance):
 4. Make it sound conversational and human
 5. Follow the ${input.selectedType.name} style pattern
 6. Maintain ${input.tone} tone
-7. Target length: ${replyLength === 'short' ? '140-280' : replyLength === 'medium' ? '400-560' : replyLength === 'long' ? '700-1000' : '1500-2000'} characters (limit: ${charLimit})
+7. Target length: ${targetLengthRange} characters (limit: ${charLimit})
 
 CRITICAL REMINDERS:
 - You are REPLYING TO THE SPECIFIC TWEET ABOVE - acknowledge what they said
@@ -432,7 +482,7 @@ REQUIREMENTS:
 2. Express the user's core message: "${input.responseIdea}" (but rephrase it in your own words)
 3. Use the ${input.selectedType.name} pattern as a style guide
 4. Maintain ${input.tone} tone
-5. Target length: ${replyLength === 'short' ? '140-280' : replyLength === 'medium' ? '400-560' : replyLength === 'long' ? '700-1000' : '1500-2000'} characters (limit: ${charLimit})`}
+5. Target length: ${targetLengthRange} characters (limit: ${charLimit})`}
 
 Style guidance:
 - Pattern: ${input.selectedType.pattern}

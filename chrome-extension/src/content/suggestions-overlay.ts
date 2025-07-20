@@ -784,31 +784,60 @@ export class SuggestionsOverlay {
         max-height: calc(80vh - 80px); /* Account for header height */
       }
       
-      /* Sections */
-      details {
+      /* V4 Compact Design Grid Styles */
+      .reply-guy-grid-3-col {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
         margin-bottom: 16px;
-        border: 1px solid #e9ecef;
-        border-radius: 12px;
-        overflow: hidden;
       }
       
-      details summary {
-        padding: 12px 16px;
+      .reply-guy-features-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+      
+      .reply-guy-footer {
+        padding: 16px 20px;
+        border-top: 1px solid #e9ecef;
         background: #f8f9fa;
-        cursor: pointer;
-        font-weight: 500;
+        flex-shrink: 0;
+      }
+      
+      .reply-guy-usage-stats {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 12px;
+        font-size: 13px;
+        color: #6c757d;
+      }
+      
+      .reply-guy-usage-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      
+      .reply-guy-usage-value {
+        font-weight: 600;
         color: #495057;
-        user-select: none;
-        transition: background 0.2s;
       }
       
-      details summary:hover {
-        background: #e9ecef;
+      .reply-guy-save-defaults-checkbox {
+        margin-top: 12px;
       }
       
-      details[open] summary {
-        border-bottom: 1px solid #e9ecef;
+      .reply-guy-content-scroll {
+        overflow-y: auto;
+        flex: 1;
+        padding: 20px;
+        min-height: 0;
+        max-height: calc(80vh - 180px); /* Account for header and footer */
       }
+      
+      /* Tweet Preview Section */
       
       .reply-guy-tweet-preview {
         padding: 16px;
@@ -831,10 +860,10 @@ export class SuggestionsOverlay {
       
       .reply-guy-select {
         width: 100%;
-        padding: 10px 12px;
+        padding: 8px 10px;
         border: 2px solid #e9ecef;
         border-radius: 8px;
-        font-size: 14px;
+        font-size: 13px;
         color: #212529; /* Explicitly set text color */
         transition: all 0.2s;
         font-family: inherit;
@@ -858,14 +887,15 @@ export class SuggestionsOverlay {
         margin-bottom: 16px;
       }
       
-      .reply-guy-advanced-content,
-      .reply-guy-extras-content {
-        padding: 16px;
-      }
-      
       /* Form Elements */
       .reply-guy-option-group {
-        margin-bottom: 20px;
+        margin-bottom: 12px;
+      }
+      
+      /* Compact spacing for grid items */
+      .reply-guy-grid-3-col .reply-guy-option-group,
+      .reply-guy-features-grid .reply-guy-option-group {
+        margin-bottom: 0;
       }
       
       .reply-guy-option-label {
@@ -1006,7 +1036,7 @@ export class SuggestionsOverlay {
       }
       
       .reply-guy-generate-btn {
-        flex: 1;
+        width: 100%;
         padding: 14px 24px;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
@@ -1122,6 +1152,24 @@ export class SuggestionsOverlay {
       
       .reply-guy-meme-info strong {
         font-weight: 600;
+      }
+      
+      /* Responsive adjustments for smaller overlays */
+      @media (max-width: 480px) {
+        .reply-guy-grid-3-col {
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+        
+        .reply-guy-features-grid {
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+        
+        .reply-guy-usage-stats {
+          flex-direction: column;
+          gap: 8px;
+        }
       }
       
       /* Spinner for loading */

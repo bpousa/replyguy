@@ -1773,11 +1773,11 @@ export class SuggestionsOverlay {
         const response = await chrome.runtime.sendMessage({
           action: 'submitCorrection',
           data: {
-            styleId: this.currentReplyData.styleId,
-            originalTweet: this.originalTweet,
+            styleId: this.currentReplyData?.styleId || undefined,
+            originalTweet: this.originalTweet || this.tweet,
             responseIdea: this.responseIdea,
-            replyType: this.currentReplyData.replyType || this.responseType,
-            tone: this.currentReplyData.tone || this.tone,
+            replyType: this.currentReplyData?.replyType || this.responseType,
+            tone: this.currentReplyData?.tone || this.tone,
             generatedReply: currentReply,
             correctedReply: editedReply,
             correctionNotes: correctionNotes

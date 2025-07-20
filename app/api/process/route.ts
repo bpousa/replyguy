@@ -196,95 +196,130 @@ export async function POST(req: NextRequest) {
       timestamp: new Date().toISOString()
     });
 
-    // Step 1: Optional Perplexity research
-    console.log('🔍 Research Check:', {
-      needsResearch: validated.needsResearch,
-      type: typeof validated.needsResearch,
-      rawValue: body?.needsResearch
-    });
+    // Parallel Step 1: Research + Style fetching
+    console.log(`\n🚀 ============ PARALLEL OPERATIONS START [${requestId}] ============`);
     
-    if (validated.needsResearch) {
-      console.log(`\n🔍 ============ STEP 1: RESEARCH [${requestId}] ============`);
-      try {
-        const researchResponse = await fetch(new URL('/api/research', req.url), {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Cookie': req.headers.get('cookie') || ''
-          },
-          body: JSON.stringify({
-            originalTweet: validated.originalTweet,
-            responseIdea: validated.responseIdea,
-            responseType: validated.responseType,
-            guidance: validated.perplexityGuidance,
-            userId: userId !== 'anonymous' ? userId : undefined,
-          }),
-        });
-
-        if (researchResponse.ok) {
-          const researchData = await researchResponse.json();
-          perplexityData = researchData.data.searchResults;
-          perplexityCitations = researchData.data.citations;
-          costs.perplexityQuery = researchData.data.cost;
+    // Create promise for research
+    const researchPromise = validated.needsResearch ? 
+      (async () => {
+        console.log(`\n🔍 ============ RESEARCH [${requestId}] ============`);
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
           
-          console.log('✅ RESEARCH SUCCESS:');
-          console.log('📊 Search Query Generated:', researchData.data.searchQuery);
-          console.log('📈 Perplexity Results:', perplexityData);
-          console.log('🔗 Citations Received:', perplexityCitations?.length || 0);
-          if (perplexityCitations && perplexityCitations.length > 0) {
-            console.log('🔗 Citation Details:', JSON.stringify(perplexityCitations, null, 2));
+          const researchResponse = await fetch(new URL('/api/research', req.url), {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Cookie': req.headers.get('cookie') || ''
+            },
+            body: JSON.stringify({
+              originalTweet: validated.originalTweet,
+              responseIdea: validated.responseIdea,
+              responseType: validated.responseType,
+              guidance: validated.perplexityGuidance,
+              userId: userId !== 'anonymous' ? userId : undefined,
+            }),
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
+
+          if (researchResponse.ok) {
+            const researchData = await researchResponse.json();
+            console.log('✅ RESEARCH SUCCESS');
+            return {
+              perplexityData: researchData.data.searchResults,
+              perplexityCitations: researchData.data.citations,
+              cost: researchData.data.cost
+            };
+          } else {
+            const errorData = await researchResponse.json().catch(() => ({ error: 'Unknown error' }));
+            console.log('❌ RESEARCH FAILED:', errorData);
+            return {
+              perplexityData: `[Research unavailable: ${errorData.error || 'API error'}]`,
+              perplexityCitations: undefined,
+              cost: 0
+            };
           }
-          console.log('💰 Research Cost:', costs.perplexityQuery);
-          console.log(`📏 Data Length: ${perplexityData?.length || 0} characters`);
+        } catch (error: any) {
+          if (error.name === 'AbortError') {
+            console.error('❌ RESEARCH TIMEOUT after 5s');
+            return {
+              perplexityData: '[Research unavailable: Request timeout]',
+              perplexityCitations: undefined,
+              cost: 0
+            };
+          }
+          console.error('❌ RESEARCH ERROR:', error);
+          return {
+            perplexityData: '[Research unavailable: Connection error]',
+            perplexityCitations: undefined,
+            cost: 0
+          };
+        }
+      })() : 
+      Promise.resolve({ perplexityData: undefined, perplexityCitations: undefined, cost: 0 });
+
+    // Create promise for style fetching
+    const stylePromise = (validated.useCustomStyle && userId !== 'anonymous') ?
+      (async () => {
+        console.log(`\n🎨 ============ STYLE FETCH [${requestId}] ============`);
+        const { data: style, error: styleError } = await supabase
+          .from('user_styles')
+          .select('style_analysis, sample_tweets, refinement_examples')
+          .eq('user_id', userId)
+          .eq('is_active', true)
+          .single();
+
+        if (styleError) {
+          console.error('Error fetching active style:', styleError);
+          return { activeStyle: null, sampleTweets: null };
         } else {
-          const errorData = await researchResponse.json().catch(() => ({ error: 'Unknown error' }));
-          console.log('❌ RESEARCH FAILED - HTTP Status:', researchResponse.status);
-          console.log('❌ Research Error Details:', errorData);
+          let sampleTweets = style.sample_tweets;
+          // If refinement examples exist, they're even better to use
+          if (style.refinement_examples && style.refinement_examples.length > 0) {
+            // Extract the user-corrected versions as the best examples
+            sampleTweets = [
+              ...style.refinement_examples
+                .filter((ex: any) => ex.revised)
+                .map((ex: any) => ex.revised),
+              ...style.sample_tweets
+            ].slice(0, 10); // Keep best 10 examples
+          }
+          console.log('✅ STYLE FETCH SUCCESS');
+          console.log('Style analysis type:', typeof style.style_analysis);
+          console.log('Style analysis exists:', !!style.style_analysis);
+          console.log('Sample tweets count:', sampleTweets?.length || 0);
           
-          // Add research failure notice that will be visible to user in the final response
-          perplexityData = `[Research unavailable: ${errorData.error || 'API temporarily unavailable'}. Reply generated without current data.]`;
-          console.log('📝 Added fallback research notice for user visibility');
+          // Parse style_analysis if it's a string
+          let parsedStyleAnalysis = style.style_analysis;
+          if (typeof style.style_analysis === 'string') {
+            try {
+              parsedStyleAnalysis = JSON.parse(style.style_analysis);
+              console.log('Parsed style analysis from string');
+            } catch (e) {
+              console.error('Failed to parse style analysis:', e);
+              parsedStyleAnalysis = null;
+            }
+          }
+          
+          return { activeStyle: parsedStyleAnalysis, sampleTweets };
         }
-      } catch (error) {
-        console.error('❌ RESEARCH ERROR:', error);
-        // Add research failure notice for user
-        perplexityData = `[Research unavailable: Connection error. Reply generated without current data.]`;
-        console.log('📝 Added fallback research notice due to connection error');
-      }
-    } else {
-      console.log(`\n🚫 ============ STEP 1: RESEARCH SKIPPED [${requestId}] ============`);
-      console.log('❌ Research skipped because needsResearch =', validated.needsResearch);
-      console.log('❌ Raw request body needsResearch =', body?.needsResearch);
-    }
+      })() :
+      Promise.resolve({ activeStyle: null, sampleTweets: null });
 
-    // Get user's active style if requested
-    let activeStyle = null;
-    let sampleTweets = null;
-    if (validated.useCustomStyle && userId !== 'anonymous') {
-      const { data: style, error: styleError } = await supabase
-        .from('user_styles')
-        .select('style_analysis, sample_tweets, refinement_examples')
-        .eq('user_id', userId)
-        .eq('is_active', true)
-        .single();
-
-      if (styleError) {
-        console.error('Error fetching active style:', styleError);
-      } else {
-        activeStyle = style.style_analysis;
-        sampleTweets = style.sample_tweets;
-        // If refinement examples exist, they're even better to use
-        if (style.refinement_examples && style.refinement_examples.length > 0) {
-          // Extract the user-corrected versions as the best examples
-          sampleTweets = [
-            ...style.refinement_examples
-              .filter((ex: any) => ex.revised)
-              .map((ex: any) => ex.revised),
-            ...style.sample_tweets
-          ].slice(0, 10); // Keep best 10 examples
-        }
-      }
-    }
+    // Wait for both parallel operations
+    const [researchResult, styleResult] = await Promise.all([researchPromise, stylePromise]);
+    
+    // Extract results
+    perplexityData = researchResult.perplexityData;
+    perplexityCitations = researchResult.perplexityCitations;
+    costs.perplexityQuery = researchResult.cost;
+    let activeStyle = styleResult.activeStyle;
+    let sampleTweets = styleResult.sampleTweets;
+    
+    console.log(`\n✅ ============ PARALLEL OPERATIONS COMPLETE [${requestId}] ============`);
 
     // Step 2: Classify and select reply types
     console.log(`\n🏷️ ============ STEP 2: CLASSIFICATION [${requestId}] ============`);
@@ -416,30 +451,66 @@ export async function POST(req: NextRequest) {
       hasPerplexityData: !!perplexityData,
       replyLength: validated.replyLength || 'short',
       enableStyleMatching: validated.enableStyleMatching ?? true,
-      useCustomStyle: validated.useCustomStyle
+      useCustomStyle: validated.useCustomStyle,
+      hasActiveStyle: !!activeStyle,
+      activeStyleType: typeof activeStyle,
+      sampleTweetsCount: sampleTweets?.length || 0
     });
     
-    const generateResponse = await fetch(new URL('/api/generate', req.url), {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Cookie': req.headers.get('cookie') || ''
-      },
-      body: JSON.stringify({
-        originalTweet: validated.originalTweet,
-        responseIdea: validated.responseIdea,
-        tone: validated.tone,
-        selectedType,
-        perplexityData,
-        replyLength: validated.replyLength || 'short',
-        enableStyleMatching: validated.enableStyleMatching ?? true,
-        useCustomStyle: validated.useCustomStyle,
-        customStyle: activeStyle, // Pass the active style to the generate API
-        // Only include customStyleExamples if we have samples
-        ...(sampleTweets && { customStyleExamples: sampleTweets }),
-        userId: validated.userId,
-      }),
-    });
+    // Use longer timeout when multiple features are enabled
+    const isComplexRequest = validated.needsResearch && validated.useCustomStyle;
+    const generateTimeout = isComplexRequest ? 15000 : 10000; // 15s for complex, 10s for normal
+    
+    let generateResponse;
+    try {
+      const generateController = new AbortController();
+      const generateTimeoutId = setTimeout(() => generateController.abort(), generateTimeout);
+      
+      generateResponse = await fetch(new URL('/api/generate', req.url), {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cookie': req.headers.get('cookie') || ''
+        },
+        body: JSON.stringify({
+          originalTweet: validated.originalTweet,
+          responseIdea: validated.responseIdea,
+          tone: validated.tone,
+          selectedType,
+          perplexityData,
+          replyLength: validated.replyLength || 'short',
+          enableStyleMatching: validated.enableStyleMatching ?? true,
+          useCustomStyle: validated.useCustomStyle,
+          customStyle: activeStyle, // Pass the active style to the generate API
+          // Only include customStyleExamples if we have samples
+          ...(sampleTweets && { customStyleExamples: sampleTweets }),
+          userId: validated.userId,
+        }),
+        signal: generateController.signal
+      });
+      
+      clearTimeout(generateTimeoutId);
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.error(`❌ GENERATION TIMEOUT after ${generateTimeout/1000}s`);
+        return NextResponse.json(
+          { 
+            error: 'Generation timed out - request was too complex. Try disabling some features.',
+            details: { 
+              timeout: generateTimeout,
+              features: {
+                research: validated.needsResearch,
+                customStyle: validated.useCustomStyle,
+                meme: validated.includeMeme
+              }
+            },
+            costs,
+          },
+          { status: 504 }
+        );
+      }
+      throw error;
+    }
 
     if (!generateResponse.ok) {
       const errorData = await generateResponse.json().catch(() => ({ error: 'Unknown error' }));
@@ -580,8 +651,8 @@ export async function POST(req: NextRequest) {
       console.log('📤 Meme API Request Parameters:', JSON.stringify(memeRequestBody, null, 2));
       console.log('📍 Meme API URL:', new URL('/api/meme', req.url).toString());
       
-      // Retry logic for meme generation
-      const maxMemeRetries = 3;
+      // Retry logic for meme generation (reduced retries and timeout)
+      const maxMemeRetries = 2; // Reduced from 3
       let memeAttempt = 0;
       let lastMemeError: any = null;
       
@@ -591,6 +662,9 @@ export async function POST(req: NextRequest) {
         try {
           console.log(`🔄 Meme generation attempt ${memeAttempt}/${maxMemeRetries}`);
           
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout per attempt
+          
           const memeResponse = await fetch(new URL('/api/meme', req.url), {
             method: 'POST',
             headers: { 
@@ -598,10 +672,12 @@ export async function POST(req: NextRequest) {
               'Cookie': req.headers.get('cookie') || ''
             },
             body: JSON.stringify(memeRequestBody),
+            signal: controller.signal
           });
+          
+          clearTimeout(timeoutId);
 
           console.log('📡 Meme API Response Status:', memeResponse.status);
-          console.log('📡 Meme API Response Headers:', Object.fromEntries(memeResponse.headers.entries()));
           
           if (memeResponse.ok) {
             const memeData = await memeResponse.json();
@@ -657,17 +733,23 @@ export async function POST(req: NextRequest) {
               // Retryable error, wait before next attempt
               console.log(`⏳ Waiting before retry ${memeAttempt + 1}...`);
               lastMemeError = { status: memeResponse.status, error: lastMemeError };
-              await new Promise(resolve => setTimeout(resolve, 1000 * memeAttempt)); // Exponential backoff
+              await new Promise(resolve => setTimeout(resolve, 500 * memeAttempt)); // Reduced backoff
             }
           }
-        } catch (error) {
-          // Network error - always retry these
+        } catch (error: any) {
           lastMemeError = error;
-          console.error(`❌ Meme generation attempt ${memeAttempt} failed with network error:`, error);
+          
+          if (error.name === 'AbortError') {
+            console.error(`❌ Meme generation timeout after 5s (attempt ${memeAttempt})`);
+            memeSkipReason = 'Meme generation timeout';
+            break; // Don't retry timeouts
+          }
+          
+          console.error(`❌ Meme generation attempt ${memeAttempt} failed:`, error);
           
           if (memeAttempt < maxMemeRetries) {
             console.log(`⏳ Waiting before retry ${memeAttempt + 1}...`);
-            await new Promise(resolve => setTimeout(resolve, 1000 * memeAttempt));
+            await new Promise(resolve => setTimeout(resolve, 500 * memeAttempt)); // Reduced backoff
           } else {
             memeSkipReason = `Network error after ${memeAttempt} attempts: ${error instanceof Error ? error.message : 'Unknown error'}`;
           }

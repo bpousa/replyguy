@@ -4,6 +4,7 @@ export class TwitterIntegration {
   private observer: MutationObserver | null = null;
   private overlays: WeakMap<Element, SuggestionsOverlay> = new WeakMap();
   private isAuthenticated: boolean = false;
+  private safetyNetInterval: number | null = null;
 
   initialize() {
     console.log('[ReplyGuy] Initializing X integration');
@@ -33,11 +34,13 @@ export class TwitterIntegration {
     
     this.setupObserver();
     
-    // Initial injection with a delay to ensure page is loaded
-    setTimeout(() => this.injectReplyButtons(), 1000);
+    // Initial injection
+    this.injectReplyButtons();
     
-    // Try again after a longer delay in case of slow loading
-    setTimeout(() => this.injectReplyButtons(), 3000);
+    // Safety net to ensure buttons are injected even if mutation observer fails
+    this.safetyNetInterval = setInterval(() => {
+      this.injectReplyButtons();
+    }, 2000);
   }
 
   cleanup() {
@@ -45,6 +48,13 @@ export class TwitterIntegration {
       this.observer.disconnect();
       this.observer = null;
     }
+    
+    // Clear the safety net interval
+    if (this.safetyNetInterval) {
+      clearInterval(this.safetyNetInterval);
+      this.safetyNetInterval = null;
+    }
+
     // Remove all injected buttons
     const existingButtons = document.querySelectorAll('[data-testid="replyguy"]');
     existingButtons.forEach(button => button.remove());
@@ -57,30 +67,19 @@ export class TwitterIntegration {
 
   private setupObserver() {
     let debounceTimer: number | null = null;
-    
-    this.observer = new MutationObserver((mutations) => {
-      // Debounce to avoid too many calls
-      if (debounceTimer) clearTimeout(debounceTimer);
-      
+
+    this.observer = new MutationObserver(() => {
+      // Debounce to avoid performance issues from rapid-fire mutations.
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+
       debounceTimer = setTimeout(() => {
-        // Check if new tweets were added
-        const hasNewTweets = mutations.some(mutation => {
-          if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-            return Array.from(mutation.addedNodes).some(node => {
-              if (node instanceof Element) {
-                return node.matches('article') || node.querySelector('article');
-              }
-              return false;
-            });
-          }
-          return false;
-        });
-        
-        if (hasNewTweets) {
-          console.log('[ReplyGuy] New tweets detected, checking for unprocessed tweets');
-          this.injectReplyButtons();
-        }
-      }, 800);
+        // Instead of checking for new tweets, we simply run the injection function.
+        // This is more robust as it will catch tweets that are revealed or changed,
+        // not just newly added ones. The injectReplyButtons function is idempotent.
+        this.injectReplyButtons();
+      }, 300); // Reduced debounce time for faster updates
     });
 
     this.observer.observe(document.body, {
@@ -90,30 +89,30 @@ export class TwitterIntegration {
   }
 
   private injectReplyButtons() {
-    console.log('[ReplyGuy] Looking for reply buttons...');
-    console.log('[ReplyGuy] Current page has', document.querySelectorAll('article').length, 'tweet articles');
-    console.log('[ReplyGuy] URL:', window.location.href);
-    console.log('[ReplyGuy] Extension context valid:', !!chrome.runtime?.id);
+    // Find all tweet articles on the page
+    const tweets = document.querySelectorAll('article');
     
-    // Find all reply buttons on the page
-    const replyButtons = this.findReplyButtons();
-    console.log('[ReplyGuy] Found', replyButtons.length, 'reply buttons');
+    if (tweets.length === 0) return;
     
-    replyButtons.forEach((replyButton, index) => {
-      const tweet = replyButton.closest('article');
-      if (tweet) {
-        // Check if ReplyGuy button already exists in this tweet's action bar
-        const actionsGroup = replyButton.closest('[role="group"]');
-        const existingRGButton = actionsGroup?.querySelector('[data-testid="replyguy"]');
-        
-        if (!existingRGButton) {
-          console.log(`[ReplyGuy] Injecting button for tweet ${index + 1}`);
-          this.createReplyGuyIcon(replyButton, tweet);
-        } else {
-          console.log(`[ReplyGuy] Button already exists for tweet ${index + 1}`);
-        }
-      } else {
-        console.log(`[ReplyGuy] No article found for reply button ${index + 1}`);
+    tweets.forEach((tweet, index) => {
+      // Check if our icon has already been injected for this tweet
+      const existingIcon = tweet.querySelector('[data-testid="replyguy"]');
+      if (existingIcon) {
+        return; // Icon already exists, skip to the next tweet
+      }
+
+      // Find the action bar within the tweet
+      const actionBar = tweet.querySelector('[role="group"]');
+      if (!actionBar) {
+        return; // No action bar found, cannot inject
+      }
+
+      // Find the native reply button within the action bar
+      const replyButton = actionBar.querySelector('[data-testid="reply"]') || 
+                          actionBar.querySelector('[aria-label*="Reply"]');
+      
+      if (replyButton) {
+        this.createReplyGuyIcon(replyButton, tweet);
       }
     });
   }

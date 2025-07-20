@@ -81,7 +81,18 @@ export async function POST(req: NextRequest) {
     }
 
     // Build generation prompt
-    const prompt = validated.useCustomStyle && validated.customStyle
+    const shouldUseWriteLikeMe = validated.useCustomStyle && validated.customStyle;
+    
+    console.log('\n🔍 === PROMPT SELECTION DEBUG ===');
+    console.log('useCustomStyle flag:', validated.useCustomStyle);
+    console.log('customStyle exists:', !!validated.customStyle);
+    console.log('customStyle type:', typeof validated.customStyle);
+    if (validated.customStyle) {
+      console.log('customStyle keys:', Object.keys(validated.customStyle));
+    }
+    console.log('Will use Write Like Me:', shouldUseWriteLikeMe);
+    
+    const prompt = shouldUseWriteLikeMe
       ? buildWriteLikeMePrompt(validated, charLimit, replyLength)
       : buildGenerationPrompt(validated, charLimit, styleInstructions, replyLength);
     
@@ -89,6 +100,11 @@ export async function POST(req: NextRequest) {
     console.log('Using Write Like Me:', validated.useCustomStyle && validated.customStyle);
     console.log('Has perplexity data in validated:', !!validated.perplexityData);
     console.log('Perplexity data preview:', validated.perplexityData?.substring(0, 200));
+    console.log('Prompt length (chars):', prompt.length);
+    console.log('Estimated tokens:', Math.ceil(prompt.length / 4));
+    if (prompt.length > 4000) {
+      console.warn('⚠️ LARGE PROMPT DETECTED:', prompt.length, 'chars');
+    }
     console.log(prompt);
     
     console.log('\n📊 === GENERATION INPUT ANALYSIS ===');
@@ -119,7 +135,9 @@ export async function POST(req: NextRequest) {
     // - Longer content allows more natural language (~3.6 chars/token)
     let maxTokens;
     const hasResearch = !!validated.perplexityData;
-    const researchBuffer = hasResearch ? 1.3 : 1.0; // 30% extra for research complexity
+    const hasCustomStyle = validated.useCustomStyle && validated.customStyle;
+    // Increase buffer when both research and custom style are used
+    const researchBuffer = hasResearch && hasCustomStyle ? 1.5 : hasResearch ? 1.3 : 1.0;
     
     if (charLimit >= 2000) {
       // Extra-long: 2000 chars / ~3.6 chars per token = 550 tokens
@@ -135,20 +153,39 @@ export async function POST(req: NextRequest) {
       maxTokens = Math.ceil(100 * researchBuffer);
     }
     
-    console.log(`\n🔢 Token calculation: charLimit=${charLimit}, maxTokens=${maxTokens}, hasResearch=${hasResearch}`);
+    console.log(`\n🔢 Token calculation: charLimit=${charLimit}, maxTokens=${maxTokens}, hasResearch=${hasResearch}, hasCustomStyle=${hasCustomStyle}`);
     
     // Use different system prompt for Write Like Me
     const systemPrompt = validated.useCustomStyle && validated.customStyle
       ? `You are channeling a specific person's writing style on Twitter/X. Your job is to capture their voice authentically while maintaining natural variety. Use their vocabulary, tone, and stylistic patterns, but avoid repetitive phrases. Each reply should feel fresh while still unmistakably theirs. Think of it as the same person writing on different days, in different moods, responding to different situations.`
       : `You are typing a ${replyLength === 'extra-long' ? 'detailed thread-style' : replyLength === 'long' ? 'comprehensive' : replyLength === 'medium' ? 'thoughtful' : 'quick'} reply on Twitter/X. Write exactly like a real person would - casual, direct, sometimes imperfect. The user told you what they want to say, so say it naturally. ${replyLength === 'short' ? 'Keep it punchy - one main point.' : replyLength === 'medium' ? 'You have room for 2-3 sentences to develop your thought.' : 'Take the space to fully develop your thoughts while keeping it conversational.'} When stats/research are included, drop them in naturally like you're sharing something you just learned.`;
 
-    const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: maxTokens,
-      temperature: 0.8,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: prompt }],
-    });
+    console.log('\n🚀 === CALLING ANTHROPIC API ===');
+    console.log('Model:', 'claude-3-5-sonnet-20241022');
+    console.log('Max tokens:', maxTokens);
+    console.log('System prompt length:', systemPrompt.length);
+    console.log('User prompt length:', prompt.length);
+    console.log('Total prompt tokens (estimate):', Math.ceil((systemPrompt.length + prompt.length) / 4));
+    
+    let message;
+    try {
+      message = await anthropic.messages.create({
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: maxTokens,
+        temperature: 0.8,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: prompt }],
+      });
+    } catch (anthropicError: any) {
+      console.error('❌ ANTHROPIC API ERROR:', anthropicError);
+      console.error('Error type:', anthropicError.constructor.name);
+      console.error('Error message:', anthropicError.message);
+      if (anthropicError.response) {
+        console.error('Response status:', anthropicError.response.status);
+        console.error('Response data:', anthropicError.response.data);
+      }
+      throw anthropicError;
+    }
 
     let reply = message.content[0].type === 'text' ? message.content[0].text : '';
     
@@ -209,8 +246,32 @@ export async function POST(req: NextRequest) {
     }
 
     console.error('Generation error:', error);
+    
+    // Provide more detailed error information
+    let errorMessage = 'Failed to generate reply';
+    let errorDetails: any = {};
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      
+      // Check for Anthropic-specific errors
+      if (error.message.includes('context length') || error.message.includes('token')) {
+        errorMessage = 'Request too large - try disabling some features or using shorter inputs';
+        errorDetails.hint = 'The combination of research data, custom style, and examples exceeded limits';
+      } else if (error.message.includes('rate limit')) {
+        errorMessage = 'Rate limited - please try again in a moment';
+      } else if (error.message.includes('timeout')) {
+        errorMessage = 'Request timed out - the response was taking too long';
+      }
+      
+      errorDetails.originalError = error.message;
+    }
+    
     return NextResponse.json(
-      { error: 'Failed to generate reply' },
+      { 
+        error: errorMessage,
+        details: errorDetails 
+      },
       { status: 500 }
     );
   }
@@ -231,7 +292,7 @@ ${JSON.stringify(input.customStyle, null, 2)}
 
 ${input.customStyleExamples?.length > 0 ? `
 Example tweets in this style:
-${input.customStyleExamples.slice(0, 5).map((t: string, i: number) => `${i + 1}. "${t}"`).join('\n')}
+${input.customStyleExamples.slice(0, input.perplexityData ? 3 : 5).map((t: string, i: number) => `${i + 1}. "${t}"`).join('\n')}
 ` : ''}
 
 Context:
@@ -252,6 +313,7 @@ CRITICAL INSTRUCTIONS:
 4. Keep their voice authentic while avoiding repetitive patterns
 5. Draw from their FULL RANGE of expressions, not just one pattern
 6. Make it sound like they wrote it on a different day, in a fresh mood
+7. EMOJI RULE: Even if they use emojis in their style, use them VERY SPARINGLY - only about 1 in 10 replies should have an emoji. Most replies should have ZERO emojis
 
 Reply (just the text, no quotes):`;
 }
@@ -267,7 +329,7 @@ Write like real people actually write on Twitter:
 - Real disagreement: "nah", "eh", "not really", "hard disagree"
 - Natural enthusiasm: "this is sick", "love this", "so good"
 - Skip perfect transitions - just jump to your point
-- One emoji max (and only if it really fits)
+- EMOJI RULE: Use emojis VERY RARELY - only about 1 in 10 replies should have an emoji. When you do use one, it should feel absolutely necessary for the context. Most replies should have ZERO emojis. Professional and informative tones should NEVER have emojis.
 
 When sharing facts/stats:
 - Lead with reaction: "wait this is wild - [stat]"
@@ -303,8 +365,8 @@ Punctuation Style:
 ${style.punctuation?.style ? `- General style: ${style.punctuation.style}` : ''}
 ${style.punctuation?.specificPatterns?.length > 0 ? `- Specific patterns: ${style.punctuation.specificPatterns.join(', ')}` : ''}
 
-${style.emojiPatterns?.frequency !== 'none' ? `Emoji usage: ${style.emojiPatterns.frequency}` : ''}
-${style.emojiPatterns?.specific?.length > 0 ? `Specific emojis: ${style.emojiPatterns.specific.join(' ')}` : ''}
+${style.emojiPatterns?.frequency !== 'none' ? `Emoji usage: ${style.emojiPatterns.frequency} (but use even less frequently - only when absolutely necessary)` : 'NO EMOJIS'}
+${style.emojiPatterns?.specific?.length > 0 ? `If you must use an emoji (rarely): ${style.emojiPatterns.specific.join(' ')}` : ''}
 
 ${style.capitalization?.style ? `Capitalization: ${style.capitalization.style}` : ''}
 

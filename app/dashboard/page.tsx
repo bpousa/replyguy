@@ -15,6 +15,7 @@ import Image from 'next/image';
 import { ReferralStats } from '@/app/components/referral-stats';
 import { ReferralWelcomeModal } from '@/app/components/referral-welcome-modal';
 import { ChromeExtensionCard } from '@/app/components/chrome-extension-card';
+import { TrialOfferBanner } from '@/app/components/trial-offer-banner';
 
 
 export default function HomePage() {
@@ -418,6 +419,15 @@ export default function HomePage() {
       <div className="max-w-6xl mx-auto">
         {/* Subscription Status Banner */}
         <SubscriptionStatusBanner />
+        
+        {/* Trial Offer Banner */}
+        {user && (
+          <TrialOfferBanner 
+            userCreatedAt={user.created_at}
+            hasSeenOffer={user.has_seen_trial_offer || false}
+            currentPlan={subscription?.plan_id || 'free'}
+          />
+        )}
         
         {/* Header */}
         <div className="text-center mb-12">

@@ -148,6 +148,36 @@ export async function POST(req: NextRequest) {
     // Generate unique event ID for idempotency
     const eventId = `${event}_${userId}_${Date.now()}`;
     
+    // For user_created events, also generate trial offer token
+    let trialOfferUrl = null;
+    if (event === 'user_created') {
+      try {
+        const tokenResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/trial-offer/generate-token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            userId, 
+            source: 'webhook' 
+          })
+        });
+        
+        if (tokenResponse.ok) {
+          const tokenData = await tokenResponse.json();
+          trialOfferUrl = tokenData.url;
+          console.log(`✅ Trial offer token generated for user ${userId}`);
+          
+          // Add trial offer URL to metadata
+          metadata = {
+            ...metadata,
+            trial_offer_url: trialOfferUrl,
+            trial_expires_at: tokenData.expires_at
+          };
+        }
+      } catch (error) {
+        console.error('Failed to generate trial offer token:', error);
+      }
+    }
+    
     // Process event asynchronously with retry
     processEventWithRetry({ event, userId, data, metadata }, eventId)
       .catch(error => console.error('Error in async event processing:', error));
@@ -155,7 +185,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       message: 'Event received and queued for processing',
       eventId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      ...(trialOfferUrl && { trial_offer_url: trialOfferUrl })
     });
     
   } catch (error) {

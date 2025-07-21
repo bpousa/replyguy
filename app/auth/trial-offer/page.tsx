@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createBrowserClient } from '@/app/lib/auth';
 import { Button } from '@/app/components/ui/button';
 import { Loader2, CheckCircle, Zap, TrendingUp, Chrome, Users, Star, Timer, Search } from 'lucide-react';
@@ -9,14 +9,17 @@ import { toast } from 'react-hot-toast';
 
 export default function TrialOfferPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [currentOffer, setCurrentOffer] = useState<'pro' | 'basic'>('pro');
   const [userId, setUserId] = useState<string | null>(null);
+  const [validatingToken, setValidatingToken] = useState(true);
+  const [tokenValid, setTokenValid] = useState(false);
   const supabase = createBrowserClient();
 
   useEffect(() => {
-    // Check if user is authenticated
-    const checkAuth = async () => {
+    const checkAuthAndToken = async () => {
+      // First check if user is authenticated
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         router.push('/auth/login');
@@ -24,7 +27,68 @@ export default function TrialOfferPage() {
       }
       setUserId(session.user.id);
       
-      // Mark that user has seen the offer
+      // Check if there's a token in the URL
+      const token = searchParams.get('token');
+      
+      if (token) {
+        // Validate token
+        try {
+          const response = await fetch(`/api/trial-offer/generate-token?token=${token}`);
+          const data = await response.json();
+          
+          if (data.valid) {
+            console.log('[trial-offer] Valid token provided');
+            setTokenValid(true);
+            
+            // Mark token as used
+            await fetch('/api/trial-offer/mark-used', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token })
+            });
+          } else {
+            console.log('[trial-offer] Invalid or expired token:', data);
+            toast.error(data.expired ? 'Trial offer link has expired' : 'Invalid trial offer link');
+            router.push('/dashboard');
+            return;
+          }
+        } catch (error) {
+          console.error('[trial-offer] Error validating token:', error);
+          toast.error('Error validating trial offer');
+          router.push('/dashboard');
+          return;
+        }
+      } else {
+        // No token - check if user is eligible (within 7 days of signup)
+        const { data: userData } = await supabase
+          .from('users')
+          .select('created_at, has_seen_trial_offer')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (userData) {
+          const userCreatedAt = new Date(userData.created_at);
+          const sevenDaysAgo = new Date();
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+          
+          if (userCreatedAt < sevenDaysAgo) {
+            console.log('[trial-offer] User outside 7-day window');
+            toast.error('Trial offer period has expired');
+            router.push('/dashboard');
+            return;
+          }
+          
+          // Check if already seen (only enforce if no token)
+          if (userData.has_seen_trial_offer) {
+            console.log('[trial-offer] User has already seen offer');
+            toast.error('You have already viewed the trial offer');
+            router.push('/dashboard');
+            return;
+          }
+        }
+      }
+      
+      // Mark that user has seen the offer (whether via token or direct access)
       try {
         const { error } = await supabase
           .from('users')
@@ -36,16 +100,16 @@ export default function TrialOfferPage() {
         
         if (error) {
           console.error('[trial-offer] Error marking offer as seen:', error);
-          // Continue anyway - don't block the user from seeing the offer
         }
       } catch (error) {
         console.error('[trial-offer] Unexpected error marking offer as seen:', error);
-        // Continue anyway
       }
+      
+      setValidatingToken(false);
     };
     
-    checkAuth();
-  }, [router, supabase]);
+    checkAuthAndToken();
+  }, [router, supabase, searchParams]);
 
   const handleAcceptOffer = async (plan: 'pro' | 'basic') => {
     if (!userId) return;
@@ -107,6 +171,21 @@ export default function TrialOfferPage() {
       router.push('/dashboard');
     }
   };
+
+  // Show loading state while validating token
+  if (validatingToken) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-purple-600 mx-auto mb-4" />
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+            Validating Your Offer...
+          </h2>
+          <p className="text-gray-600">Please wait a moment</p>
+        </div>
+      </div>
+    );
+  }
 
   if (currentOffer === 'pro') {
     return (

@@ -8,6 +8,7 @@ import { REPLY_LENGTHS } from '@/app/lib/constants';
 // Initialize Anthropic client
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
+  timeout: 20000, // 20 second timeout for API calls
 });
 
 // Request validation schema
@@ -32,6 +33,9 @@ const requestSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  const startTime = Date.now();
+  const timings: Record<string, number> = {};
+  
   try {
     // Validate request body
     const body = await req.json();
@@ -42,6 +46,7 @@ export async function POST(req: NextRequest) {
       perplexityDataPreview: body.perplexityData?.substring(0, 100)
     });
     const validated = requestSchema.parse(body);
+    timings.validation = Date.now() - startTime;
     
     // Get character limit based on reply length
     const replyLength = validated.replyLength || 'short';
@@ -93,6 +98,7 @@ export async function POST(req: NextRequest) {
     }
 
     await Promise.all(promises);
+    timings.dataFetching = Date.now() - startTime - timings.validation;
 
     // Build generation prompt
     const shouldUseWriteLikeMe = validated.useCustomStyle && validated.customStyle;
@@ -205,6 +211,7 @@ export async function POST(req: NextRequest) {
     console.log('User prompt length:', prompt.length);
     console.log('Total prompt tokens (estimate):', Math.ceil((systemPrompt.length + prompt.length) / 4));
     
+    const anthropicStartTime = Date.now();
     let message;
     try {
       message = await anthropic.messages.create({
@@ -214,6 +221,7 @@ export async function POST(req: NextRequest) {
         system: systemPrompt,
         messages: [{ role: 'user', content: prompt }],
       });
+      timings.anthropicCall = Date.now() - anthropicStartTime;
     } catch (anthropicError: any) {
       console.error('❌ ANTHROPIC API ERROR:', anthropicError);
       console.error('Error type:', anthropicError.constructor.name);
@@ -287,11 +295,19 @@ export async function POST(req: NextRequest) {
       console.warn(`Generated only ${reply.length}/${charLimit} chars but used ${message.usage.output_tokens}/${maxTokens} tokens`);
     }
 
+    timings.totalTime = Date.now() - startTime;
+    console.log('\n⏱️ === PERFORMANCE TIMINGS ===');
+    console.log('Validation:', timings.validation, 'ms');
+    console.log('Data fetching (DB/style):', timings.dataFetching || 0, 'ms');
+    console.log('Anthropic API call:', timings.anthropicCall, 'ms');
+    console.log('Total time:', timings.totalTime, 'ms');
+    
     return NextResponse.json({
       data: {
         reply,
         tokensUsed,
         cost,
+        timings, // Include timing info for debugging
       },
     });
   } catch (error) {
@@ -407,10 +423,19 @@ ${input.perplexityData}
     const maxExamples = input.perplexityData ? 3 : 5;
     const diverseExamples = input.customStyleExamples ? diversifyExamples(input.customStyleExamples, maxExamples) : [];
     
+    // When research is enabled, use a more compact style representation
+    const styleToShow = input.perplexityData ? {
+      tone: input.customStyle.tone,
+      formality: input.customStyle.formality,
+      vocabulary: { level: input.customStyle.vocabulary?.level, uniqueWords: input.customStyle.vocabulary?.uniqueWords?.slice(0, 5) },
+      uniqueQuirks: input.customStyle.uniqueQuirks?.slice(0, 3),
+      doNotUse: input.customStyle.doNotUse
+    } : input.customStyle;
+    
     return `Based on this writing style analysis, write a reply that captures the SPIRIT and VARIETY of this person's voice:
 
 Style Analysis:
-${JSON.stringify(input.customStyle, null, 2)}
+${JSON.stringify(styleToShow, null, 2)}
 
 ${diverseExamples.length > 0 ? `\nExample tweets in this style (showing variety):\n${diverseExamples.map((t: string, i: number) => `${i + 1}. "${t}"`).join('\n')}\n` : ''}
 
@@ -422,11 +447,10 @@ Context:
 - Length: ${lengthGuide} (max ${charLimit} characters)
 ${researchBlock}
 
-${(input.perplexityData && input.includeMeme) ? `SIMPLIFIED INSTRUCTIONS (Multi-feature mode):
+${(input.perplexityData || input.includeMeme) ? `SIMPLIFIED INSTRUCTIONS (Multi-feature mode):
 1. PRIORITY: Express "${input.responseIdea}" in their style
 2. NO COPYING: Create fresh phrasing - don't copy from examples
-3. INCLUDE: Weave in the research data naturally
-4. STYLE: Match their energy/tone but with original words
+${input.perplexityData ? '3. INCLUDE: Weave in the research data naturally\n' : ''}4. STYLE: Match their energy/tone but with original words
 5. LENGTH: Keep it concise - ${lengthGuide}
 
 Reply (just the text, no quotes):` : `CRITICAL INSTRUCTIONS:

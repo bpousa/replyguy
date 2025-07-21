@@ -50,7 +50,7 @@ const requestSchema = z.object({
 export async function POST(req: NextRequest) {
   const cookieStore = cookies();
   const supabase = createServerClient(cookieStore);
-  const startTime = Date.now();
+  const processingStartTime = Date.now();
   const costs: CostBreakdown = {
     classification: 0,
     reasoning: 0,
@@ -206,7 +206,7 @@ export async function POST(req: NextRequest) {
         console.log(`\n🔍 ============ RESEARCH [${requestId}] ============`);
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+          const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout for research
           
           const researchResponse = await fetch(new URL('/api/research', req.url), {
             method: 'POST',
@@ -291,7 +291,7 @@ export async function POST(req: NextRequest) {
                 .filter((ex: any) => ex.revised)
                 .map((ex: any) => ex.revised),
               ...style.sample_tweets
-            ].slice(0, 10); // Keep best 10 examples
+            ].slice(0, 7); // Keep best 7 examples to avoid token bloat
           }
           console.log('✅ STYLE FETCH SUCCESS');
           console.log('Style analysis type:', typeof style.style_analysis);
@@ -447,7 +447,7 @@ export async function POST(req: NextRequest) {
     console.log('🎯 Final Selected Type:', selectedType.name);
     console.log('💰 Reasoning Cost:', costs.reasoning);
 
-    // Step 4: Generate final reply first (we need it for auto-generating meme text)
+    // Step 4: Generate final reply AND start meme pre-processing in parallel
     console.log(`\n✍️ ============ STEP 4: FINAL GENERATION [${requestId}] ============`);
     console.log('📤 Generation Input:', {
       originalTweet: validated.originalTweet,
@@ -463,9 +463,41 @@ export async function POST(req: NextRequest) {
       sampleTweetsCount: sampleTweets?.length || 0
     });
     
-    // Use longer timeout when multiple features are enabled
-    const isComplexRequest = validated.needsResearch && validated.useCustomStyle;
-    const generateTimeout = isComplexRequest ? 15000 : 10000; // 15s for complex, 10s for normal
+    // Calculate timeout based on enabled features
+    let baseTimeout = 10000; // 10s base
+    if (validated.needsResearch) baseTimeout += 8000; // +8s for research (includes Perplexity time)
+    if (validated.useCustomStyle) baseTimeout += 3000; // +3s for custom style processing
+    if (validated.includeMeme) baseTimeout += 2000; // +2s buffer for meme (meme runs separately)
+    
+    // Add safety margin for multiple features
+    const featureCount = [validated.needsResearch, validated.useCustomStyle, validated.includeMeme].filter(Boolean).length;
+    if (featureCount >= 2) baseTimeout += 2000; // +2s for multi-feature complexity
+    
+    const generateTimeout = Math.min(baseTimeout, 28000); // Cap at 28s to stay under Vercel's 30s limit
+    
+    // Start meme pre-processing if meme is requested
+    let memePreprocessPromise: Promise<any> | null = null;
+    if (validated.includeMeme && imgflipService.isConfigured()) {
+      console.log('🎭 Starting meme pre-processing in parallel...');
+      memePreprocessPromise = fetch(new URL('/api/meme-text', req.url), {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cookie': req.headers.get('cookie') || ''
+        },
+        body: JSON.stringify({
+          userText: validated.memeText,
+          // Use placeholder for reply since it's not ready yet
+          reply: '',
+          originalTweet: validated.originalTweet,
+          tone: validated.tone,
+          enhance: validated.memeTextMode === 'enhance',
+          userId: userId,
+          // Flag to indicate this is pre-processing
+          isPreprocess: true
+        }),
+      }).then(res => res.ok ? res.json() : null).catch(() => null);
+    }
     
     let generateResponse;
     try {
@@ -501,14 +533,15 @@ export async function POST(req: NextRequest) {
         console.error(`❌ GENERATION TIMEOUT after ${generateTimeout/1000}s`);
         return NextResponse.json(
           { 
-            error: 'Generation timed out - request was too complex. Try disabling some features.',
+            error: `Generation timed out after ${generateTimeout/1000} seconds. Try disabling some features like ${validated.useCustomStyle ? 'Write Like Me' : validated.needsResearch ? 'research' : 'meme generation'}.`,
             details: { 
               timeout: generateTimeout,
               features: {
                 research: validated.needsResearch,
                 customStyle: validated.useCustomStyle,
                 meme: validated.includeMeme
-              }
+              },
+              suggestion: 'The server is taking longer than expected. You can try again or disable some features for faster generation.'
             },
             costs,
           },
@@ -546,37 +579,84 @@ export async function POST(req: NextRequest) {
     let finalMemeText: string | undefined;
     let memeSkipReason: string | undefined;
     
-    if (validated.includeMeme && imgflipService.isConfigured()) {
+    // Check if we have enough time left for meme generation
+    const elapsedTime = Date.now() - processingStartTime;
+    const remainingTime = 29000 - elapsedTime; // Leave 1s buffer from Vercel's 30s limit
+    
+    if (validated.includeMeme && imgflipService.isConfigured() && remainingTime > 3000) {
       console.log('🎭 Meme Generation Details:', {
         userRequestedMeme: true,
         userProvidedText: validated.memeText || 'none',
         willAutoGenerate: !validated.memeText,
+        remainingTime: `${(remainingTime / 1000).toFixed(1)}s`,
         replyLength: validated.replyLength || 'short',
         generatedReplyPreview: generateData.data.reply.substring(0, 100) + '...',
         tone: validated.tone
       });
       
-      // Generate meme text using GPT-4o
+      // Generate meme text using GPT-4o (or use pre-processed data)
       try {
-        console.log('🤖 Calling meme-text API to generate text...');
-        const memeTextResponse = await fetch(new URL('/api/meme-text', req.url), {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Cookie': req.headers.get('cookie') || ''
-          },
-          body: JSON.stringify({
-            userText: validated.memeText,
-            reply: generateData.data.reply,
-            originalTweet: validated.originalTweet,
-            tone: validated.tone,
-            enhance: validated.memeTextMode === 'enhance',
-            userId: userId
-          }),
-        });
+        console.log('🤖 Finalizing meme text...');
         
-        if (memeTextResponse.ok) {
-          const memeTextData = await memeTextResponse.json();
+        // Check if we have pre-processed meme data
+        let memeTextData = null;
+        if (memePreprocessPromise) {
+          const preprocessedData = await memePreprocessPromise;
+          if (preprocessedData) {
+            console.log('✅ Using pre-processed meme template data');
+            memeTextData = preprocessedData;
+            // Update with actual reply text if needed
+            if (!validated.memeText && memeTextData.needsReplyUpdate) {
+              // Make a quick update call with the actual reply
+              const updateResponse = await fetch(new URL('/api/meme-text', req.url), {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'Cookie': req.headers.get('cookie') || ''
+                },
+                body: JSON.stringify({
+                  userText: validated.memeText,
+                  reply: generateData.data.reply,
+                  originalTweet: validated.originalTweet,
+                  tone: validated.tone,
+                  enhance: validated.memeTextMode === 'enhance',
+                  userId: userId,
+                  templateData: memeTextData // Pass pre-processed template
+                }),
+              });
+              if (updateResponse.ok) {
+                memeTextData = await updateResponse.json();
+              }
+            }
+          }
+        }
+        
+        // If no pre-processed data or it failed, generate now
+        if (!memeTextData) {
+          console.log('🤖 Generating meme text from scratch...');
+          const memeTextResponse = await fetch(new URL('/api/meme-text', req.url), {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Cookie': req.headers.get('cookie') || ''
+            },
+            body: JSON.stringify({
+              userText: validated.memeText,
+              reply: generateData.data.reply,
+              originalTweet: validated.originalTweet,
+              tone: validated.tone,
+              enhance: validated.memeTextMode === 'enhance',
+              userId: userId
+            }),
+          });
+        
+          if (memeTextResponse.ok) {
+            memeTextData = await memeTextResponse.json();
+          }
+        }
+        
+        // Process meme data if we have it
+        if (memeTextData) {
           
           // Check if we got template-specific data
           if (memeTextData.templateId && !memeTextData.useAutomeme) {
@@ -785,12 +865,14 @@ export async function POST(req: NextRequest) {
       console.warn('Request exceeded cost limit:', costs.total);
     }
 
-    const processingTime = Date.now() - startTime;
+    const processingTime = Date.now() - processingStartTime;
 
     // Determine meme skip reason for debugging
     if (validated.includeMeme && !memeUrl && !memeSkipReason) {
       if (!imgflipService.isConfigured()) {
         memeSkipReason = 'Imgflip service not configured';
+      } else if (remainingTime <= 3000) {
+        memeSkipReason = `Insufficient time remaining (${(remainingTime / 1000).toFixed(1)}s)`;
       } else {
         memeSkipReason = 'Meme generation API call failed';
       }
@@ -845,6 +927,16 @@ export async function POST(req: NextRequest) {
     console.log('⏱️ Total Processing Time:', processingTime + 'ms');
     console.log('💰 Total Cost:', costs.total);
     console.log('📊 Cost Breakdown:', costs);
+    console.log('⏱️ Timeout Configuration:', {
+      generateTimeout: `${generateTimeout/1000}s`,
+      actualTime: `${processingTime/1000}s`, 
+      remainingBuffer: `${(30000 - processingTime)/1000}s`,
+      features: {
+        research: validated.needsResearch,
+        customStyle: validated.useCustomStyle,
+        meme: validated.includeMeme
+      }
+    });
     console.log('🎯 Final Result:', {
       reply: result.reply,
       replyType: result.replyType,

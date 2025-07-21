@@ -11,11 +11,13 @@ import { cookies } from 'next/headers';
 // Request validation schema
 const requestSchema = z.object({
   userText: z.string().max(100).optional(),
-  reply: z.string().min(1).max(1000),
+  reply: z.string().min(0).max(1000).default(''), // Allow empty for pre-processing
   originalTweet: z.string().min(1).max(1000).optional(),
   tone: z.string(),
   enhance: z.boolean().default(false),
-  userId: z.string().optional()
+  userId: z.string().optional(),
+  isPreprocess: z.boolean().optional(),
+  templateData: z.any().optional()
 });
 
 export async function POST(req: NextRequest) {
@@ -62,6 +64,64 @@ export async function POST(req: NextRequest) {
         method: 'user-provided',
         useAutomeme: true
       });
+    }
+    
+    // Handle pre-processing request
+    if (validated.isPreprocess) {
+      console.log('[meme-text] Pre-processing meme template selection');
+      
+      // For pre-processing, select template based on tone/context without final reply
+      try {
+        const templates = await imgflipService.getPopularMemes();
+        const recentTemplateIds = memeTemplateTracker.getRecentTemplateIds(userId);
+        const scoredTemplates = memeTemplateTracker.scoreTemplatesByDiversity(templates, userId);
+        
+        const candidateTemplateIds = scoredTemplates
+          .filter(st => st.score > 20)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 15) // Fewer candidates for pre-processing
+          .map(st => st.template.id);
+        
+        const candidateTemplates = templates.filter(t => candidateTemplateIds.includes(t.id));
+        
+        // For pre-processing, just return the top candidates
+        return NextResponse.json({
+          preProcessed: true,
+          candidateTemplates: candidateTemplates.slice(0, 5),
+          needsReplyUpdate: true,
+          method: 'pre-processed'
+        });
+      } catch (error) {
+        console.error('[meme-text] Pre-processing failed:', error);
+        return NextResponse.json({
+          preProcessed: false,
+          error: 'Pre-processing failed'
+        });
+      }
+    }
+    
+    // Handle template data update (when we have the final reply)
+    if (validated.templateData && validated.templateData.preProcessed) {
+      console.log('[meme-text] Updating pre-processed template with final reply');
+      
+      // Use the pre-selected templates with the actual reply
+      const candidateTemplates = validated.templateData.candidateTemplates;
+      
+      // Now select the best one with the actual reply context
+      const selection = await openAIMemeService.selectMemeTemplate({
+        templates: candidateTemplates,
+        reply: validated.reply,
+        originalTweet: validated.originalTweet || '',
+        tone: validated.tone
+      });
+      
+      if (selection) {
+        memeTemplateTracker.recordUsage(userId, selection.templateId, selection.templateName);
+        return NextResponse.json({
+          ...selection,
+          method: 'template-updated'
+        });
+      }
     }
     
     // New approach: Template-based selection

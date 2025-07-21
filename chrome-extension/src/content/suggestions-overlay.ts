@@ -1540,8 +1540,8 @@ export class SuggestionsOverlay {
           replyBox.focus();
         }
         
-        // Auto-close after showing the success message (longer if meme present)
-        const closeDelay = memeUrl ? 3500 : 2500;
+        // Auto-close after showing the success message
+        const closeDelay = 1500; // Reduced to 1.5s for better UX
         setTimeout(() => {
           this.remove();
         }, closeDelay);
@@ -1821,10 +1821,10 @@ export class SuggestionsOverlay {
               editContainer.appendChild(successNotice);
             }
             
-            // Close after a longer delay to let user see the success
+            // Close after a brief delay to let user see the success
             setTimeout(() => {
               this.remove();
-            }, 3000);
+            }, 1500);
           } catch (copyError) {
             // If copy fails, still show success but warn about copy
             console.error('[ReplyGuy] Failed to copy to clipboard:', copyError);

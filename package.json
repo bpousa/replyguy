@@ -14,7 +14,8 @@
     "replay-webhooks": "tsx scripts/replay-webhooks.ts",
     "sync-stripe-plans": "tsx scripts/sync-stripe-plans.ts",
     "test": "jest --watch",
-    "test:ci": "jest"
+    "test:ci": "jest",
+    "test:timeouts": "tsx scripts/test-timeouts.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.0",

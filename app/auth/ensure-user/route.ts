@@ -44,13 +44,15 @@ export async function GET() {
     if (!existingUser) {
       console.log('[ensure-user] User not found in public.users, creating...');
       
-      // Create user
+      // Create user with all metadata
       const { error: insertError } = await supabase
         .from('users')
         .insert({
           id: session.user.id,
           email: session.user.email,
           full_name: session.user.user_metadata?.full_name || '',
+          phone: session.user.user_metadata?.phone || null,
+          sms_opt_in: session.user.user_metadata?.sms_opt_in || false,
           referral_code: Math.random().toString(36).substring(2, 8).toUpperCase(),
           referred_by: null // Will be updated by trigger if referral code was used
         });

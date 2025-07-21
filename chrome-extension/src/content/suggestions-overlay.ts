@@ -54,14 +54,31 @@ export class SuggestionsOverlay {
       const result = await chrome.storage.sync.get(['replyGuySettings']);
       if (result.replyGuySettings) {
         const settings = result.replyGuySettings;
+        console.log('[ReplyGuy] Loading saved settings:', settings);
+        
+        // Log each setting as it's applied
         this.responseType = settings.responseType || this.responseType;
+        console.log('[ReplyGuy] - responseType:', this.responseType);
+        
         this.tone = settings.tone || this.tone;
+        console.log('[ReplyGuy] - tone:', this.tone);
+        
         this.replyLength = settings.replyLength || this.replyLength;
+        console.log('[ReplyGuy] - replyLength:', this.replyLength);
+        
         this.needsResearch = settings.needsResearch ?? this.needsResearch;
+        console.log('[ReplyGuy] - needsResearch:', this.needsResearch);
+        
         this.includeMeme = settings.includeMemes ?? this.includeMeme;
+        console.log('[ReplyGuy] - includeMeme:', this.includeMeme);
+        
         this.useCustomStyle = settings.useCustomStyle ?? this.useCustomStyle;
+        console.log('[ReplyGuy] - useCustomStyle:', this.useCustomStyle);
+        
         this.enableStyleMatching = settings.enableStyleMatching ?? this.enableStyleMatching;
-        console.log('[ReplyGuy] Loaded user settings:', settings);
+        console.log('[ReplyGuy] - enableStyleMatching:', this.enableStyleMatching);
+      } else {
+        console.log('[ReplyGuy] No saved settings found, using defaults');
       }
     } catch (error) {
       console.error('[ReplyGuy] Failed to load settings:', error);
@@ -354,6 +371,7 @@ export class SuggestionsOverlay {
       responseTypeSelect.value = this.responseType;
       responseTypeSelect.addEventListener('change', () => {
         this.responseType = responseTypeSelect.value;
+        console.log('[ReplyGuy] Response type changed to:', this.responseType);
       });
     }
     
@@ -363,6 +381,7 @@ export class SuggestionsOverlay {
       toneSelect.value = this.tone;
       toneSelect.addEventListener('change', () => {
         this.tone = toneSelect.value;
+        console.log('[ReplyGuy] Tone changed to:', this.tone);
       });
     }
     
@@ -451,15 +470,14 @@ export class SuggestionsOverlay {
     });
     
     // Reply length selection
-    this.overlay.querySelectorAll('input[name="replyLength"]').forEach(input => {
-      const radioInput = input as HTMLInputElement;
-      if (radioInput.value === this.replyLength) {
-        radioInput.checked = true;
-      }
-      radioInput.addEventListener('change', (e) => {
-        this.replyLength = (e.target as HTMLInputElement).value;
+    const lengthSelect = this.overlay.querySelector('#reply-guy-length') as HTMLSelectElement;
+    if (lengthSelect) {
+      lengthSelect.value = this.replyLength;
+      lengthSelect.addEventListener('change', () => {
+        this.replyLength = lengthSelect.value;
+        console.log('[ReplyGuy] Reply length changed to:', this.replyLength);
       });
-    });
+    }
     
     // Research toggle
     const researchCheckbox = this.overlay.querySelector('#reply-guy-research') as HTMLInputElement;
@@ -611,12 +629,15 @@ export class SuggestionsOverlay {
     const writeLikeMeCheckbox = this.overlay.querySelector('#reply-guy-write-like-me') as HTMLInputElement;
     if (writeLikeMeCheckbox) {
       writeLikeMeCheckbox.checked = this.useCustomStyle || false;
+      console.log('[ReplyGuy] Write Like Me initial state:', this.useCustomStyle);
       writeLikeMeCheckbox.addEventListener('change', () => {
         this.useCustomStyle = writeLikeMeCheckbox.checked;
+        console.log('[ReplyGuy] Write Like Me changed to:', this.useCustomStyle);
       });
     } else {
       // If checkbox doesn't exist (user plan doesn't support it), explicitly set to false
       this.useCustomStyle = false;
+      console.log('[ReplyGuy] Write Like Me feature not available in user plan');
     }
     
     // Match Tweet Style checkbox
@@ -625,12 +646,15 @@ export class SuggestionsOverlay {
       // Set initial value and default to true (matching the main dashboard behavior)
       matchStyleCheckbox.checked = this.enableStyleMatching !== false;
       this.enableStyleMatching = matchStyleCheckbox.checked;
+      console.log('[ReplyGuy] Match Tweet Style initial state:', this.enableStyleMatching);
       matchStyleCheckbox.addEventListener('change', () => {
         this.enableStyleMatching = matchStyleCheckbox.checked;
+        console.log('[ReplyGuy] Match Tweet Style changed to:', this.enableStyleMatching);
       });
     } else {
       // If checkbox doesn't exist (user plan doesn't support it), explicitly set to false
       this.enableStyleMatching = false;
+      console.log('[ReplyGuy] Match Tweet Style feature not available in user plan');
     }
     
     // Generate button

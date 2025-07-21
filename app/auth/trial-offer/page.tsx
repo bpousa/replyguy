@@ -25,13 +25,23 @@ export default function TrialOfferPage() {
       setUserId(session.user.id);
       
       // Mark that user has seen the offer
-      await supabase
-        .from('users')
-        .update({ 
-          has_seen_trial_offer: true,
-          trial_offer_shown_at: new Date().toISOString()
-        })
-        .eq('id', session.user.id);
+      try {
+        const { error } = await supabase
+          .from('users')
+          .update({ 
+            has_seen_trial_offer: true,
+            trial_offer_shown_at: new Date().toISOString()
+          })
+          .eq('id', session.user.id);
+        
+        if (error) {
+          console.error('[trial-offer] Error marking offer as seen:', error);
+          // Continue anyway - don't block the user from seeing the offer
+        }
+      } catch (error) {
+        console.error('[trial-offer] Unexpected error marking offer as seen:', error);
+        // Continue anyway
+      }
     };
     
     checkAuth();

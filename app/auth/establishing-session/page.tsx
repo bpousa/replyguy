@@ -125,19 +125,38 @@ export default function EstablishingSessionPage() {
             console.log('[establishing-session] Free plan, checking trial offer eligibility');
             
             // Check if user has seen trial offer
-            const { data: userData } = await supabase
-              .from('users')
-              .select('has_seen_trial_offer')
-              .eq('id', session.user.id)
-              .single();
-            
-            if (userData && !userData.has_seen_trial_offer) {
-              console.log('[establishing-session] User eligible for trial offer, redirecting');
-              router.push('/auth/trial-offer');
-            } else {
-              console.log('[establishing-session] User has seen trial offer or ineligible, redirecting to dashboard');
-              router.push(next || '/dashboard');
+            try {
+              const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('has_seen_trial_offer')
+                .eq('id', session.user.id)
+                .single();
+              
+              if (userError) {
+                console.error('[establishing-session] Error checking trial offer:', userError);
+                // If we can't check, assume they haven't seen it (especially for new users)
+                if (isNew) {
+                  console.log('[establishing-session] Error checking but user is new, showing trial offer');
+                  router.push('/auth/trial-offer');
+                  return;
+                }
+              } else if (userData && !userData.has_seen_trial_offer) {
+                console.log('[establishing-session] User eligible for trial offer, redirecting');
+                router.push('/auth/trial-offer');
+                return;
+              }
+            } catch (error) {
+              console.error('[establishing-session] Unexpected error checking trial offer:', error);
+              // For new users, show the trial offer anyway
+              if (isNew) {
+                console.log('[establishing-session] Error but user is new, showing trial offer');
+                router.push('/auth/trial-offer');
+                return;
+              }
             }
+            
+            console.log('[establishing-session] User has seen trial offer or ineligible, redirecting to dashboard');
+            router.push(next || '/dashboard');
           }
         }
       });
@@ -204,19 +223,38 @@ export default function EstablishingSessionPage() {
               console.log('[establishing-session] Free plan, checking trial offer eligibility');
               
               // Check if user has seen trial offer
-              const { data: userData } = await supabase
-                .from('users')
-                .select('has_seen_trial_offer')
-                .eq('id', session.user.id)
-                .single();
-              
-              if (userData && !userData.has_seen_trial_offer) {
-                console.log('[establishing-session] User eligible for trial offer, redirecting');
-                router.push('/auth/trial-offer');
-              } else {
-                console.log('[establishing-session] User has seen trial offer or ineligible, redirecting to dashboard');
-                router.push(next || '/dashboard');
+              try {
+                const { data: userData, error: userError } = await supabase
+                  .from('users')
+                  .select('has_seen_trial_offer')
+                  .eq('id', session.user.id)
+                  .single();
+                
+                if (userError) {
+                  console.error('[establishing-session] Error checking trial offer (polling):', userError);
+                  // If we can't check, assume they haven't seen it (especially for new users)
+                  if (isNew) {
+                    console.log('[establishing-session] Error checking but user is new, showing trial offer (polling)');
+                    router.push('/auth/trial-offer');
+                    return;
+                  }
+                } else if (userData && !userData.has_seen_trial_offer) {
+                  console.log('[establishing-session] User eligible for trial offer, redirecting (polling)');
+                  router.push('/auth/trial-offer');
+                  return;
+                }
+              } catch (error) {
+                console.error('[establishing-session] Unexpected error checking trial offer (polling):', error);
+                // For new users, show the trial offer anyway
+                if (isNew) {
+                  console.log('[establishing-session] Error but user is new, showing trial offer (polling)');
+                  router.push('/auth/trial-offer');
+                  return;
+                }
               }
+              
+              console.log('[establishing-session] User has seen trial offer or ineligible, redirecting to dashboard');
+              router.push(next || '/dashboard');
             }
             return;
           }

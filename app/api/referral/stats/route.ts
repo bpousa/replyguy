@@ -35,10 +35,41 @@ export async function GET(req: NextRequest) {
       
     if (userError) {
       console.error('Error fetching user data:', userError);
-      return NextResponse.json(
-        { error: 'Failed to fetch user data' },
-        { status: 500 }
-      );
+      
+      // Try a simpler query without the join
+      const { data: simpleUserData, error: simpleError } = await supabase
+        .from('users')
+        .select('referral_code, bonus_replies, bonus_research')
+        .eq('id', user.id)
+        .single();
+        
+      if (simpleError) {
+        console.error('Simple query also failed:', simpleError);
+        return NextResponse.json(
+          { error: 'Failed to fetch user data' },
+          { status: 500 }
+        );
+      }
+      
+      // Return basic data without subscription info
+      return NextResponse.json({
+        referralCode: simpleUserData?.referral_code || null,
+        referralUrl: simpleUserData?.referral_code ? 
+          `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/signup?ref=${simpleUserData.referral_code}` : 
+          null,
+        isFreeTier: true, // Default to free if we can't get subscription
+        isPaidTier: false,
+        stats: {
+          totalReferrals: 0,
+          completedReferrals: 0,
+          pendingReferrals: 0,
+          bonusReplies: simpleUserData?.bonus_replies || 0,
+          bonusResearch: simpleUserData?.bonus_research || 0,
+          maxBonusReplies: 40,
+          maxBonusResearch: 4
+        },
+        referrals: []
+      });
     }
     
     const subscription_tier = userData.subscriptions?.[0]?.plan_id || 'free';

@@ -421,14 +421,31 @@ export default function SignupPage() {
               setIsLoading(true);
               try {
                 const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
-                const { error } = await supabase.auth.signInWithOAuth({
+                const redirectTo = `${appUrl}/auth/callback${planId ? `?plan=${planId}` : ''}`;
+                
+                console.log('[X OAuth] Starting OAuth flow with:', {
+                  provider: 'twitter',
+                  redirectTo,
+                  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL
+                });
+                
+                const { data, error } = await supabase.auth.signInWithOAuth({
                   provider: 'twitter',
                   options: {
-                    redirectTo: `${appUrl}/auth/callback${planId ? `?plan=${planId}` : ''}`
+                    redirectTo,
+                    skipBrowserRedirect: false
                   }
                 });
                 
+                console.log('[X OAuth] Response:', { data, error });
+                
                 if (error) throw error;
+                
+                // If we get here and there's a URL, something went wrong with the redirect
+                if (data?.url) {
+                  console.log('[X OAuth] Manual redirect to:', data.url);
+                  window.location.href = data.url;
+                }
               } catch (error: any) {
                 console.error('X OAuth error:', error);
                 toast.error('Failed to sign in with X');

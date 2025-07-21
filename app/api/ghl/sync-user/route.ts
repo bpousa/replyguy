@@ -11,6 +11,10 @@ interface GHLUserPayload {
   external_id: string;        // ReplyGuy user ID
   email: string;
   name: string;
+  phone?: string;             // Phone number in E.164 format
+  phone_verified?: boolean;   // Whether phone is verified
+  sms_opt_in?: boolean;       // Opted in for SMS growth tips
+  sms_opt_in_date?: string;   // ISO date when opted in
   timezone: string;
   
   // Subscription data
@@ -133,6 +137,10 @@ async function getUserData(userId: string): Promise<GHLUserPayload | null> {
       external_id: userId,
       email: userInfo.email,
       name: userInfo.full_name || userInfo.email.split('@')[0],
+      phone: userInfo.phone,
+      phone_verified: userInfo.phone_verified || false,
+      sms_opt_in: userInfo.sms_opt_in || false,
+      sms_opt_in_date: userInfo.sms_opt_in_date,
       timezone: userInfo.timezone || 'America/New_York',
       member_level: mapPlanToMemberLevel(userInfo.plan_id || 'free'),
       subscription_status: userInfo.subscription_status || 'active',

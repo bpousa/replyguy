@@ -364,6 +364,44 @@ export default function LoginPage() {
             )}
           </Button>
 
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Or continue with</span>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={async () => {
+              setIsLoading(true);
+              try {
+                const { error } = await supabase.auth.signInWithOAuth({
+                  provider: 'twitter',
+                  options: {
+                    redirectTo: `${window.location.origin}/auth/callback`
+                  }
+                });
+                
+                if (error) throw error;
+              } catch (error: any) {
+                console.error('X OAuth error:', error);
+                toast.error('Failed to sign in with X');
+                setIsLoading(false);
+              }
+            }}
+            disabled={isLoading}
+          >
+            <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+            </svg>
+            Sign in with X
+          </Button>
+
         </form>
         )}
       </div>

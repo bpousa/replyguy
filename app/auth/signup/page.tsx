@@ -21,6 +21,9 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [smsOptIn, setSmsOptIn] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [validatedReferral, setValidatedReferral] = useState<{ valid: boolean; message?: string } | null>(null);
   
@@ -93,9 +96,49 @@ export default function SignupPage() {
     validateReferralCode();
   }, [referralCode]);
 
+  const formatPhoneNumber = (value: string) => {
+    // Remove all non-digits
+    const phoneNumber = value.replace(/\D/g, '');
+    
+    // Format as US phone number
+    if (phoneNumber.length <= 3) {
+      return phoneNumber;
+    } else if (phoneNumber.length <= 6) {
+      return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3)}`;
+    } else if (phoneNumber.length <= 10) {
+      return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3, 6)}-${phoneNumber.slice(6)}`;
+    } else {
+      return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3, 6)}-${phoneNumber.slice(6, 10)}`;
+    }
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhoneNumber(e.target.value);
+    setPhone(formatted);
+  };
+
+  const convertToE164 = (phoneNumber: string) => {
+    // Remove all non-digits
+    const digits = phoneNumber.replace(/\D/g, '');
+    
+    // Assume US number if 10 digits
+    if (digits.length === 10) {
+      return `+1${digits}`;
+    } else if (digits.length === 11 && digits.startsWith('1')) {
+      return `+${digits}`;
+    }
+    
+    return null; // Invalid format
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!fullName.trim()) {
+      toast.error('Please enter your name');
+      return;
+    }
+
     if (password !== confirmPassword) {
       toast.error('Passwords do not match');
       return;
@@ -104,6 +147,16 @@ export default function SignupPage() {
     if (password.length < 6) {
       toast.error('Password must be at least 6 characters');
       return;
+    }
+
+    // Validate phone if provided
+    let e164Phone = null;
+    if (phone) {
+      e164Phone = convertToE164(phone);
+      if (!e164Phone) {
+        toast.error('Please enter a valid 10-digit phone number');
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -118,7 +171,10 @@ export default function SignupPage() {
           emailRedirectTo: `${appUrl}/auth/callback${planId ? `?plan=${planId}` : ''}`,
           data: {
             selected_plan: planId || 'free',
-            referral_code: referralCode || ''
+            referral_code: referralCode || '',
+            full_name: fullName,
+            phone: e164Phone,
+            sms_opt_in: smsOptIn && e164Phone ? true : false
           }
         },
       });
@@ -235,6 +291,22 @@ export default function SignupPage() {
           
           <div className="space-y-4">
             <div>
+              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
+                Full Name
+              </label>
+              <input
+                id="fullName"
+                name="fullName"
+                type="text"
+                autoComplete="name"
+                required
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
+                placeholder="Your full name"
+              />
+            </div>
+            <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email address
               </label>
@@ -282,6 +354,39 @@ export default function SignupPage() {
                 placeholder="Confirm password"
               />
             </div>
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                Phone Number <span className="text-gray-500">(optional)</span>
+              </label>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                autoComplete="tel"
+                value={phone}
+                onChange={handlePhoneChange}
+                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
+                placeholder="(555) 123-4567"
+              />
+              {phone && (
+                <div className="mt-2">
+                  <label className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={smsOptIn}
+                      onChange={(e) => setSmsOptIn(e.target.checked)}
+                      className="mt-1 h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm text-gray-600">
+                      <span className="font-medium text-gray-900">Get exclusive X growth tips!</span>
+                      <br />
+                      Unlock insider strategies to boost your engagement and grow your following faster. 
+                      <span className="text-purple-600">2-3 texts per month, unsubscribe anytime.</span>
+                    </span>
+                  </label>
+                </div>
+              )}
+            </div>
           </div>
 
           <Button
@@ -297,6 +402,45 @@ export default function SignupPage() {
             ) : (
               'Create account'
             )}
+          </Button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Or continue with</span>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={async () => {
+              setIsLoading(true);
+              try {
+                const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+                const { error } = await supabase.auth.signInWithOAuth({
+                  provider: 'twitter',
+                  options: {
+                    redirectTo: `${appUrl}/auth/callback${planId ? `?plan=${planId}` : ''}`
+                  }
+                });
+                
+                if (error) throw error;
+              } catch (error: any) {
+                console.error('X OAuth error:', error);
+                toast.error('Failed to sign in with X');
+                setIsLoading(false);
+              }
+            }}
+            disabled={isLoading}
+          >
+            <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+            </svg>
+            Sign up with X
           </Button>
 
 

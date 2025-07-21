@@ -9,7 +9,7 @@
 - **Features**:
   - 300 replies per month
   - 10 memes per month
-  - 50 AI suggestions
+  - 100 AI suggestions
   - All reply types
   - Email support
 
@@ -20,7 +20,7 @@
 - **Features**:
   - 500 replies per month
   - 50 memes per month
-  - 100 AI suggestions
+  - 200 AI suggestions
   - Write Like Me™ AI training
   - Style matching
   - Medium-length replies
@@ -33,7 +33,7 @@
 - **Features**:
   - 1000 replies per month
   - 100 memes per month
-  - 200 AI suggestions
+  - 400 AI suggestions
   - Write Like Me™ AI training
   - Real-time fact checking
   - Long-form replies (1000 chars)

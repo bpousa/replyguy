@@ -668,28 +668,28 @@ export default function ReplyForm({ onSubmit, isLoading, user, subscription }: R
       currentPlan={userPlan.name || 'Free'}
       upgradePlans={
         upgradeLimitType === 'tweet' ? [
-          { name: 'X Basic', limit: '500 chars', price: '$19', features: ['300 replies/month', '10 memes/month', '50 AI suggestions'] },
+          { name: 'X Basic', limit: '500 chars', price: '$19', features: ['300 replies/month', '10 memes/month', '100 AI suggestions'] },
           { name: 'X Pro', limit: '1000 chars', price: '$49', features: ['500 replies/month', '50 memes/month', 'Write Like Me™'] },
           { name: 'X Business', limit: '2000 chars', price: '$99', features: ['1000 replies/month', '100 memes/month', 'All features'] }
         ] :
         upgradeLimitType === 'response' ? [
-          { name: 'X Basic', limit: '300 chars', price: '$19', features: ['300 replies/month', '10 memes/month', '50 AI suggestions'] },
+          { name: 'X Basic', limit: '300 chars', price: '$19', features: ['300 replies/month', '10 memes/month', '100 AI suggestions'] },
           { name: 'X Pro', limit: '500 chars', price: '$49', features: ['500 replies/month', '50 memes/month', 'Write Like Me™'] },
           { name: 'X Business', limit: '1000 chars', price: '$99', features: ['1000 replies/month', '100 memes/month', 'All features'] }
         ] :
         upgradeLimitType === 'replies' ? [
-          { name: 'X Basic', limit: '300/month', price: '$19', features: ['10 memes/month', '50 AI suggestions', 'Email support'] },
+          { name: 'X Basic', limit: '300/month', price: '$19', features: ['10 memes/month', '100 AI suggestions', 'Email support'] },
           { name: 'X Pro', limit: '500/month', price: '$49', features: ['50 memes/month', 'Write Like Me™', 'Priority support'] },
           { name: 'X Business', limit: '1000/month', price: '$99', features: ['100 memes/month', 'Real-time research', 'Dedicated support'] }
         ] :
         upgradeLimitType === 'memes' ? [
-          { name: 'X Basic', limit: '10/month', price: '$19', features: ['300 replies/month', '50 AI suggestions', 'Email support'] },
+          { name: 'X Basic', limit: '10/month', price: '$19', features: ['300 replies/month', '100 AI suggestions', 'Email support'] },
           { name: 'X Pro', limit: '50/month', price: '$49', features: ['500 replies/month', 'Write Like Me™', 'Priority support'] },
           { name: 'X Business', limit: '100/month', price: '$99', features: ['1000 replies/month', 'Real-time research', 'Dedicated support'] }
         ] : [
-          { name: 'X Basic', limit: '50/month', price: '$19', features: ['300 replies/month', '10 memes/month', 'Email support'] },
-          { name: 'X Pro', limit: '100/month', price: '$49', features: ['500 replies/month', 'Write Like Me™', 'Priority support'] },
-          { name: 'X Business', limit: '200/month', price: '$99', features: ['1000 replies/month', 'Real-time research', 'Dedicated support'] }
+          { name: 'X Basic', limit: '100/month', price: '$19', features: ['300 replies/month', '10 memes/month', 'Email support'] },
+          { name: 'X Pro', limit: '200/month', price: '$49', features: ['500 replies/month', 'Write Like Me™', 'Priority support'] },
+          { name: 'X Business', limit: '400/month', price: '$99', features: ['1000 replies/month', 'Real-time research', 'Dedicated support'] }
         ]
       }
     />

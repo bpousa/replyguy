@@ -15,6 +15,7 @@ const plans = [
     description: 'Perfect for getting started',
     features: [
       '10 replies per month',
+      '5 AI suggestions',
       'Basic reply types',
       'Standard support',
       'Daily goal tracking',
@@ -31,7 +32,7 @@ const plans = [
     features: [
       '300 replies per month',
       '10 memes per month',
-      '50 AI suggestions',
+      '100 AI suggestions',
       'All reply types',
       'Chrome Extension included',
       'Email support',
@@ -47,7 +48,7 @@ const plans = [
     features: [
       '500 replies per month',
       '50 memes per month',
-      '100 AI suggestions',
+      '200 AI suggestions',
       'Write Like Me™ AI training',
       'Chrome Extension + Write Like Me™',
       'Style matching',
@@ -65,7 +66,7 @@ const plans = [
     features: [
       '1000 replies per month',
       '100 memes per month',
-      '200 AI suggestions',
+      '400 AI suggestions',
       'Write Like Me™ AI training',
       'Chrome Extension included',
       'Real-time fact checking',

@@ -12,7 +12,7 @@ ReplyGuy offers three subscription tiers with different features and limits:
   - Response idea: 200 characters
   - Generated reply: 280 characters (short only)
 - **Features**:
-  - ❌ No AI suggestions
+  - ✅ 5 AI suggestions
   - ❌ No long replies
   - ❌ No style matching
   - ❌ No Perplexity guidance
@@ -27,7 +27,7 @@ ReplyGuy offers three subscription tiers with different features and limits:
   - Response idea: 500 characters
   - Generated reply: 560 characters (short/medium)
 - **Features**:
-  - ✅ AI suggestions (50/month)
+  - ✅ AI suggestions (100/month)
   - ✅ Medium-length replies
   - ✅ Style matching (50% influence)
   - ❌ No Perplexity guidance
@@ -41,7 +41,7 @@ ReplyGuy offers three subscription tiers with different features and limits:
   - Response idea: 2000 characters
   - Generated reply: 2000 characters (short/medium/long)
 - **Features**:
-  - ✅ AI suggestions (unlimited)
+  - ✅ AI suggestions (400/month)
   - ✅ Long replies (up to 2000 chars)
   - ✅ Style matching (50% influence)
   - ✅ Perplexity guidance

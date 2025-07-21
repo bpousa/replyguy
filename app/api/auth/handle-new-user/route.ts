@@ -3,7 +3,13 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
+  process.env.SUPABASE_SERVICE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
 );
 
 export async function POST(req: NextRequest) {
@@ -74,6 +80,32 @@ export async function POST(req: NextRequest) {
       }
     }
     
+    // Generate trial offer token for new user
+    let trialOfferData = null;
+    try {
+      // Generate token using the API endpoint
+      const tokenResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/trial-offer/generate-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          userId: record.id, 
+          source: 'webhook' 
+        })
+      });
+      
+      if (tokenResponse.ok) {
+        const tokenData = await tokenResponse.json();
+        trialOfferData = {
+          token: tokenData.token,
+          url: tokenData.url,
+          expires_at: tokenData.expires_at
+        };
+        console.log(`✅ Trial offer token generated for user ${record.id}`);
+      }
+    } catch (error) {
+      console.error('Failed to generate trial offer token:', error);
+    }
+    
     // Send GHL notification for new user
     if (process.env.GHL_SYNC_ENABLED === 'true') {
       try {
@@ -92,8 +124,14 @@ export async function POST(req: NextRequest) {
             },
             metadata: {
               source: 'signup_form',
-              timestamp: new Date().toISOString()
-            }
+              timestamp: new Date().toISOString(),
+              ...(trialOfferData && {
+                trial_offer_url: trialOfferData.url,
+                trial_offer_token: trialOfferData.token,
+                trial_expires_at: trialOfferData.expires_at
+              })
+            },
+            generateTrialToken: false // We already generated it
           })
         });
         
@@ -105,7 +143,14 @@ export async function POST(req: NextRequest) {
     
     return NextResponse.json({ 
       message: 'New user processing completed',
-      userId: record.id 
+      userId: record.id,
+      ...(trialOfferData && {
+        trial_offer: {
+          token: trialOfferData.token,
+          url: trialOfferData.url,
+          expires_at: trialOfferData.expires_at
+        }
+      })
     });
     
   } catch (error) {

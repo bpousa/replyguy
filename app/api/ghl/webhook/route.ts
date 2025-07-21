@@ -14,6 +14,7 @@ interface GHLWebhookEvent {
   userId: string;
   data: any;
   metadata?: Record<string, any>;
+  generateTrialToken?: boolean; // Option to generate trial token
 }
 
 // Queue for retry logic
@@ -110,7 +111,7 @@ async function processEventWithRetry(event: GHLWebhookEvent, eventId: string) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { event, userId, data, metadata } = body as GHLWebhookEvent;
+    const { event, userId, data, metadata, generateTrialToken = true } = body as GHLWebhookEvent;
     
     if (!event || !userId) {
       return NextResponse.json(
@@ -148,9 +149,9 @@ export async function POST(req: NextRequest) {
     // Generate unique event ID for idempotency
     const eventId = `${event}_${userId}_${Date.now()}`;
     
-    // For user_created events, also generate trial offer token
-    let trialOfferUrl = null;
-    if (event === 'user_created') {
+    // For user_created events, generate trial offer token if requested
+    let trialOfferData = null;
+    if (event === 'user_created' && generateTrialToken) {
       try {
         const tokenResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/trial-offer/generate-token`, {
           method: 'POST',
@@ -163,13 +164,19 @@ export async function POST(req: NextRequest) {
         
         if (tokenResponse.ok) {
           const tokenData = await tokenResponse.json();
-          trialOfferUrl = tokenData.url;
+          trialOfferData = {
+            token: tokenData.token,
+            url: tokenData.url,
+            expires_at: tokenData.expires_at,
+            user_email: tokenData.user_email
+          };
           console.log(`✅ Trial offer token generated for user ${userId}`);
           
-          // Add trial offer URL to metadata
+          // Add trial offer info to metadata for GHL
           metadata = {
             ...metadata,
-            trial_offer_url: trialOfferUrl,
+            trial_offer_url: tokenData.url,
+            trial_offer_token: tokenData.token,
             trial_expires_at: tokenData.expires_at
           };
         }
@@ -186,7 +193,14 @@ export async function POST(req: NextRequest) {
       message: 'Event received and queued for processing',
       eventId,
       timestamp: new Date().toISOString(),
-      ...(trialOfferUrl && { trial_offer_url: trialOfferUrl })
+      ...(trialOfferData && { 
+        trial_offer: {
+          token: trialOfferData.token,
+          url: trialOfferData.url,
+          expires_at: trialOfferData.expires_at,
+          user_email: trialOfferData.user_email
+        }
+      })
     });
     
   } catch (error) {

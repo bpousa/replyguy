@@ -135,7 +135,7 @@ export default function EstablishingSessionPage() {
               if (userError) {
                 console.error('[establishing-session] Error checking trial offer:', userError);
                 // If we can't check, assume they haven't seen it (especially for new users)
-                if (isNew) {
+                if (isNewUser) {
                   console.log('[establishing-session] Error checking but user is new, showing trial offer');
                   router.push('/auth/trial-offer');
                   return;
@@ -148,7 +148,7 @@ export default function EstablishingSessionPage() {
             } catch (error) {
               console.error('[establishing-session] Unexpected error checking trial offer:', error);
               // For new users, show the trial offer anyway
-              if (isNew) {
+              if (isNewUser) {
                 console.log('[establishing-session] Error but user is new, showing trial offer');
                 router.push('/auth/trial-offer');
                 return;
@@ -233,7 +233,7 @@ export default function EstablishingSessionPage() {
                 if (userError) {
                   console.error('[establishing-session] Error checking trial offer (polling):', userError);
                   // If we can't check, assume they haven't seen it (especially for new users)
-                  if (isNew) {
+                  if (isNewUser) {
                     console.log('[establishing-session] Error checking but user is new, showing trial offer (polling)');
                     router.push('/auth/trial-offer');
                     return;
@@ -246,7 +246,7 @@ export default function EstablishingSessionPage() {
               } catch (error) {
                 console.error('[establishing-session] Unexpected error checking trial offer (polling):', error);
                 // For new users, show the trial offer anyway
-                if (isNew) {
+                if (isNewUser) {
                   console.log('[establishing-session] Error but user is new, showing trial offer (polling)');
                   router.push('/auth/trial-offer');
                   return;

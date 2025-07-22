@@ -14,6 +14,8 @@ const supabase = createClient(
 );
 
 export async function POST(req: NextRequest) {
+  console.log('[post-signup] Processing new signup notification');
+  
   try {
     const { userId } = await req.json();
     
@@ -24,14 +26,17 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    // Check if this is a new user (created within last 5 minutes)
+    console.log('[post-signup] Checking user:', userId);
+    
+    // Check if this is a new user (created within last 10 minutes)
     const { data: user } = await supabase
       .from('users')
-      .select('created_at')
+      .select('created_at, email')
       .eq('id', userId)
       .single();
       
     if (!user) {
+      console.error('[post-signup] User not found:', userId);
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -39,38 +44,24 @@ export async function POST(req: NextRequest) {
     }
     
     const createdAt = new Date(user.created_at);
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
     
-    if (createdAt < fiveMinutesAgo) {
-      // Not a new user, skip GHL notification
+    if (createdAt < tenMinutesAgo) {
+      // Not a new user, skip processing
+      console.log('[post-signup] Not a new user, skipping:', userId);
       return NextResponse.json({ 
-        message: 'Not a new user, skipping GHL notification' 
+        message: 'Not a new user, skipping post-signup processing' 
       });
     }
     
-    // Send user_created event to GHL
-    if (process.env.GHL_SYNC_ENABLED === 'true') {
-      try {
-        await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/ghl/webhook`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            event: 'user_created',
-            userId: userId,
-            data: {},
-            metadata: {
-              source: 'signup_form',
-              timestamp: createdAt.toISOString()
-            }
-          })
-        });
-        
-        console.log(`✅ GHL user_created event sent for user ${userId}`);
-      } catch (error) {
-        console.error('Failed to send user_created event to GHL:', error);
-        // Don't fail the request if GHL webhook fails
-      }
-    }
+    console.log('[post-signup] Processing new user:', {
+      userId,
+      email: user.email,
+      createdAt: user.created_at
+    });
+    
+    // The actual webhook to GHL is handled by the database trigger
+    // This endpoint is just for client-side notification
     
     return NextResponse.json({ 
       message: 'Post-signup processing completed',
@@ -78,7 +69,7 @@ export async function POST(req: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Post-signup error:', error);
+    console.error('[post-signup] Error:', error);
     return NextResponse.json(
       { error: 'Post-signup processing failed' },
       { status: 500 }

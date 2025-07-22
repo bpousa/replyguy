@@ -92,22 +92,36 @@ WHERE s.id IS NULL
 ON CONFLICT (user_id, plan_id) WHERE status = 'active' DO NOTHING;
 
 -- Generate trial tokens for recently created users (last 7 days) who don't have one
-INSERT INTO public.trial_offer_tokens (
-  user_id,
-  token,
-  expires_at,
-  source
-)
-SELECT 
-  u.id,
-  encode(gen_random_bytes(32), 'hex'),
-  NOW() + INTERVAL '7 days',
-  'migration_fix'
-FROM public.users u
-LEFT JOIN public.trial_offer_tokens t ON u.id = t.user_id
-WHERE u.created_at > NOW() - INTERVAL '7 days'
-  AND t.id IS NULL
-ON CONFLICT DO NOTHING;
+-- First check if the table exists
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables 
+    WHERE table_schema = 'public' 
+    AND table_name = 'trial_offer_tokens'
+  ) THEN
+    -- Only insert if user doesn't already have a token
+    INSERT INTO public.trial_offer_tokens (
+      user_id,
+      token,
+      expires_at,
+      source
+    )
+    SELECT 
+      u.id,
+      encode(gen_random_bytes(32), 'hex'),
+      NOW() + INTERVAL '7 days',
+      'migration_fix'
+    FROM public.users u
+    WHERE u.created_at > NOW() - INTERVAL '7 days'
+      AND NOT EXISTS (
+        SELECT 1 FROM public.trial_offer_tokens t 
+        WHERE t.user_id = u.id
+      );
+  ELSE
+    RAISE NOTICE 'trial_offer_tokens table does not exist, skipping token generation';
+  END IF;
+END $$;
 
 -- Final report
 DO $$
@@ -115,6 +129,7 @@ DECLARE
   users_fixed INTEGER;
   subs_created INTEGER;
   tokens_created INTEGER;
+  user_record RECORD;
 BEGIN
   -- Count fixes
   SELECT COUNT(*) INTO users_fixed
@@ -125,9 +140,18 @@ BEGIN
   FROM public.subscriptions
   WHERE created_at > NOW() - INTERVAL '1 minute';
   
-  SELECT COUNT(*) INTO tokens_created
-  FROM public.trial_offer_tokens
-  WHERE created_at > NOW() - INTERVAL '1 minute';
+  -- Check if trial_offer_tokens table exists before counting
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables 
+    WHERE table_schema = 'public' 
+    AND table_name = 'trial_offer_tokens'
+  ) THEN
+    SELECT COUNT(*) INTO tokens_created
+    FROM public.trial_offer_tokens
+    WHERE created_at > NOW() - INTERVAL '1 minute';
+  ELSE
+    tokens_created := 0;
+  END IF;
   
   RAISE NOTICE '';
   RAISE NOTICE '=== FIX COMPLETE ===';
@@ -136,18 +160,30 @@ BEGIN
   RAISE NOTICE 'Trial tokens created: %', tokens_created;
   RAISE NOTICE '';
   
-  -- Show the fixed user
-  PERFORM 
-    RAISE NOTICE 'User % now has:' || E'\n' ||
-                 '  - Referral code: %' || E'\n' ||
-                 '  - Subscription: %' || E'\n' ||
-                 '  - Trial token: %',
-    u.email,
-    u.referral_code,
-    s.plan_id,
-    CASE WHEN t.id IS NOT NULL THEN 'Yes' ELSE 'No' END
-  FROM public.users u
-  LEFT JOIN public.subscriptions s ON u.id = s.user_id AND s.status = 'active'
-  LEFT JOIN public.trial_offer_tokens t ON u.id = t.user_id
-  WHERE u.email = 'antoni.mike+102@gmail.com';
+  -- Show the fixed user details
+  FOR user_record IN
+    SELECT 
+      u.email,
+      u.referral_code,
+      s.plan_id,
+      CASE 
+        WHEN EXISTS (
+          SELECT 1 FROM information_schema.tables 
+          WHERE table_schema = 'public' AND table_name = 'trial_offer_tokens'
+        ) THEN (
+          SELECT CASE WHEN COUNT(*) > 0 THEN 'Yes' ELSE 'No' END
+          FROM public.trial_offer_tokens t 
+          WHERE t.user_id = u.id
+        )
+        ELSE 'N/A (table missing)'
+      END as has_token
+    FROM public.users u
+    LEFT JOIN public.subscriptions s ON u.id = s.user_id AND s.status = 'active'
+    WHERE u.email = 'antoni.mike+102@gmail.com'
+  LOOP
+    RAISE NOTICE 'User % now has:', user_record.email;
+    RAISE NOTICE '  - Referral code: %', user_record.referral_code;
+    RAISE NOTICE '  - Subscription: %', user_record.plan_id;
+    RAISE NOTICE '  - Trial token: %', user_record.has_token;
+  END LOOP;
 END $$;

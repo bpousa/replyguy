@@ -87,9 +87,11 @@ SELECT
   COALESCE(u.created_at, NOW()),
   NOW()
 FROM public.users u
-LEFT JOIN public.subscriptions s ON u.id = s.user_id AND s.status = 'active'
-WHERE s.id IS NULL
-ON CONFLICT (user_id, plan_id) WHERE status = 'active' DO NOTHING;
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.subscriptions s 
+  WHERE s.user_id = u.id 
+  AND s.status = 'active'
+);
 
 -- Generate trial tokens for recently created users (last 7 days) who don't have one
 -- First check if the table exists

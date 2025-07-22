@@ -309,7 +309,7 @@ export default function EstablishingSessionPage() {
     };
     
     establishSession();
-  }, [router, searchParams, plan, from, next, attempts]);
+  }, [router, searchParams, plan, from, next, attempts, isNewUser]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">

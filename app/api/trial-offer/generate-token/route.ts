@@ -73,12 +73,12 @@ export async function POST(req: NextRequest) {
         p_user_id: userId,
         p_source: source
       })
-      .single();
+      .single() as { data: { token: string; expires_at: string; url: string } | null; error: any };
       
-    if (tokenError) {
+    if (tokenError || !tokenData) {
       console.error('[generate-token] Error creating token:', tokenError);
       return NextResponse.json(
-        { error: tokenError.message || 'Failed to generate token' },
+        { error: tokenError?.message || 'Failed to generate token' },
         { status: 500 }
       );
     }

@@ -238,6 +238,10 @@ CREATE TRIGGER on_auth_user_created
 -- Add RLS policy for trigger_logs (service role only)
 ALTER TABLE public.trigger_logs ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policy if it exists
+DROP POLICY IF EXISTS "Service role can manage trigger logs" ON public.trigger_logs;
+
+-- Create the policy
 CREATE POLICY "Service role can manage trigger logs"
   ON public.trigger_logs
   FOR ALL

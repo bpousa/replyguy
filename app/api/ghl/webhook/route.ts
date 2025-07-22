@@ -111,7 +111,8 @@ async function processEventWithRetry(event: GHLWebhookEvent, eventId: string) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { event, userId, data, metadata, generateTrialToken = true } = body as GHLWebhookEvent;
+    const { event, userId, data, metadata: initialMetadata, generateTrialToken = true } = body as GHLWebhookEvent;
+    let metadata = initialMetadata || {};
     
     if (!event || !userId) {
       return NextResponse.json(

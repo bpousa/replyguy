@@ -69,29 +69,49 @@ ON CONFLICT (id) DO UPDATE SET
   updated_at = NOW();
 
 -- Create free subscriptions for users without one
-INSERT INTO public.subscriptions (
-  user_id,
-  plan_id,
-  status,
-  current_period_start,
-  current_period_end,
-  created_at,
-  updated_at
-)
-SELECT 
-  u.id,
-  'free',
-  'active',
-  COALESCE(u.created_at, NOW()),
-  COALESCE(u.created_at, NOW()) + INTERVAL '30 days',
-  COALESCE(u.created_at, NOW()),
-  NOW()
-FROM public.users u
-WHERE NOT EXISTS (
-  SELECT 1 FROM public.subscriptions s 
-  WHERE s.user_id = u.id 
-  AND s.status = 'active'
-);
+-- First, let's see what subscriptions exist
+DO $$
+DECLARE
+  user_record RECORD;
+  sub_count INTEGER;
+BEGIN
+  FOR user_record IN 
+    SELECT u.id, u.email, u.created_at
+    FROM public.users u
+    LEFT JOIN public.subscriptions s ON u.id = s.user_id
+    WHERE s.id IS NULL
+  LOOP
+    -- Check if user has ANY subscription (not just active)
+    SELECT COUNT(*) INTO sub_count
+    FROM public.subscriptions
+    WHERE user_id = user_record.id;
+    
+    IF sub_count = 0 THEN
+      -- No subscription at all, create one
+      INSERT INTO public.subscriptions (
+        user_id,
+        plan_id,
+        status,
+        current_period_start,
+        current_period_end,
+        created_at,
+        updated_at
+      ) VALUES (
+        user_record.id,
+        'free',
+        'active',
+        COALESCE(user_record.created_at, NOW()),
+        COALESCE(user_record.created_at, NOW()) + INTERVAL '30 days',
+        COALESCE(user_record.created_at, NOW()),
+        NOW()
+      );
+      
+      RAISE NOTICE 'Created subscription for user: %', user_record.email;
+    ELSE
+      RAISE NOTICE 'User % already has % subscription(s), skipping', user_record.email, sub_count;
+    END IF;
+  END LOOP;
+END $$;
 
 -- Generate trial tokens for recently created users (last 7 days) who don't have one
 -- First check if the table exists

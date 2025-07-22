@@ -185,27 +185,37 @@ BEGIN
   -- Show the fixed user details
   FOR user_record IN
     SELECT 
+      u.id,
       u.email,
       u.referral_code,
-      s.plan_id,
-      CASE 
-        WHEN EXISTS (
-          SELECT 1 FROM information_schema.tables 
-          WHERE table_schema = 'public' AND table_name = 'trial_offer_tokens'
-        ) THEN (
-          SELECT CASE WHEN COUNT(*) > 0 THEN 'Yes' ELSE 'No' END
-          FROM public.trial_offer_tokens t 
-          WHERE t.user_id = u.id
-        )
-        ELSE 'N/A (table missing)'
-      END as has_token
+      s.plan_id
     FROM public.users u
     LEFT JOIN public.subscriptions s ON u.id = s.user_id AND s.status = 'active'
     WHERE u.email = 'antoni.mike+102@gmail.com'
   LOOP
-    RAISE NOTICE 'User % now has:', user_record.email;
-    RAISE NOTICE '  - Referral code: %', user_record.referral_code;
-    RAISE NOTICE '  - Subscription: %', user_record.plan_id;
-    RAISE NOTICE '  - Trial token: %', user_record.has_token;
+    DECLARE
+      has_token_text TEXT := 'N/A';
+      token_count INTEGER := 0;
+    BEGIN
+      -- Check if trial_offer_tokens table exists
+      IF EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'trial_offer_tokens'
+      ) THEN
+        -- Use dynamic SQL to check for tokens
+        EXECUTE 'SELECT COUNT(*) FROM public.trial_offer_tokens WHERE user_id = $1'
+        INTO token_count
+        USING user_record.id;
+        
+        has_token_text := CASE WHEN token_count > 0 THEN 'Yes' ELSE 'No' END;
+      ELSE
+        has_token_text := 'N/A (table missing)';
+      END IF;
+      
+      RAISE NOTICE 'User % now has:', user_record.email;
+      RAISE NOTICE '  - Referral code: %', user_record.referral_code;
+      RAISE NOTICE '  - Subscription: %', user_record.plan_id;
+      RAISE NOTICE '  - Trial token: %', has_token_text;
+    END;
   END LOOP;
 END $$;

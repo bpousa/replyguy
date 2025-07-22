@@ -39,29 +39,44 @@ export default function EstablishingSessionPage() {
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         if (initialSession?.user) {
           // More robust check for new user:
-          // 1. Check if user was created in the last 5 minutes
-          // 2. Check for presence of last_sign_in_at metadata
+          // 1. Check if user was created in the last 10 minutes (more lenient for OAuth)
+          // 2. Check for OAuth provider in metadata
           // 3. Check if coming from signup flow
+          // 4. Check if they haven't seen trial offer yet
           
           const createdAt = new Date(initialSession.user.created_at);
           const now = new Date();
           const timeSinceCreation = now.getTime() - createdAt.getTime();
-          const isRecentlyCreated = timeSinceCreation < 5 * 60 * 1000; // 5 minutes
+          const isRecentlyCreated = timeSinceCreation < 10 * 60 * 1000; // 10 minutes for OAuth delays
           
-          // Check if user has signed in before
+          // Check if user signed up via OAuth
+          const isOAuthUser = !!initialSession.user.app_metadata?.provider && 
+                             initialSession.user.app_metadata.provider !== 'email';
+          
+          // Check if user has signed in before (for email users)
           const lastSignIn = initialSession.user.last_sign_in_at;
           const hasSignedInBefore = lastSignIn && new Date(lastSignIn) < createdAt;
           
           // Check if coming from signup
           const fromSignup = from === 'signup' || 
                            document.referrer.includes('/auth/signup') ||
-                           sessionStorage.getItem('auth_flow_from') === 'signup';
+                           sessionStorage.getItem('auth_flow_from') === 'signup' ||
+                           sessionStorage.getItem('oauth_signup') === 'true';
           
-          const isNew = isRecentlyCreated && !hasSignedInBefore || fromSignup;
+          // For OAuth users, consider them new if recently created
+          // For email users, use the more strict check
+          const isNew = isOAuthUser ? isRecentlyCreated : (isRecentlyCreated && !hasSignedInBefore || fromSignup);
           setIsNewUser(isNew);
+          
+          // Clear the OAuth signup flag after checking
+          if (sessionStorage.getItem('oauth_signup') === 'true') {
+            sessionStorage.removeItem('oauth_signup');
+          }
           
           console.log('[establishing-session] User type check:', {
             isRecentlyCreated,
+            isOAuthUser,
+            provider: initialSession.user.app_metadata?.provider,
             hasSignedInBefore,
             fromSignup,
             isNew

@@ -429,6 +429,9 @@ export default function SignupPage() {
                   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL
                 });
                 
+                // Set a flag to indicate OAuth signup for better new user detection
+                sessionStorage.setItem('oauth_signup', 'true');
+                
                 const { data, error } = await supabase.auth.signInWithOAuth({
                   provider: 'twitter',
                   options: {

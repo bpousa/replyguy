@@ -24,8 +24,15 @@ async function sendEventToGHL(event: GHLWebhookEvent): Promise<boolean> {
   const ghlWebhookUrl = process.env.GHL_WEBHOOK_URL;
   const ghlApiKey = process.env.GHL_API_KEY;
   
+  console.log('[GHL webhook] Attempting to send event:', {
+    event: event.event,
+    userId: event.userId,
+    hasWebhookUrl: !!ghlWebhookUrl,
+    webhookUrl: ghlWebhookUrl?.substring(0, 50) + '...'
+  });
+  
   if (!ghlWebhookUrl) {
-    console.error('GHL_WEBHOOK_URL not configured');
+    console.error('[GHL webhook] GHL_WEBHOOK_URL not configured');
     return false;
   }
   
@@ -109,9 +116,19 @@ async function processEventWithRetry(event: GHLWebhookEvent, eventId: string) {
 }
 
 export async function POST(req: NextRequest) {
+  console.log('[GHL webhook] Received POST request');
+  
   try {
     const body = await req.json();
     const { event, userId, data, metadata: initialMetadata, generateTrialToken = true } = body as GHLWebhookEvent;
+    
+    console.log('[GHL webhook] Request body:', {
+      event,
+      userId,
+      hasData: !!data,
+      hasMetadata: !!initialMetadata,
+      generateTrialToken
+    });
     let metadata = initialMetadata || {};
     
     if (!event || !userId) {

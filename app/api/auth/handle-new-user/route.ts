@@ -13,10 +13,26 @@ const supabase = createClient(
 );
 
 export async function POST(req: NextRequest) {
+  console.log('[handle-new-user] Webhook received from Supabase');
+  
   try {
-    const { record } = await req.json();
+    const body = await req.json();
+    const { record } = body;
+    
+    console.log('[handle-new-user] Request details:', {
+      hasRecord: !!record,
+      recordId: record?.id,
+      recordEmail: record?.email,
+      hasMetadata: !!record?.raw_user_meta_data,
+      eventType: body.event_type,
+      headers: {
+        'x-supabase-event': req.headers.get('x-supabase-event'),
+        'content-type': req.headers.get('content-type')
+      }
+    });
     
     if (!record?.id) {
+      console.error('[handle-new-user] No user record provided in webhook');
       return NextResponse.json(
         { error: 'No user record provided' },
         { status: 400 }
@@ -51,17 +67,21 @@ export async function POST(req: NextRequest) {
     
     // Only update if there are fields to update
     if (Object.keys(updates).length > 0) {
+      console.log('[handle-new-user] Updating user fields:', updates);
+      
       const { error: updateError } = await supabase
         .from('users')
         .update(updates)
         .eq('id', record.id);
         
       if (updateError) {
-        console.error('Error updating user fields:', updateError);
+        console.error('[handle-new-user] Error updating user fields:', updateError);
         // Don't fail the request - user is already created
       } else {
-        console.log(`✅ Updated user fields for ${record.id}:`, Object.keys(updates));
+        console.log(`[handle-new-user] ✅ Updated user fields for ${record.id}:`, Object.keys(updates));
       }
+    } else {
+      console.log('[handle-new-user] No additional fields to update');
     }
     
     // Handle referral code if present
@@ -107,9 +127,16 @@ export async function POST(req: NextRequest) {
     }
     
     // Send GHL notification for new user
+    console.log('[handle-new-user] GHL sync check:', {
+      enabled: process.env.GHL_SYNC_ENABLED === 'true',
+      webhookUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/ghl/webhook`
+    });
+    
     if (process.env.GHL_SYNC_ENABLED === 'true') {
+      console.log('[handle-new-user] Sending user_created event to GHL webhook');
+      
       try {
-        await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/ghl/webhook`, {
+        const ghlResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/ghl/webhook`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -135,7 +162,11 @@ export async function POST(req: NextRequest) {
           })
         });
         
-        console.log(`✅ GHL user_created event sent for user ${record.id}`);
+        const ghlResult = await ghlResponse.json();
+        console.log(`[handle-new-user] ✅ GHL user_created event sent for user ${record.id}`, {
+          status: ghlResponse.status,
+          result: ghlResult
+        });
       } catch (error) {
         console.error('Failed to send user_created event to GHL:', error);
       }

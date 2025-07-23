@@ -79,31 +79,33 @@ export default function TrialOfferPage() {
           }
           
           // Check if already seen (only enforce if no token)
+          // Allow access within 7 days even if already seen
           if (userData.has_seen_trial_offer) {
-            console.log('[trial-offer] User has already seen offer');
-            toast.error('You have already viewed the trial offer');
-            router.push('/dashboard');
-            return;
+            console.log('[trial-offer] User has already seen offer but within 7-day window');
+            // Don't block access - they can view the page again within 7 days
           }
         }
       }
       
-      // Mark that user has seen the offer (whether via token or direct access)
-      try {
-        const { error } = await supabase
-          .from('users')
-          .update({ 
-            has_seen_trial_offer: true,
-            trial_offer_shown_at: new Date().toISOString()
-          })
-          .eq('id', session.user.id);
+      // Mark that user has seen the offer only if not already marked
+      // This prevents updating trial_offer_shown_at on subsequent visits
+      if (!userData?.has_seen_trial_offer) {
+        try {
+          const { error } = await supabase
+            .from('users')
+            .update({ 
+              has_seen_trial_offer: true,
+              trial_offer_shown_at: new Date().toISOString()
+            })
+            .eq('id', session.user.id);
         
-        if (error) {
-          console.error('[trial-offer] Error marking offer as seen:', error);
+          if (error) {
+            console.error('[trial-offer] Error marking offer as seen:', error);
+          }
+        } catch (err) {
+          console.error('[trial-offer] Error updating user:', err);
         }
-      } catch (error) {
-        console.error('[trial-offer] Unexpected error marking offer as seen:', error);
-      }
+      
       
       setValidatingToken(false);
     };

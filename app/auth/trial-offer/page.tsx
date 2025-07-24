@@ -27,6 +27,9 @@ export default function TrialOfferPage() {
       }
       setUserId(session.user.id);
       
+      // Get user data for later checks
+      let userData: any = null;
+      
       // Check if there's a token in the URL
       const token = searchParams.get('token');
       
@@ -60,11 +63,13 @@ export default function TrialOfferPage() {
         }
       } else {
         // No token - check if user is eligible (within 7 days of signup)
-        const { data: userData } = await supabase
+        const { data } = await supabase
           .from('users')
           .select('created_at, has_seen_trial_offer')
           .eq('id', session.user.id)
           .single();
+        
+        userData = data;
           
         if (userData) {
           const userCreatedAt = new Date(userData.created_at);
@@ -105,7 +110,7 @@ export default function TrialOfferPage() {
         } catch (err) {
           console.error('[trial-offer] Error updating user:', err);
         }
-      
+      }
       
       setValidatingToken(false);
     };

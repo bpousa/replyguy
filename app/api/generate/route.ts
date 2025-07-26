@@ -227,8 +227,11 @@ export async function POST(req: NextRequest) {
 2) Use their general voice/tone BUT be adaptive to their feedback
 3) AVOID patterns they've corrected away from (especially technical/coding language if that keeps appearing in corrections)
 4) Create fresh, original phrasing - never copy examples verbatim
-5) Respect that styles evolve - honor their current preferences over historical patterns`
-      : `You are typing a ${replyTypeDesc} reply on Twitter/X. Write exactly like a real person would - casual, direct, sometimes imperfect. The user told you what they want to say, so say it naturally. ${replyLengthInstr} When stats/research are included, drop them in naturally like you're sharing something you just learned.`;
+5) Respect that styles evolve - honor their current preferences over historical patterns
+6) FORMAT for Twitter: Use line breaks between distinct thoughts. Keep paragraphs to 1-3 sentences max for mobile readability.`
+      : `You are typing a ${replyTypeDesc} reply on Twitter/X. Write exactly like a real person would - casual, direct, sometimes imperfect. The user told you what they want to say, so say it naturally. ${replyLengthInstr} When stats/research are included, drop them in naturally like you're sharing something you just learned.
+
+FORMATTING: Use line breaks to separate distinct thoughts. Keep paragraphs short (1-3 sentences) for easy mobile reading. Think about how tweets look best on phones.`;
 
     console.log('\n🚀 === CALLING ANTHROPIC API ===');
     console.log('Model:', 'claude-3-5-sonnet-20241022');
@@ -297,9 +300,13 @@ export async function POST(req: NextRequest) {
     // Clean and validate the reply
     reply = cleanReply(reply, charLimit, validated.useCustomStyle && validated.customStyle);
     
-    console.log('\n✨ === FINAL CLEANED REPLY ===');
+    // Apply Twitter-style formatting
+    reply = formatForTwitter(reply, charLimit);
+    
+    console.log('\n✨ === FINAL CLEANED & FORMATTED REPLY ===');
     console.log('Final reply:', reply);
     console.log('Character count:', reply.length);
+    console.log('Contains line breaks:', reply.includes('\n'));
     console.log('Contains numbers/stats:', /\d+%|\d+\s*(percent|million|thousand|billion)|\d{4}/.test(reply));
 
     // Calculate cost
@@ -516,8 +523,9 @@ ${(input.perplexityData || input.includeMeme) ? `SIMPLIFIED INSTRUCTIONS (Multi-
 2. NO COPYING: Create fresh phrasing - don't copy from examples
 ${input.perplexityData ? '3. INCLUDE: Weave in the research data naturally\n' : ''}4. STYLE: Match their energy/tone but with original words
 5. LENGTH: Keep it concise - ${lengthGuide}
+6. FORMAT: Use line breaks between thoughts. Short paragraphs (1-3 sentences) for mobile.
 
-Reply (just the text, no quotes):` : `ADAPTIVE INSTRUCTIONS:
+Reply (formatted with line breaks, just the text, no quotes):` : `ADAPTIVE INSTRUCTIONS:
 1. EXPRESS THE EXACT MESSAGE: The "REQUIRED MESSAGE TO EXPRESS" is what the user wants to say - deliver THIS specific message, not something thematically similar
 2. LEARN FROM CORRECTIONS: Pay special attention to the correction examples above. The user is teaching you what they DON'T want
 3. FORBIDDEN PATTERNS: ${forbiddenPatterns.length > 0 ? forbiddenPatterns.map(p => {
@@ -533,8 +541,9 @@ Reply (just the text, no quotes):` : `ADAPTIVE INSTRUCTIONS:
 8. EMOJI RULE: Use emojis VERY SPARINGLY - only about 1 in 10 replies should have an emoji
 9. RESPECT USER INTENT: The user's message and corrections are more important than rigid style matching
 10. BE ADAPTIVE: Writing styles evolve. Honor their current preferences over past patterns
+11. TWITTER FORMATTING: Break your reply into short paragraphs (1-3 sentences each). Use line breaks between distinct thoughts. Format for easy mobile reading.
 
-Reply (just the text, no quotes):`}`;
+Reply (formatted with line breaks, just the text, no quotes):`}`;
   } else {
     // Extract length guidance to avoid complex expressions in template literal
     let lengthGuidance = '';
@@ -655,7 +664,13 @@ ${customStylePrompt ? customStylePrompt : styleInstructions}
 
 ${antiAIPrompt}
 
-Write the reply (just the text, no quotes):`;
+TWITTER FORMATTING:
+- Break your reply into short paragraphs (1-3 sentences each)
+- Use line breaks between distinct thoughts or ideas
+- Think mobile-first: how will this look on a phone screen?
+- Natural conversation flow, not a wall of text
+
+Write the reply (formatted with line breaks, just the text, no quotes):`;
   }
 }
 
@@ -698,4 +713,59 @@ function cleanReply(reply: string, charLimit: number, isWriteLikeMe: boolean = f
   }
 
   return reply;
+}
+
+function formatForTwitter(text: string, charLimit: number): string {
+  // If text already has line breaks, respect them but ensure they're properly formatted
+  if (text.includes('\n')) {
+    // Clean up excessive line breaks (more than 2 in a row)
+    text = text.replace(/\n{3,}/g, '\n\n');
+    return text.trim();
+  }
+  
+  // For text without line breaks, add them intelligently
+  const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+  const paragraphs: string[] = [];
+  let currentParagraph: string[] = [];
+  let currentLength = 0;
+  
+  // For short replies (under 280 chars), limit to 2 paragraphs max
+  const isShort = charLimit <= 280;
+  const maxSentencesPerParagraph = isShort ? 2 : 3;
+  
+  sentences.forEach((sentence, index) => {
+    sentence = sentence.trim();
+    currentParagraph.push(sentence);
+    currentLength += sentence.length;
+    
+    // Start new paragraph if:
+    // 1. We've hit the max sentences per paragraph
+    // 2. Current paragraph is getting long (over 200 chars)
+    // 3. There's a natural break (e.g., question followed by statement)
+    const isQuestion = sentence.endsWith('?');
+    const nextIsStatement = index < sentences.length - 1 && !sentences[index + 1].trim().endsWith('?');
+    const shouldBreak = 
+      currentParagraph.length >= maxSentencesPerParagraph ||
+      currentLength > 200 ||
+      (isQuestion && nextIsStatement);
+    
+    if (shouldBreak && index < sentences.length - 1) {
+      paragraphs.push(currentParagraph.join(' '));
+      currentParagraph = [];
+      currentLength = 0;
+    }
+  });
+  
+  // Add remaining sentences
+  if (currentParagraph.length > 0) {
+    paragraphs.push(currentParagraph.join(' '));
+  }
+  
+  // For very short replies, don't add line breaks
+  if (text.length < 100 && paragraphs.length === 1) {
+    return text.trim();
+  }
+  
+  // Join paragraphs with double line breaks
+  return paragraphs.join('\n\n').trim();
 }

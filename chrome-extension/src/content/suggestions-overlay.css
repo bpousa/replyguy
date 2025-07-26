@@ -579,9 +579,17 @@
   border-radius: 12px;
   padding: 16px;
   font-size: 15px;
-  line-height: 1.5;
+  line-height: 1.6;
   color: #212529;
   margin-bottom: 16px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.reply-guy-reply-text br {
+  display: block;
+  margin: 0.5em 0;
+  content: "";
 }
 
 .reply-guy-meme-preview {

@@ -794,7 +794,7 @@ export class SuggestionsOverlay {
       
       <div class="reply-guy-content-scroll">
         <div class="reply-guy-reply-text">
-          ${this.escapeHtml(reply)}
+          ${this.formatTextForDisplay(reply)}
         </div>
         
         ${memeUrl ? `
@@ -1347,6 +1347,13 @@ export class SuggestionsOverlay {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+  
+  private formatTextForDisplay(text: string): string {
+    // First escape HTML to prevent XSS
+    const escaped = this.escapeHtml(text);
+    // Then convert line breaks to <br> tags for proper display
+    return escaped.replace(/\n/g, '<br>');
   }
 
   private showResearchSuggestions() {

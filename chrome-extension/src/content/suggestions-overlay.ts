@@ -26,6 +26,21 @@ export class SuggestionsOverlay {
     this.container = container;
   }
 
+  private getReplyLengthLimit(replyLength: string): number {
+    switch (replyLength) {
+      case 'short':
+        return 280;
+      case 'medium':
+        return 560;
+      case 'long':
+        return 1000;
+      case 'extra-long':
+        return 2000;
+      default:
+        return 280;
+    }
+  }
+
   private async saveUserSettings() {
     if (!chrome?.storage?.sync) return;
     
@@ -1301,8 +1316,11 @@ export class SuggestionsOverlay {
   showGeneratedReply(reply: string, memeUrl?: string, replyData?: any) {
     this.remove();
     
-    // Store the reply data for potential corrections
-    this.currentReplyData = replyData || {};
+    // Store the reply data for potential corrections, including reply length
+    this.currentReplyData = {
+      ...(replyData || {}),
+      replyLength: this.replyLength
+    };
     
     this.overlay = document.createElement('div');
     this.overlay.className = 'reply-guy-overlay';
@@ -1592,6 +1610,10 @@ export class SuggestionsOverlay {
   showEditMode(currentReply: string) {
     this.remove();
     
+    // Get the character limit based on the original reply length
+    const replyLength = this.currentReplyData?.replyLength || this.replyLength || 'short';
+    const charLimit = this.getReplyLengthLimit(replyLength);
+    
     // Create edit mode overlay
     this.overlay = document.createElement('div');
     this.overlay.className = 'reply-guy-overlay';
@@ -1733,10 +1755,10 @@ export class SuggestionsOverlay {
             id="reply-guy-edited-reply" 
             class="reply-guy-edit-textarea"
             placeholder="Edit this to match how YOU would write it"
-            maxlength="280"
+            maxlength="${charLimit}"
           >${this.escapeHtml(currentReply)}</textarea>
           <div class="reply-guy-char-count">
-            <span id="reply-guy-char-current">${currentReply.length}</span>/280 characters
+            <span id="reply-guy-char-current">${currentReply.length}</span>/${charLimit} characters
           </div>
         </div>
         

@@ -18,11 +18,13 @@ import {
   Loader2,
   Sparkles,
   Wand2,
-  AlertCircle
+  AlertCircle,
+  Ban
 } from 'lucide-react';
 import StyleRefinementDialog from './style-refinement-dialog';
 import StyleAnalysisDisplay from './style-analysis-display';
 import WriteStyleWizard from './write-like-me-wizard';
+import { StyleForbiddenPatterns } from './style-forbidden-patterns';
 
 interface UserStyle {
   id: string;
@@ -47,6 +49,7 @@ export function WriteLikeMeSettings() {
   const [deletingStyle, setDeletingStyle] = useState<string | null>(null);
   const [expandedStyle, setExpandedStyle] = useState<string | null>(null);
   const [showWizard, setShowWizard] = useState(false);
+  const [managingForbiddenPatterns, setManagingForbiddenPatterns] = useState<string | null>(null);
 
   useEffect(() => {
     loadStyles();
@@ -372,14 +375,24 @@ export function WriteLikeMeSettings() {
                           setEditing(style.id);
                           setEditingStyle(style);
                         }}
+                        title="Edit style"
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
                       <Button
                         size="icon"
                         variant="ghost"
+                        onClick={() => setManagingForbiddenPatterns(style.id)}
+                        title="Manage forbidden patterns"
+                      >
+                        <Ban className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
                         onClick={() => handleDeleteStyle(style.id)}
                         disabled={deletingStyle === style.id}
+                        title="Delete style"
                       >
                         {deletingStyle === style.id ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -465,6 +478,19 @@ export function WriteLikeMeSettings() {
           toast.success('Style refined successfully!');
         }}
       />
+      
+      {/* Forbidden Patterns Dialog */}
+      {managingForbiddenPatterns && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="max-w-2xl w-full max-h-[90vh] overflow-y-auto bg-background rounded-lg shadow-lg">
+            <StyleForbiddenPatterns
+              styleId={managingForbiddenPatterns}
+              styleName={styles.find(s => s.id === managingForbiddenPatterns)?.name || ''}
+              onClose={() => setManagingForbiddenPatterns(null)}
+            />
+          </div>
+        </div>
+      )}
     </Card>
   );
 }

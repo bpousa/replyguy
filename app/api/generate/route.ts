@@ -73,7 +73,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Custom style promise
+    // Custom style promise with corrections
+    let recentCorrections: any[] = [];
+    let forbiddenPatterns: string[] = [];
+    
     if (validated.useCustomStyle && validated.userId) {
       promises.push(
         (async () => {
@@ -83,12 +86,30 @@ export async function POST(req: NextRequest) {
             const cookieStore = cookies();
             const supabase = createServerClient(cookieStore);
             
-            const { data: activeStyle } = await supabase
+            const { data: activeStyle, error } = await supabase
               .rpc('get_user_active_style', { p_user_id: validated.userId })
-              .single() as { data: { style_instructions?: string } | null };
+              .single();
               
-            if (activeStyle?.style_instructions) {
+            if (error) {
+              console.error('Error calling get_user_active_style:', error);
+              // Fallback to getting style directly if function doesn't exist yet
+              const { data: style } = await supabase
+                .from('user_styles')
+                .select('style_analysis')
+                .eq('user_id', validated.userId)
+                .eq('is_active', true)
+                .single();
+                
+              if (style?.style_analysis) {
+                customStyleInstructions = JSON.stringify(style.style_analysis);
+              }
+            } else if (activeStyle) {
               customStyleInstructions = activeStyle.style_instructions;
+              recentCorrections = activeStyle.recent_corrections || [];
+              forbiddenPatterns = activeStyle.forbidden_patterns || [];
+              
+              console.log('📝 Loaded corrections:', recentCorrections.length);
+              console.log('🚫 Forbidden patterns:', forbiddenPatterns);
             }
           } catch (error) {
             console.error('Failed to get custom style:', error);
@@ -112,7 +133,7 @@ export async function POST(req: NextRequest) {
     }
     console.log('Will use Write Like Me:', shouldUseWriteLikeMe);
     
-    const prompt = buildPrompt(validated, charLimit, replyLength, styleInstructions);
+    const prompt = buildPrompt(validated, charLimit, replyLength, styleInstructions, recentCorrections, forbiddenPatterns);
     
     console.log('\n📋 === GENERATION PROMPT ===');
     console.log('Using Write Like Me:', validated.useCustomStyle && validated.customStyle);
@@ -201,7 +222,12 @@ export async function POST(req: NextRequest) {
     }
     
     const systemPrompt = validated.useCustomStyle && validated.customStyle
-      ? `You are helping someone express THEIR SPECIFIC MESSAGE in their unique writing style on Twitter/X. The user has told you exactly what they want to say - your job is to deliver THAT message using their voice BUT WITH FRESH PHRASING. CRITICAL: Never copy exact phrases from the examples - instead, imagine how they would naturally say this NEW thing. Think of it as the same person expressing their intended message but with original wording that still feels authentic to their style. Paraphrase, reword, and create new expressions while maintaining their tone and energy.`
+      ? `You are helping someone express THEIR SPECIFIC MESSAGE in their unique writing style on Twitter/X. IMPORTANT: This person is actively teaching you their preferences through corrections. Your job is to:
+1) Deliver their exact message (not a similar theme)
+2) Use their general voice/tone BUT be adaptive to their feedback
+3) AVOID patterns they've corrected away from (especially technical/coding language if that keeps appearing in corrections)
+4) Create fresh, original phrasing - never copy examples verbatim
+5) Respect that styles evolve - honor their current preferences over historical patterns`
       : `You are typing a ${replyTypeDesc} reply on Twitter/X. Write exactly like a real person would - casual, direct, sometimes imperfect. The user told you what they want to say, so say it naturally. ${replyLengthInstr} When stats/research are included, drop them in naturally like you're sharing something you just learned.`;
 
     console.log('\n🚀 === CALLING ANTHROPIC API ===');
@@ -391,7 +417,7 @@ function diversifyExamples(examples: string[], maxExamples: number): string[] {
   return diverse.slice(0, maxExamples);
 }
 
-function buildPrompt(input: any, charLimit: number, replyLength: string, styleInstructions: string): string {
+function buildPrompt(input: any, charLimit: number, replyLength: string, styleInstructions: string, recentCorrections: any[] = [], forbiddenPatterns: string[] = []): string {
   const isWriteLikeMe = input.useCustomStyle && input.customStyle;
 
   const lengthGuide = replyLength === 'short' ? '1-2 sentences max' : 
@@ -421,7 +447,31 @@ ${input.perplexityData}
   if (isWriteLikeMe) {
     // Use fewer examples when multiple features are enabled to reduce cognitive load
     const maxExamples = input.perplexityData ? 3 : 5;
-    const diverseExamples = input.customStyleExamples ? diversifyExamples(input.customStyleExamples, maxExamples) : [];
+    let diverseExamples = input.customStyleExamples ? diversifyExamples(input.customStyleExamples, maxExamples) : [];
+    
+    // Filter out examples that contain forbidden patterns
+    if (forbiddenPatterns.length > 0 && diverseExamples.length > 0) {
+      const originalCount = diverseExamples.length;
+      diverseExamples = diverseExamples.filter((example: string) => {
+        const lowerExample = example.toLowerCase();
+        // Check for coding language patterns
+        if (forbiddenPatterns.includes('coding_language') && 
+            (lowerExample.includes('function') || lowerExample.includes('code') || 
+             lowerExample.includes('implementation') || lowerExample.includes('algorithm'))) {
+          return false;
+        }
+        // Check for verbatim openings
+        if (forbiddenPatterns.includes('what_i_ended_up_doing') && lowerExample.startsWith('what i ended up doing')) {
+          return false;
+        }
+        if (forbiddenPatterns.includes('i_tell_people') && lowerExample.startsWith('i tell people')) {
+          return false;
+        }
+        return true;
+      });
+      
+      console.log(`Filtered examples from ${originalCount} to ${diverseExamples.length} based on forbidden patterns`);
+    }
     
     // When research is enabled, use a more compact style representation
     const styleToShow = input.perplexityData ? {
@@ -432,12 +482,26 @@ ${input.perplexityData}
       doNotUse: input.customStyle.doNotUse
     } : input.customStyle;
     
-    return `Based on this writing style analysis, write a reply that captures the SPIRIT and VARIETY of this person's voice:
+    // Build correction guidance
+    let correctionGuidance = '';
+    if (recentCorrections.length > 0) {
+      const correctionExamples = recentCorrections.slice(0, 3).map((c: any) => 
+        `   ❌ NOT: "${c.original.substring(0, 60)}..."\n   ✅ BUT: "${c.corrected.substring(0, 60)}..."`
+      ).join('\n\n');
+      
+      correctionGuidance = `\n\n⚠️ IMPORTANT - Learn from these recent corrections:
+${correctionExamples}
+
+The user keeps correcting these patterns, so AVOID them completely!`;
+    }
+    
+    return `Based on this writing style analysis, write a reply that captures the SPIRIT of this person while being ADAPTABLE to their feedback:
 
 Style Analysis:
 ${JSON.stringify(styleToShow, null, 2)}
 
 ${diverseExamples.length > 0 ? `\nExample tweets in this style (showing variety):\n${diverseExamples.map((t: string, i: number) => `${i + 1}. "${t}"`).join('\n')}\n` : ''}
+${correctionGuidance}
 
 Context:
 - You're replying to: "${input.originalTweet}"
@@ -453,21 +517,22 @@ ${(input.perplexityData || input.includeMeme) ? `SIMPLIFIED INSTRUCTIONS (Multi-
 ${input.perplexityData ? '3. INCLUDE: Weave in the research data naturally\n' : ''}4. STYLE: Match their energy/tone but with original words
 5. LENGTH: Keep it concise - ${lengthGuide}
 
-Reply (just the text, no quotes):` : `CRITICAL INSTRUCTIONS:
+Reply (just the text, no quotes):` : `ADAPTIVE INSTRUCTIONS:
 1. EXPRESS THE EXACT MESSAGE: The "REQUIRED MESSAGE TO EXPRESS" is what the user wants to say - deliver THIS specific message, not something thematically similar
-2. FORBIDDEN - DO NOT COPY: Never use exact phrases from the examples. If you see "what I ended up doing was" in multiple examples, you MUST use different wording
-3. PARAPHRASE AND REWORD: Capture their style's ESSENCE without copying. Think "How would they say this NEW thing?" not "What exact words did they use before?"
-4. VARY YOUR APPROACH - if examples show repetitive openings, deliberately choose different ways to start
-5. Examples of what NOT to do:
-   ❌ "what I ended up doing was realizing..." (copying exact opening)
-   ❌ "i tell people that the wild part about..." (copying exact pattern)
-   ✅ Instead: Use their tone/energy but with fresh phrasing for THIS specific message
-6. MIX AND MATCH their different stylistic elements naturally
-7. Keep their voice authentic while creating ORIGINAL phrasing
-8. Draw from their FULL RANGE of expressions, not just one pattern
-9. Make it sound like they wrote it on a different day, with fresh words
-10. EMOJI RULE: Even if they use emojis in their style, use them VERY SPARINGLY - only about 1 in 10 replies should have an emoji. Most replies should have ZERO emojis
-11. NEVER replace the user's message with a different metaphor or idea, even if it's about the same topic
+2. LEARN FROM CORRECTIONS: Pay special attention to the correction examples above. The user is teaching you what they DON'T want
+3. FORBIDDEN PATTERNS: ${forbiddenPatterns.length > 0 ? forbiddenPatterns.map(p => {
+   if (p === 'coding_language') return 'NO programming/technical language';
+   if (p === 'what_i_ended_up_doing') return 'NEVER start with "what I ended up doing"';
+   if (p === 'i_tell_people') return 'NEVER start with "I tell people"';
+   return `Avoid: ${p.replace(/_/g, ' ')}`;
+}).join('; ') : 'Watch for patterns the user corrects'}
+4. STYLE FLEXIBILITY: Capture their voice's SPIRIT but be open to evolution. They may be trying to move away from certain patterns
+5. FRESH PHRASING: Create original expressions that feel authentic to them WITHOUT copying examples verbatim
+6. AVOID LOCKED-IN PATTERNS: If the style analysis suggests certain themes (like coding) but corrections show they don't want that, IGNORE those themes
+7. NATURAL VARIETY: Draw from their full range of expression, not just dominant patterns
+8. EMOJI RULE: Use emojis VERY SPARINGLY - only about 1 in 10 replies should have an emoji
+9. RESPECT USER INTENT: The user's message and corrections are more important than rigid style matching
+10. BE ADAPTIVE: Writing styles evolve. Honor their current preferences over past patterns
 
 Reply (just the text, no quotes):`}`;
   } else {

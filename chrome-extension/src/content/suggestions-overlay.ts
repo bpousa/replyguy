@@ -1,3 +1,5 @@
+import './suggestions-overlay.css';
+
 export class SuggestionsOverlay {
   private overlay: HTMLElement | null = null;
   private container: Element;
@@ -125,8 +127,7 @@ export class SuggestionsOverlay {
     } catch (error) {
       if (error instanceof Error && error.message.includes('Extension context invalidated')) {
         console.error('[ReplyGuy] Extension context invalidated');
-        alert('Reply Guy extension needs to be refreshed. Please reload this page.');
-        this.remove();
+        this.showError('Reply Guy extension needs to be refreshed. Please reload this page.');
         return;
       }
       console.error('[ReplyGuy] Failed to get user plan:', error);
@@ -135,9 +136,6 @@ export class SuggestionsOverlay {
     this.overlay = document.createElement('div');
     this.overlay.className = 'reply-guy-overlay';
     this.overlay.innerHTML = `
-      <style>
-        ${this.getComprehensiveStyles()}
-      </style>
       <div class="reply-guy-header">
         <div class="reply-guy-title">
           <img src="${chrome.runtime.getURL('icons/reply_guy_logo.png')}" class="reply-guy-logo-icon" alt="Reply Guy" />
@@ -428,7 +426,7 @@ export class SuggestionsOverlay {
       console.log('[ReplyGuy] Suggest button clicked');
       
       if (!this.tweet.trim()) {
-        alert('Please wait for tweet to load');
+        this.showInlineError('Please wait for tweet to load');
         return;
       }
       
@@ -464,17 +462,17 @@ export class SuggestionsOverlay {
           const errorMsg = response?.error || 'Failed to get suggestion';
           console.error('[ReplyGuy] Failed to get suggestion:', errorMsg);
           if (errorMsg.includes('limit')) {
-            alert('You have reached your suggestion limit. Please upgrade your plan.');
+            this.showInlineError('You have reached your suggestion limit. Please upgrade your plan.');
           } else {
-            alert('Failed to generate suggestion. Please try again.');
+            this.showInlineError('Failed to generate suggestion. Please try again.');
           }
         }
       } catch (error) {
         console.error('[ReplyGuy] Suggest error:', error);
         if (error instanceof Error && error.message.includes('Extension context invalidated')) {
-          alert('Reply Guy extension needs to be refreshed. Please reload this page.');
+          this.showInlineError('Reply Guy extension needs to be refreshed. Please reload this page.');
         } else {
-          alert('An error occurred. Please try again.');
+          this.showInlineError('An error occurred. Please try again.');
         }
       } finally {
         if (suggestBtn && this.overlay) {
@@ -521,7 +519,7 @@ export class SuggestionsOverlay {
       e.preventDefault();
       e.stopPropagation();
       if (!this.tweet.trim() || !this.responseIdea.trim()) {
-        alert('Please enter a tweet and response idea first');
+        this.showInlineError('Please enter a tweet and response idea first');
         return;
       }
       
@@ -554,7 +552,7 @@ export class SuggestionsOverlay {
       } catch (error) {
         console.error('[ReplyGuy] Research suggest error:', error);
         if (error instanceof Error && error.message.includes('Extension context invalidated')) {
-          alert('Reply Guy extension needs to be refreshed. Please reload this page.');
+          this.showInlineError('Reply Guy extension needs to be refreshed. Please reload this page.');
         }
       } finally {
         if (suggestBtn) {
@@ -676,7 +674,7 @@ export class SuggestionsOverlay {
     this.overlay.querySelector('#reply-guy-generate')?.addEventListener('click', async () => {
       // Validate minimum requirements
       if (!this.responseIdea.trim()) {
-        alert('Please describe what you want to say');
+        this.showInlineError('Please describe what you want to say');
         return;
       }
       
@@ -746,571 +744,6 @@ export class SuggestionsOverlay {
       onGenerate(data);
     });
   }
-  
-  private getComprehensiveStyles(): string {
-    return `
-      .reply-guy-overlay {
-        position: fixed;
-        z-index: 10000;
-        background: white;
-        border-radius: 16px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        overflow: hidden;
-        animation: slideIn 0.3s ease-out;
-        display: flex;
-        flex-direction: column;
-        max-height: 80vh; /* Limit to 80% of viewport height */
-      }
-
-      @keyframes slideIn {
-        from {
-          opacity: 0;
-          transform: translateY(-20px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      .reply-guy-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 16px 20px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        flex-shrink: 0; /* Prevent header from shrinking */
-      }
-
-      .reply-guy-title {
-        display: flex;
-        align-items: center;
-        font-size: 18px;
-        font-weight: 600;
-        gap: 10px;
-      }
-      
-      .reply-guy-logo-icon {
-        width: 28px;
-        height: 28px;
-        filter: brightness(0) invert(1);
-      }
-
-      .reply-guy-close {
-        width: 32px;
-        height: 32px;
-        border: none;
-        background: rgba(255, 255, 255, 0.2);
-        color: white;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 24px;
-        line-height: 1;
-        transition: all 0.2s;
-      }
-
-      .reply-guy-close:hover {
-        background: rgba(255, 255, 255, 0.3);
-        transform: scale(1.05);
-      }
-      
-      .reply-guy-content {
-        padding: 20px;
-        overflow-y: auto;
-        flex: 1;
-        max-height: calc(80vh - 80px); /* Account for header height */
-      }
-      
-      /* V4 Compact Design Grid Styles */
-      .reply-guy-grid-3-col {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
-        margin-bottom: 16px;
-      }
-      
-      .reply-guy-features-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-        margin-bottom: 16px;
-      }
-      
-      .reply-guy-footer {
-        padding: 16px 20px;
-        border-top: 1px solid #e9ecef;
-        background: #f8f9fa;
-        flex-shrink: 0;
-      }
-      
-      .reply-guy-usage-stats {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 12px;
-        font-size: 13px;
-        color: #6c757d;
-      }
-      
-      .reply-guy-usage-item {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-      }
-      
-      .reply-guy-usage-value {
-        font-weight: 600;
-        color: #495057;
-      }
-      
-      .reply-guy-save-defaults-checkbox {
-        margin-top: 12px;
-      }
-      
-      .reply-guy-content-scroll {
-        overflow-y: auto;
-        flex: 1;
-        padding: 20px;
-        min-height: 0;
-        max-height: calc(80vh - 180px); /* Account for header and footer */
-      }
-      
-      /* Tweet Preview Section */
-      
-      .reply-guy-tweet-preview {
-        padding: 16px;
-        font-size: 14px;
-        line-height: 1.5;
-        color: #6c757d;
-        max-height: 150px;
-        overflow-y: auto;
-      }
-      
-      .reply-guy-row {
-        display: flex;
-        gap: 12px;
-        margin-bottom: 20px;
-      }
-      
-      .reply-guy-half {
-        flex: 1;
-      }
-      
-      .reply-guy-select {
-        width: 100%;
-        padding: 8px 10px;
-        border: 2px solid #e9ecef;
-        border-radius: 8px;
-        font-size: 13px;
-        color: #212529; /* Explicitly set text color */
-        transition: all 0.2s;
-        font-family: inherit;
-        background: white;
-        cursor: pointer;
-        -webkit-appearance: none; /* Remove default styling */
-      }
-      
-      .reply-guy-select option {
-        color: #212529; /* Ensure option text is visible */
-        background: white;
-      }
-      
-      .reply-guy-select:focus {
-        outline: none;
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-      }
-      
-      .reply-guy-main-section {
-        margin-bottom: 16px;
-      }
-      
-      /* Form Elements */
-      .reply-guy-option-group {
-        margin-bottom: 12px;
-      }
-      
-      /* Compact spacing for grid items */
-      .reply-guy-grid-3-col .reply-guy-option-group,
-      .reply-guy-features-grid .reply-guy-option-group {
-        margin-bottom: 0;
-      }
-      
-      .reply-guy-option-label {
-        display: block;
-        font-size: 12px;
-        font-weight: 600;
-        color: #6c757d;
-        text-transform: uppercase;
-        margin-bottom: 8px;
-        letter-spacing: 0.5px;
-      }
-      
-      .reply-guy-label-with-action {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 8px;
-      }
-      
-      
-      .reply-guy-text-input,
-      .reply-guy-idea-input {
-        width: 100%;
-        padding: 10px 12px;
-        border: 2px solid #e9ecef;
-        border-radius: 8px;
-        font-size: 14px;
-        transition: all 0.2s;
-        font-family: inherit;
-      }
-      
-      .reply-guy-text-input:focus,
-      .reply-guy-idea-input:focus {
-        outline: none;
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-      }
-      
-      .reply-guy-idea-input {
-        resize: vertical;
-        min-height: 60px;
-      }
-      
-      .reply-guy-idea-input.error {
-        border-color: #dc3545;
-      }
-      
-      .reply-guy-char-count {
-        text-align: right;
-        font-size: 12px;
-        color: #6c757d;
-        margin-top: 4px;
-      }
-      
-      .reply-guy-suggest-btn {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        padding: 4px 12px;
-        background: #f8f9fa;
-        border: 1px solid #e9ecef;
-        border-radius: 6px;
-        font-size: 12px;
-        color: #667eea;
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-      
-      .reply-guy-suggest-btn:hover {
-        background: #e9ecef;
-        border-color: #667eea;
-      }
-      
-      /* Radio and Checkbox */
-      .reply-guy-length-options,
-      .reply-guy-meme-mode {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-      }
-      
-      .reply-guy-radio,
-      .reply-guy-checkbox {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        cursor: pointer;
-        font-size: 14px;
-        color: #495057;
-      }
-      
-      .reply-guy-radio input[type="radio"],
-      .reply-guy-checkbox input[type="checkbox"] {
-        cursor: pointer;
-      }
-      
-      .reply-guy-radio input[type="radio"]:disabled + span,
-      .reply-guy-checkbox input[type="checkbox"]:disabled + span {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-      
-      .reply-guy-option-hint {
-        font-size: 11px;
-        color: #868e96;
-        margin-top: 4px;
-        margin-left: 24px;
-      }
-      
-      /* Save Defaults */
-      .reply-guy-save-defaults {
-        margin: 16px 0;
-        padding: 12px 16px;
-        background: #f8f9fa;
-        border-radius: 8px;
-      }
-      
-      .reply-guy-checkbox {
-        display: flex;
-        align-items: center;
-        cursor: pointer;
-        font-size: 14px;
-        color: #495057;
-      }
-      
-      .reply-guy-checkbox input {
-        margin-right: 8px;
-      }
-      
-      /* Action Buttons */
-      .reply-guy-actions {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 24px;
-        padding-top: 20px;
-        border-top: 1px solid #e9ecef;
-      }
-      
-      .reply-guy-generate-btn {
-        width: 100%;
-        padding: 14px 24px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        border-radius: 10px;
-        font-size: 16px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-      }
-      
-      .reply-guy-generate-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-      }
-      
-      .reply-guy-generate-btn:active {
-        transform: translateY(0);
-      }
-      
-      .reply-guy-usage {
-        margin-left: 16px;
-        font-size: 13px;
-        color: #6c757d;
-        white-space: nowrap;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        gap: 2px;
-      }
-      
-      .reply-guy-usage-remaining {
-        font-weight: 600;
-        color: #495057;
-      }
-      
-      .reply-guy-usage-detail {
-        font-size: 11px;
-        color: #adb5bd;
-      }
-      
-      .reply-guy-daily-goal {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        margin-top: 8px;
-        padding: 8px 12px;
-        background: #f8f9fa;
-        border-radius: 8px;
-        font-size: 13px;
-        color: #495057;
-      }
-      
-      .reply-guy-daily-icon {
-        font-size: 16px;
-      }
-      
-      .reply-guy-daily-text {
-        font-weight: 500;
-      }
-      
-      /* Research suggestions */
-      .reply-guy-suggestion-label {
-        font-size: 12px;
-        font-weight: 600;
-        color: #6c757d;
-        margin-bottom: 6px;
-      }
-      
-      .reply-guy-suggestion-chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-      }
-      
-      .reply-guy-suggestion-chip {
-        padding: 6px 12px;
-        background: #f8f9fa;
-        border: 1px solid #e9ecef;
-        border-radius: 16px;
-        font-size: 12px;
-        color: #495057;
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-      
-      .reply-guy-suggestion-chip:hover {
-        background: #e9ecef;
-        border-color: #667eea;
-        color: #667eea;
-      }
-      
-      /* Meme styles */
-      .reply-guy-meme-usage {
-        font-size: 11px;
-        color: #6c757d;
-        margin-left: 8px;
-      }
-      
-      .reply-guy-meme-info {
-        margin-top: 8px;
-        padding: 8px;
-        background: #f8f9fa;
-        border-radius: 6px;
-        font-size: 12px;
-        color: #495057;
-      }
-      
-      .reply-guy-meme-info p {
-        margin: 0;
-      }
-      
-      .reply-guy-meme-info strong {
-        font-weight: 600;
-      }
-      
-      /* Responsive adjustments for smaller overlays */
-      @media (max-width: 480px) {
-        .reply-guy-grid-3-col {
-          grid-template-columns: 1fr;
-          gap: 8px;
-        }
-        
-        .reply-guy-features-grid {
-          grid-template-columns: 1fr;
-          gap: 8px;
-        }
-        
-        .reply-guy-usage-stats {
-          flex-direction: column;
-          gap: 8px;
-        }
-      }
-      
-      /* Spinner for loading */
-      .reply-guy-spinner-small {
-        animation: spin 1s linear infinite;
-        display: inline-block;
-        vertical-align: middle;
-      }
-      
-      /* Loading States */
-      .reply-guy-loading {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 60px;
-        gap: 16px;
-      }
-      
-      .reply-guy-loading img {
-        animation: pulse 2s ease-in-out infinite;
-      }
-      
-      @keyframes pulse {
-        0%, 100% {
-          transform: scale(1);
-          opacity: 1;
-        }
-        50% {
-          transform: scale(1.05);
-          opacity: 0.8;
-        }
-      }
-      
-      .reply-guy-spinner {
-        width: 40px;
-        height: 40px;
-        border: 3px solid #f3f3f3;
-        border-top: 3px solid #667eea;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
-      
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-      
-      /* Loading dots animation */
-      .reply-guy-loading-text {
-        color: #666;
-        font-size: 16px;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-      }
-      
-      .reply-guy-loading-dots {
-        display: inline-flex;
-        gap: 3px;
-      }
-      
-      .reply-guy-loading-dot {
-        width: 6px;
-        height: 6px;
-        background: #667eea;
-        border-radius: 50%;
-        display: inline-block;
-        animation: loadingDot 1.4s infinite ease-in-out both;
-      }
-      
-      .reply-guy-loading-dot:nth-child(1) {
-        animation-delay: -0.32s;
-      }
-      
-      .reply-guy-loading-dot:nth-child(2) {
-        animation-delay: -0.16s;
-      }
-      
-      @keyframes loadingDot {
-        0%, 80%, 100% {
-          transform: scale(0.8);
-          opacity: 0.5;
-        }
-        40% {
-          transform: scale(1.2);
-          opacity: 1;
-        }
-      }
-      
-      /* Error State */
-      .reply-guy-error {
-        padding: 20px;
-        text-align: center;
-        color: #dc3545;
-        background: #f8d7da;
-        border: 1px solid #f5c6cb;
-        border-radius: 8px;
-        margin: 16px;
-      }
-    `;
-  }
 
 
   showGeneratedReply(reply: string, memeUrl?: string, replyData?: any) {
@@ -1325,106 +758,6 @@ export class SuggestionsOverlay {
     this.overlay = document.createElement('div');
     this.overlay.className = 'reply-guy-overlay';
     this.overlay.innerHTML = `
-      <style>
-        ${this.getComprehensiveStyles()}
-        /* Override to ensure proper flex layout for result display */
-        .reply-guy-overlay {
-          display: flex !important;
-          flex-direction: column !important;
-          max-height: 80vh !important;
-        }
-        .reply-guy-content-scroll {
-          overflow-y: auto;
-          flex: 1;
-          padding: 20px;
-          min-height: 0; /* Important for Firefox */
-        }
-        .reply-guy-reply-text {
-          background: #f8f9fa;
-          border: 2px solid #e9ecef;
-          border-radius: 12px;
-          padding: 16px;
-          font-size: 15px;
-          line-height: 1.5;
-          color: #212529;
-          margin-bottom: 16px;
-        }
-        .reply-guy-meme-preview {
-          margin-bottom: 16px;
-          text-align: center;
-        }
-        .reply-guy-meme-preview img {
-          width: 100%;
-          max-width: 300px;
-          max-height: 300px;
-          height: auto;
-          object-fit: contain;
-          border-radius: 12px;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-        .reply-guy-result-footer {
-          flex-shrink: 0;
-          padding: 0 20px 20px;
-          border-top: 1px solid #e9ecef;
-          background: white;
-        }
-        .reply-guy-result-actions {
-          display: flex;
-          gap: 12px;
-          padding-top: 16px;
-          justify-content: center;
-        }
-        .reply-guy-copy-btn, .reply-guy-edit-btn {
-          padding: 14px 24px;
-          border: none;
-          border-radius: 10px;
-          font-size: 15px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-          min-width: 140px;
-        }
-        .reply-guy-copy-btn {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-        }
-        .reply-guy-copy-btn:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
-        }
-        .reply-guy-copy-btn.copied {
-          background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-        }
-        .reply-guy-edit-btn {
-          background: white;
-          color: #667eea;
-          border: 2px solid #667eea;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-        .reply-guy-edit-btn:hover {
-          background: #f8f9ff;
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
-        }
-        .reply-guy-notice {
-          margin-top: 12px;
-          padding: 12px 16px;
-          border-radius: 8px;
-          font-size: 14px;
-          text-align: center;
-        }
-        .reply-guy-copy-notice {
-          background: #d4edda;
-          border: 1px solid #c3e6cb;
-          color: #155724;
-        }
-        .reply-guy-meme-notice {
-          background: #d1ecf1;
-          border: 1px solid #bee5eb;
-          color: #0c5460;
-        }
-      </style>
       <div class="reply-guy-header">
         <div class="reply-guy-title">
           <img src="${chrome.runtime.getURL('icons/reply_guy_logo.png')}" class="reply-guy-logo-icon" alt="Reply Guy" />
@@ -1590,7 +923,7 @@ export class SuggestionsOverlay {
         
       } catch (err) {
         console.error('[ReplyGuy] Failed to copy to clipboard:', err);
-        alert('Failed to copy. Please select the text and copy manually.');
+        this.showInlineError('Failed to copy. Please select the text and copy manually.', 5000);
       }
     });
 
@@ -1618,106 +951,6 @@ export class SuggestionsOverlay {
     this.overlay = document.createElement('div');
     this.overlay.className = 'reply-guy-overlay';
     this.overlay.innerHTML = `
-      <style>
-        ${this.getComprehensiveStyles()}
-        /* Edit mode specific styles */
-        .reply-guy-edit-container {
-          padding: 20px;
-        }
-        .reply-guy-edit-section {
-          margin-bottom: 20px;
-        }
-        .reply-guy-edit-label {
-          display: block;
-          font-size: 14px;
-          font-weight: 600;
-          color: #536471;
-          margin-bottom: 8px;
-        }
-        .reply-guy-context-box {
-          background: #f7f9fa;
-          border: 1px solid #e1e8ed;
-          border-radius: 8px;
-          padding: 12px;
-          font-size: 14px;
-          color: #536471;
-          margin-bottom: 8px;
-        }
-        .reply-guy-edit-textarea {
-          width: 100%;
-          padding: 12px;
-          border: 2px solid #e1e8ed;
-          border-radius: 8px;
-          font-size: 15px;
-          line-height: 1.5;
-          resize: vertical;
-          min-height: 100px;
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-          transition: border-color 0.2s;
-        }
-        .reply-guy-edit-textarea:focus {
-          outline: none;
-          border-color: #667eea;
-        }
-        .reply-guy-edit-input {
-          width: 100%;
-          padding: 10px 12px;
-          border: 2px solid #e1e8ed;
-          border-radius: 8px;
-          font-size: 14px;
-          transition: border-color 0.2s;
-        }
-        .reply-guy-edit-input:focus {
-          outline: none;
-          border-color: #667eea;
-        }
-        .reply-guy-char-count {
-          text-align: right;
-          font-size: 13px;
-          color: #536471;
-          margin-top: 4px;
-        }
-        .reply-guy-edit-actions {
-          display: flex;
-          gap: 12px;
-          justify-content: flex-end;
-          margin-top: 20px;
-        }
-        .reply-guy-save-btn {
-          padding: 10px 24px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-          border: none;
-          border-radius: 8px;
-          font-size: 15px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .reply-guy-save-btn:hover:not(:disabled) {
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-        }
-        .reply-guy-save-btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-        .reply-guy-cancel-btn {
-          padding: 10px 24px;
-          background: white;
-          color: #536471;
-          border: 2px solid #e1e8ed;
-          border-radius: 8px;
-          font-size: 15px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .reply-guy-cancel-btn:hover {
-          background: #f7f9fa;
-          border-color: #d1d5da;
-        }
-      </style>
       <div class="reply-guy-header">
         <div class="reply-guy-title">
           <img src="${chrome.runtime.getURL('icons/reply_guy_logo.png')}" class="reply-guy-logo-icon" alt="Reply Guy" />
@@ -1909,118 +1142,8 @@ export class SuggestionsOverlay {
     this.remove();
     
     this.overlay = document.createElement('div');
-    this.overlay.className = 'reply-guy-overlay';
+    this.overlay.className = 'reply-guy-overlay reply-guy-suggestions-list';
     this.overlay.innerHTML = `
-      <style>
-        .reply-guy-overlay {
-          position: absolute;
-          z-index: 10000;
-          background: white;
-          border-radius: 12px;
-          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
-          padding: 16px;
-          max-width: 500px;
-          margin-top: 8px;
-          animation: slideIn 0.2s ease-out;
-        }
-
-        @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .reply-guy-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 12px;
-          padding-bottom: 12px;
-          border-bottom: 1px solid #e9ecef;
-        }
-
-        .reply-guy-title {
-          display: flex;
-          align-items: center;
-          font-size: 16px;
-          font-weight: 600;
-          color: #1a1a1a;
-        }
-
-        .reply-guy-logo {
-          width: 20px;
-          height: 20px;
-          margin-right: 8px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          border-radius: 4px;
-        }
-
-        .reply-guy-close {
-          width: 24px;
-          height: 24px;
-          border: none;
-          background: none;
-          cursor: pointer;
-          color: #6c757d;
-          font-size: 20px;
-          line-height: 1;
-          transition: color 0.2s;
-        }
-
-        .reply-guy-close:hover {
-          color: #1a1a1a;
-        }
-
-        .reply-guy-suggestions {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-
-        .reply-guy-suggestion {
-          padding: 12px;
-          background: #f8f9fa;
-          border: 1px solid #e9ecef;
-          border-radius: 8px;
-          cursor: pointer;
-          transition: all 0.2s;
-          font-size: 14px;
-          line-height: 1.5;
-          color: #1a1a1a;
-        }
-
-        .reply-guy-suggestion:hover {
-          background: #e9ecef;
-          border-color: #667eea;
-          transform: translateX(4px);
-        }
-
-        .reply-guy-loading {
-          text-align: center;
-          padding: 40px;
-          color: #6c757d;
-        }
-
-        .reply-guy-spinner {
-          width: 32px;
-          height: 32px;
-          border: 3px solid #f3f3f3;
-          border-top: 3px solid #667eea;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-          margin: 0 auto 12px;
-        }
-
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      </style>
       <div class="reply-guy-header">
         <div class="reply-guy-title">
           <div class="reply-guy-logo"></div>
@@ -2069,9 +1192,6 @@ export class SuggestionsOverlay {
     this.overlay = document.createElement('div');
     this.overlay.className = 'reply-guy-overlay';
     this.overlay.innerHTML = `
-      <style>
-        ${this.getComprehensiveStyles()}
-      </style>
       <div class="reply-guy-header">
         <div class="reply-guy-title">
           <img src="${chrome.runtime.getURL('icons/reply_guy_logo.png')}" class="reply-guy-logo-icon" alt="Reply Guy" />
@@ -2111,26 +1231,39 @@ export class SuggestionsOverlay {
     document.body.appendChild(this.overlay);
   }
 
+  showInlineError(error: string, duration: number = 3000) {
+    // Show a temporary error message without removing existing overlay
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'reply-guy-inline-error';
+    errorDiv.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #dc3545;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 10001;
+      box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+      animation: slideIn 0.3s ease-out;
+    `;
+    errorDiv.textContent = error;
+    
+    document.body.appendChild(errorDiv);
+    
+    setTimeout(() => {
+      errorDiv.remove();
+    }, duration);
+  }
+  
   showError(error: string) {
     this.remove();
     
     this.overlay = document.createElement('div');
     this.overlay.className = 'reply-guy-overlay';
     this.overlay.innerHTML = `
-      <style>
-        ${this.getComprehensiveStyles()}
-        .reply-guy-error {
-          padding: 20px;
-          text-align: center;
-          color: #dc3545;
-          font-size: 14px;
-          line-height: 1.5;
-        }
-        .reply-guy-error-icon {
-          font-size: 48px;
-          margin-bottom: 12px;
-        }
-      </style>
       <div class="reply-guy-header">
         <div class="reply-guy-title">
           <img src="${chrome.runtime.getURL('icons/reply_guy_logo.png')}" class="reply-guy-logo-icon" alt="Reply Guy" />

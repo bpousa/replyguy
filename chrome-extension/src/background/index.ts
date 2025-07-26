@@ -9,6 +9,20 @@ chrome.runtime.onInstalled.addListener(async () => {
 
 // Handle messages from content scripts and popup
 chrome.runtime.onMessage.addListener((message: ChromeMessage, sender, sendResponse) => {
+  // Validate sender to prevent malicious extensions from sending commands
+  if (sender.id !== chrome.runtime.id) {
+    console.warn('[Background] Rejecting message from unknown extension:', sender.id);
+    sendResponse({ success: false, error: 'Unauthorized sender' });
+    return true;
+  }
+  
+  // Additional validation: ensure message is from our extension's context
+  if (!sender.tab && sender.origin !== `chrome-extension://${chrome.runtime.id}`) {
+    console.warn('[Background] Rejecting message from invalid origin:', sender.origin);
+    sendResponse({ success: false, error: 'Invalid origin' });
+    return true;
+  }
+  
   // Handle async responses
   (async () => {
     try {

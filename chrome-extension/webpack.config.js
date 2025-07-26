@@ -3,7 +3,8 @@ const CopyPlugin = require('copy-webpack-plugin');
 const HtmlPlugin = require('html-webpack-plugin');
 const webpack = require('webpack');
 
-module.exports = {
+module.exports = (env, argv) => ({
+  devtool: argv.mode === 'production' ? false : 'cheap-module-source-map',
   entry: {
     popup: './src/popup/index.tsx',
     content: './src/content/index.ts',
@@ -58,4 +59,4 @@ module.exports = {
       },
     },
   },
-};
+});

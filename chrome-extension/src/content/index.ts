@@ -34,6 +34,12 @@ async function initialize() {
 
 // Listen for messages from the background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // Validate that message is from our extension
+  if (sender.id && sender.id !== chrome.runtime.id) {
+    console.warn('[ReplyGuy Content] Rejecting message from unknown extension:', sender.id);
+    return;
+  }
+  
   if (message.action === 'authStateChanged') {
     authState = message.data;
     console.log('[ReplyGuy Content] Auth state changed:', authState);

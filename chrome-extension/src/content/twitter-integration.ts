@@ -5,6 +5,31 @@ export class TwitterIntegration {
   private overlays: WeakMap<Element, SuggestionsOverlay> = new WeakMap();
   private isAuthenticated: boolean = false;
   private safetyNetInterval: number | null = null;
+  
+  private showInlineError(message: string, duration: number = 3000) {
+    const errorDiv = document.createElement('div');
+    errorDiv.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #dc3545;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 10001;
+      box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+      animation: slideIn 0.3s ease-out;
+    `;
+    errorDiv.textContent = message;
+    
+    document.body.appendChild(errorDiv);
+    
+    setTimeout(() => {
+      errorDiv.remove();
+    }, duration);
+  }
 
   initialize() {
     console.log('[ReplyGuy] Initializing X integration');
@@ -269,7 +294,7 @@ export class TwitterIntegration {
     // Check if extension context is still valid
     if (!chrome.runtime?.id) {
       console.error('[ReplyGuy] Extension context invalidated');
-      alert('Reply Guy extension needs to be refreshed. Please reload this page.');
+      this.showInlineError('Reply Guy extension needs to be refreshed. Please reload this page.');
       return;
     }
     
@@ -288,7 +313,7 @@ export class TwitterIntegration {
     } catch (error) {
       if (error instanceof Error && error.message.includes('Extension context invalidated')) {
         console.error('[ReplyGuy] Extension context invalidated');
-        alert('Reply Guy extension needs to be refreshed. Please reload this page.');
+        this.showInlineError('Reply Guy extension needs to be refreshed. Please reload this page.');
         return;
       }
       console.error('[ReplyGuy] Auth check error:', error);
@@ -301,7 +326,7 @@ export class TwitterIntegration {
     
     if (!tweetText) {
       console.error('[ReplyGuy] Could not find tweet text');
-      alert('Could not find tweet text. Please try again.');
+      this.showInlineError('Could not find tweet text. Please try again.');
       return;
     }
     
@@ -311,7 +336,7 @@ export class TwitterIntegration {
     const replyButton = tweet.querySelector('[data-testid="reply"]') as HTMLElement;
     if (!replyButton) {
       console.error('[ReplyGuy] Could not find reply button');
-      alert('Could not find reply button. Please try again.');
+      this.showInlineError('Could not find reply button. Please try again.');
       return;
     }
     
@@ -324,7 +349,7 @@ export class TwitterIntegration {
         const composeArea = document.querySelector('[data-testid="tweetTextarea_0_label"]')?.parentElement;
         if (!composeArea) {
           console.error('Could not find compose area');
-          alert('Could not find compose area. Please try clicking reply again.');
+          this.showInlineError('Could not find compose area. Please try clicking reply again.');
           return;
         }
         
@@ -397,7 +422,7 @@ export class TwitterIntegration {
       }, 500);
     } catch (error) {
       console.error('[ReplyGuy] Error in reply process:', error);
-      alert('An error occurred. Please try again.');
+      this.showInlineError('An error occurred. Please try again.');
     }
   }
 

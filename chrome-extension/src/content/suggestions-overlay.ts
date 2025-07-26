@@ -364,12 +364,38 @@ export class SuggestionsOverlay {
     // Add all event listeners
     this.attachEventListeners(onGenerate);
 
-    // Close on outside click
+    document.body.appendChild(this.overlay);
+    
+    // Auto-focus the idea textarea first, before setting up click handlers
+    setTimeout(() => {
+      const ideaInput = this.overlay?.querySelector('#reply-guy-idea') as HTMLTextAreaElement;
+      if (ideaInput) {
+        // Ensure the element is visible and can receive focus
+        ideaInput.style.visibility = 'visible';
+        ideaInput.style.pointerEvents = 'auto';
+        
+        // Force focus with click simulation if needed
+        ideaInput.click();
+        ideaInput.focus();
+        
+        // Place cursor at the end if there's existing text
+        ideaInput.setSelectionRange(ideaInput.value.length, ideaInput.value.length);
+        console.log('[ReplyGuy] Auto-focused idea input');
+        
+        // Additional fallback focus attempt
+        requestAnimationFrame(() => {
+          if (document.activeElement !== ideaInput) {
+            ideaInput.focus();
+            console.log('[ReplyGuy] Fallback focus applied');
+          }
+        });
+      }
+    }, 50);
+
+    // Close on outside click - delay this to avoid interfering with initial focus
     setTimeout(() => {
       document.addEventListener('click', this.handleOutsideClick);
-    }, 0);
-
-    document.body.appendChild(this.overlay);
+    }, 200);
   }
   
   private attachEventListeners(onGenerate: (data: any) => void) {

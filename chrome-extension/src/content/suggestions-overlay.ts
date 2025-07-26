@@ -1350,10 +1350,28 @@ export class SuggestionsOverlay {
   }
   
   private formatTextForDisplay(text: string): string {
+    console.log('[ReplyGuy] formatTextForDisplay input:', JSON.stringify(text));
+    
     // First escape HTML to prevent XSS
     const escaped = this.escapeHtml(text);
-    // Then convert line breaks to <br> tags for proper display
-    return escaped.replace(/\n/g, '<br>');
+    console.log('[ReplyGuy] After escaping:', JSON.stringify(escaped));
+    
+    // Convert double line breaks to paragraph breaks
+    const paragraphs = escaped.split(/\n\n+/);
+    console.log('[ReplyGuy] Paragraphs:', paragraphs);
+    
+    // Wrap each paragraph in a div for better spacing
+    const formatted = paragraphs
+      .filter(p => p.trim()) // Remove empty paragraphs
+      .map(p => {
+        // Replace single line breaks with <br>
+        const withBreaks = p.replace(/\n/g, '<br>');
+        return `<div class="reply-guy-paragraph">${withBreaks}</div>`;
+      })
+      .join('');
+    
+    console.log('[ReplyGuy] Final formatted:', formatted);
+    return formatted;
   }
 
   private showResearchSuggestions() {

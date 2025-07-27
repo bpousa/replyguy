@@ -969,9 +969,8 @@ export class SuggestionsOverlay {
   showEditMode(currentReply: string) {
     this.remove();
     
-    // Get the character limit based on the original reply length
-    const replyLength = this.currentReplyData?.replyLength || this.replyLength || 'short';
-    const charLimit = this.getReplyLengthLimit(replyLength);
+    // Always use 2000 chars for feedback edits to give users more room
+    const charLimit = 2000;
     
     // Create edit mode overlay
     this.overlay = document.createElement('div');
@@ -1350,27 +1349,49 @@ export class SuggestionsOverlay {
   }
   
   private formatTextForDisplay(text: string): string {
-    console.log('[ReplyGuy] formatTextForDisplay input:', JSON.stringify(text));
+    console.log('[ReplyGuy] formatTextForDisplay raw input:', text);
+    console.log('[ReplyGuy] Input type:', typeof text);
+    console.log('[ReplyGuy] Input length:', text?.length);
+    console.log('[ReplyGuy] Input has \\n:', text?.includes('\n'));
+    console.log('[ReplyGuy] Input has \\r\\n:', text?.includes('\r\n'));
+    
+    // Ensure we have a string
+    if (!text || typeof text !== 'string') {
+      console.warn('[ReplyGuy] Invalid input to formatTextForDisplay:', text);
+      return '';
+    }
+    
+    // Normalize line breaks (handle different formats)
+    let normalizedText = text.replace(/\r\n/g, '\n');
+    console.log('[ReplyGuy] After normalizing line breaks:', JSON.stringify(normalizedText));
     
     // First escape HTML to prevent XSS
-    const escaped = this.escapeHtml(text);
+    const escaped = this.escapeHtml(normalizedText);
     console.log('[ReplyGuy] After escaping:', JSON.stringify(escaped));
+    
+    // Check if we have any line breaks at all
+    if (!escaped.includes('\n')) {
+      console.log('[ReplyGuy] No line breaks found, returning as single paragraph');
+      return `<div class="reply-guy-paragraph">${escaped}</div>`;
+    }
     
     // Convert double line breaks to paragraph breaks
     const paragraphs = escaped.split(/\n\n+/);
+    console.log('[ReplyGuy] Number of paragraphs:', paragraphs.length);
     console.log('[ReplyGuy] Paragraphs:', paragraphs);
     
     // Wrap each paragraph in a div for better spacing
     const formatted = paragraphs
       .filter(p => p.trim()) // Remove empty paragraphs
-      .map(p => {
+      .map((p, index) => {
         // Replace single line breaks with <br>
         const withBreaks = p.replace(/\n/g, '<br>');
+        console.log(`[ReplyGuy] Paragraph ${index + 1}:`, withBreaks);
         return `<div class="reply-guy-paragraph">${withBreaks}</div>`;
       })
       .join('');
     
-    console.log('[ReplyGuy] Final formatted:', formatted);
+    console.log('[ReplyGuy] Final formatted HTML:', formatted);
     return formatted;
   }
 

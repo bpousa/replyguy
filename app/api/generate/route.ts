@@ -5,6 +5,13 @@ import { StyleAnalyzer, TweetStyle } from '@/app/lib/services/style-analyzer.ser
 import { AntiAIDetector } from '@/app/lib/services/anti-ai-detector.service';
 import { REPLY_LENGTHS } from '@/app/lib/constants';
 
+// Define an interface for the active style object
+interface ActiveStyle {
+  style_instructions: string;
+  recent_corrections: any[];
+  forbidden_patterns: string[];
+}
+
 // Initialize Anthropic client
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
@@ -88,7 +95,7 @@ export async function POST(req: NextRequest) {
             
             const { data: activeStyle, error } = await supabase
               .rpc('get_user_active_style', { p_user_id: validated.userId })
-              .single();
+              .single<ActiveStyle>();
               
             if (error) {
               console.error('Error calling get_user_active_style:', error);

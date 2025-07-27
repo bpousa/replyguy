@@ -878,6 +878,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Log the reply content before creating result
+    console.log('[process] Creating result object with reply:', {
+      replyLength: generateData.data.reply?.length,
+      hasLineBreaks: generateData.data.reply?.includes('\n'),
+      replyPreview: JSON.stringify(generateData.data.reply?.substring(0, 200))
+    });
+    
     const result: GeneratedReply = {
       reply: generateData.data.reply,
       replyType: selectedType.name,
@@ -1050,6 +1057,14 @@ export async function POST(req: NextRequest) {
         timezone: 'N/A'
       };
     }
+
+    // Log final result before returning
+    console.log('[process] Final result before JSON response:', {
+      replyLength: result.reply?.length,
+      hasLineBreaks: result.reply?.includes('\n'),
+      hasDoubleLineBreaks: result.reply?.includes('\n\n'),
+      replyPreview: JSON.stringify(result.reply?.substring(0, 200))
+    });
 
     return NextResponse.json({ data: result });
   } catch (error) {

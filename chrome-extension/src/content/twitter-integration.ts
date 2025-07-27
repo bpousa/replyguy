@@ -384,6 +384,10 @@ export class TwitterIntegration {
               // The API returns { data: { reply, memeUrl, ... } }
               const replyData = response.data.data || response.data;
               console.log('[ReplyGuy] Reply data extracted:', replyData);
+              console.log('[ReplyGuy] Raw reply text:', JSON.stringify(replyData.reply));
+              console.log('[ReplyGuy] Reply length:', replyData.reply?.length);
+              console.log('[ReplyGuy] Reply has \\n line breaks:', replyData.reply?.includes('\n'));
+              console.log('[ReplyGuy] Reply has \\r\\n line breaks:', replyData.reply?.includes('\r\n'));
               
               // Log tracking status for debugging
               if (replyData.trackingStatus) {

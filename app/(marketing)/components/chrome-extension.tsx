@@ -86,7 +86,7 @@ export function ChromeExtension() {
                   asChild
                 >
                   <a 
-                    href="https://www.youtube.com/watch?v=EYFCIBYObcE"
+                    href="https://www.youtube.com/watch?v=dfyVo62Ji-M"
                     target="_blank"
                     rel="noopener noreferrer"
                   >

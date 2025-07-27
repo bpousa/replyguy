@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 type EventType = 
   | 'user_created'
+  | 'user_profile_completed'
   | 'subscription_started'
   | 'subscription_updated'
   | 'payment_failed'
@@ -141,6 +142,7 @@ export async function POST(req: NextRequest) {
     // Validate event type
     const validEvents: EventType[] = [
       'user_created',
+      'user_profile_completed',
       'subscription_started',
       'subscription_updated',
       'payment_failed',

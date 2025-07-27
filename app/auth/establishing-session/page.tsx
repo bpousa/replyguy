@@ -145,13 +145,20 @@ export default function EstablishingSessionPage() {
                 .from('users')
                 .select('has_seen_trial_offer')
                 .eq('id', session.user.id)
-                .single();
+                .maybeSingle();
               
               if (userError) {
                 console.error('[establishing-session] Error checking trial offer:', userError);
-                // If we can't check, assume they haven't seen it (especially for new users)
-                if (isNewUser) {
-                  console.log('[establishing-session] Error checking but user is new, showing trial offer');
+                // Handle 406 errors or database issues gracefully
+                if (userError.code === 'PGRST116' || userError.code === 'PGRST301' || userError.message?.includes('406')) {
+                  console.log('[establishing-session] 406/PGRST116 error - user record missing, treating as new user');
+                  if (isNewUser || isNewUser === null) {
+                    console.log('[establishing-session] Showing trial offer for missing user record');
+                    router.push('/auth/trial-offer');
+                    return;
+                  }
+                } else if (isNewUser) {
+                  console.log('[establishing-session] Other error but user is new, showing trial offer');
                   router.push('/auth/trial-offer');
                   return;
                 }
@@ -159,12 +166,17 @@ export default function EstablishingSessionPage() {
                 console.log('[establishing-session] User eligible for trial offer, redirecting');
                 router.push('/auth/trial-offer');
                 return;
+              } else if (!userData && (isNewUser || isNewUser === null)) {
+                // No user record found but user appears to be new
+                console.log('[establishing-session] No user record found for new user, showing trial offer');
+                router.push('/auth/trial-offer');
+                return;
               }
             } catch (error) {
               console.error('[establishing-session] Unexpected error checking trial offer:', error);
               // For new users, show the trial offer anyway
-              if (isNewUser) {
-                console.log('[establishing-session] Error but user is new, showing trial offer');
+              if (isNewUser || isNewUser === null) {
+                console.log('[establishing-session] Error but user appears new, showing trial offer');
                 router.push('/auth/trial-offer');
                 return;
               }
@@ -243,13 +255,20 @@ export default function EstablishingSessionPage() {
                   .from('users')
                   .select('has_seen_trial_offer')
                   .eq('id', session.user.id)
-                  .single();
+                  .maybeSingle();
                 
                 if (userError) {
                   console.error('[establishing-session] Error checking trial offer (polling):', userError);
-                  // If we can't check, assume they haven't seen it (especially for new users)
-                  if (isNewUser) {
-                    console.log('[establishing-session] Error checking but user is new, showing trial offer (polling)');
+                  // Handle 406 errors or database issues gracefully
+                  if (userError.code === 'PGRST116' || userError.code === 'PGRST301' || userError.message?.includes('406')) {
+                    console.log('[establishing-session] 406/PGRST116 error (polling) - user record missing, treating as new user');
+                    if (isNewUser || isNewUser === null) {
+                      console.log('[establishing-session] Showing trial offer for missing user record (polling)');
+                      router.push('/auth/trial-offer');
+                      return;
+                    }
+                  } else if (isNewUser) {
+                    console.log('[establishing-session] Other error but user is new, showing trial offer (polling)');
                     router.push('/auth/trial-offer');
                     return;
                   }
@@ -257,12 +276,17 @@ export default function EstablishingSessionPage() {
                   console.log('[establishing-session] User eligible for trial offer, redirecting (polling)');
                   router.push('/auth/trial-offer');
                   return;
+                } else if (!userData && (isNewUser || isNewUser === null)) {
+                  // No user record found but user appears to be new
+                  console.log('[establishing-session] No user record found for new user, showing trial offer (polling)');
+                  router.push('/auth/trial-offer');
+                  return;
                 }
               } catch (error) {
                 console.error('[establishing-session] Unexpected error checking trial offer (polling):', error);
                 // For new users, show the trial offer anyway
-                if (isNewUser) {
-                  console.log('[establishing-session] Error but user is new, showing trial offer (polling)');
+                if (isNewUser || isNewUser === null) {
+                  console.log('[establishing-session] Error but user appears new, showing trial offer (polling)');
                   router.push('/auth/trial-offer');
                   return;
                 }

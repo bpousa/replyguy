@@ -16,6 +16,7 @@ import { ReferralStats } from '@/app/components/referral-stats';
 import { ReferralWelcomeModal } from '@/app/components/referral-welcome-modal';
 import { ChromeExtensionCard } from '@/app/components/chrome-extension-card';
 import { TrialOfferBanner } from '@/app/components/trial-offer-banner';
+import { ProfileCompletionModal } from '@/app/components/profile-completion-modal';
 
 
 export default function HomePage() {
@@ -36,6 +37,9 @@ export default function HomePage() {
   const [referralCode, setReferralCode] = useState('');
   const [referralUrl, setReferralUrl] = useState('');
   const [userTimezone, setUserTimezone] = useState<string | null>(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileCompleted, setProfileCompleted] = useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
   
   // Function to fetch current daily usage from database
   const fetchDailyUsage = useCallback(async (userId: string, userTimezone?: string) => {
@@ -104,20 +108,54 @@ export default function HomePage() {
       
       setUser(user);
       
-      // Get user's settings
-      const { data: userData } = await supabase
+      // Get user's settings and profile completion status
+      const { data: userData, error: userDataError } = await supabase
         .from('users')
-        .select('daily_goal, timezone')
+        .select('daily_goal, timezone, full_name, phone, profile_completed_at, created_at')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
+      
+      if (userDataError && userDataError.code !== 'PGRST116') {
+        console.error('[dashboard] Error fetching user data:', userDataError);
+      }
         
       if (userData) {
         setDailyGoal(userData.daily_goal || 10);
         setUserTimezone(userData.timezone || null);
+        setUserProfile(userData);
+        
+        // Check if profile is complete
+        const isProfileComplete = !!userData.profile_completed_at;
+        setProfileCompleted(isProfileComplete);
+        
+        // Show profile modal for incomplete profiles if:
+        // 1. Profile not completed
+        // 2. User created within last 30 days (recent signup)
+        // 3. Missing either full_name or no profile_completed_at timestamp
+        const userAge = new Date().getTime() - new Date(userData.created_at).getTime();
+        const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
+        const isRecentUser = userAge < thirtyDaysInMs;
+        const needsProfileCompletion = !isProfileComplete && 
+                                     isRecentUser && 
+                                     (!userData.full_name || userData.full_name.trim() === '');
+        
+        if (needsProfileCompletion) {
+          // Small delay to ensure UI is ready
+          setTimeout(() => setShowProfileModal(true), 1000);
+        }
+        
+        console.log('[dashboard] Profile check:', {
+          isComplete: isProfileComplete,
+          isRecent: isRecentUser,
+          needsCompletion: needsProfileCompletion,
+          hasName: !!userData.full_name,
+          hasPhone: !!userData.phone,
+          userAge: Math.round(userAge / (24 * 60 * 60 * 1000)) + ' days'
+        });
       }
       
       // Get user with active subscription and plan details
-      const { data: userWithSub } = await supabase
+      const { data: userWithSub, error: subError } = await supabase
         .from('users')
         .select(`
           *,
@@ -130,7 +168,11 @@ export default function HomePage() {
         `)
         .eq('id', user.id)
         .eq('subscriptions.is_active', true)
-        .single();
+        .maybeSingle();
+      
+      if (subError && subError.code !== 'PGRST116') {
+        console.error('[dashboard] Error fetching subscription data:', subError);
+      }
         
       if (userWithSub?.subscriptions?.[0]) {
         const subscription = userWithSub.subscriptions[0];
@@ -414,6 +456,47 @@ export default function HomePage() {
     }
   };
 
+  // Handle profile completion
+  const handleProfileComplete = async (profileData: { fullName?: string; phone?: string; smsOptIn?: boolean }) => {
+    try {
+      console.log('[dashboard] Submitting profile completion:', profileData);
+      
+      const response = await fetch('/api/user/complete-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(profileData)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('[dashboard] Profile completion successful:', result);
+        
+        // Update local state
+        setProfileCompleted(true);
+        setShowProfileModal(false);
+        
+        // Update user profile data
+        if (userProfile) {
+          setUserProfile({
+            ...userProfile,
+            full_name: profileData.fullName || userProfile.full_name,
+            phone: profileData.phone || userProfile.phone,
+            profile_completed_at: result.profileData.profile_completed_at
+          });
+        }
+        
+        toast.success('Profile completed successfully! 🎉');
+      } else {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update profile');
+      }
+    } catch (error) {
+      console.error('[dashboard] Profile completion failed:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to complete profile');
+    }
+  };
+
   return (
     <main className="min-h-screen py-12 px-4">
       <div className="max-w-6xl mx-auto">
@@ -534,6 +617,18 @@ export default function HomePage() {
         referralUrl={referralUrl}
         isFreeTier={subscription?.subscription_plans?.id === 'free' || !subscription}
       />
+      
+      {/* Profile Completion Modal */}
+      {user && userProfile && (
+        <ProfileCompletionModal
+          isOpen={showProfileModal}
+          onClose={() => setShowProfileModal(false)}
+          onComplete={handleProfileComplete}
+          userEmail={user.email || ''}
+          existingName={userProfile.full_name || ''}
+          existingPhone={userProfile.phone || ''}
+        />
+      )}
     </main>
   );
 }

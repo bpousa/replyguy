@@ -28,44 +28,92 @@ export async function POST(req: NextRequest) {
     
     console.log('[post-signup] Checking user:', userId);
     
-    // Check if this is a new user (created within last 10 minutes)
-    const { data: user } = await supabase
-      .from('users')
-      .select('created_at, email')
-      .eq('id', userId)
-      .single();
-      
-    if (!user) {
-      console.error('[post-signup] User not found:', userId);
+    // First try to get the user from auth to get metadata
+    const { data: { user: authUser }, error: authError } = await supabase.auth.admin.getUserById(userId);
+    
+    if (authError || !authUser) {
+      console.error('[post-signup] Auth user not found:', userId, authError);
       return NextResponse.json(
-        { error: 'User not found' },
+        { error: 'Auth user not found' },
         { status: 404 }
       );
     }
     
-    const createdAt = new Date(user.created_at);
-    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+    console.log('[post-signup] Auth user found:', {
+      id: authUser.id,
+      email: authUser.email,
+      created_at: authUser.created_at
+    });
     
-    if (createdAt < tenMinutesAgo) {
-      // Not a new user, skip processing
-      console.log('[post-signup] Not a new user, skipping:', userId);
+    // Check if user exists in public.users table
+    const { data: publicUser, error: publicUserError } = await supabase
+      .from('users')
+      .select('created_at, email')
+      .eq('id', userId)
+      .maybeSingle();
+    
+    if (publicUserError && publicUserError.code !== 'PGRST116') {
+      console.error('[post-signup] Error checking public user:', publicUserError);
+    }
+    
+    const createdAt = new Date(authUser.created_at);
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    
+    if (createdAt < fiveMinutesAgo) {
+      // Not a new user, skip GHL notification
+      console.log('[post-signup] Not a new user, skipping GHL notification');
       return NextResponse.json({ 
-        message: 'Not a new user, skipping post-signup processing' 
+        message: 'Not a new user, skipping GHL notification' 
       });
     }
     
-    console.log('[post-signup] Processing new user:', {
+    console.log('[post-signup] Processing new user for GHL webhook:', {
       userId,
-      email: user.email,
-      createdAt: user.created_at
+      email: authUser.email,
+      hasPublicRecord: !!publicUser,
+      createdAt: authUser.created_at
     });
     
-    // The actual webhook to GHL is handled by the database trigger
-    // This endpoint is just for client-side notification
+    // Send user_created event to GHL (fallback if database trigger failed)
+    if (process.env.GHL_SYNC_ENABLED === 'true') {
+      try {
+        const ghlResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/ghl/webhook`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: 'user_created',
+            userId: userId,
+            data: {
+              email: authUser.email,
+              full_name: authUser.user_metadata?.full_name || null,
+              phone: authUser.user_metadata?.phone || null,
+              sms_opt_in: authUser.user_metadata?.sms_opt_in || false,
+              selected_plan: authUser.user_metadata?.selected_plan || 'free'
+            },
+            metadata: {
+              source: 'post_signup_fallback',
+              timestamp: createdAt.toISOString(),
+              has_public_record: !!publicUser
+            }
+          })
+        });
+        
+        if (ghlResponse.ok) {
+          const ghlResult = await ghlResponse.json();
+          console.log(`✅ [post-signup] GHL user_created event sent for user ${userId}:`, ghlResult);
+        } else {
+          console.error('[post-signup] GHL webhook failed:', ghlResponse.status);
+        }
+      } catch (error) {
+        console.error('[post-signup] Failed to send user_created event to GHL:', error);
+        // Don't fail the request if GHL webhook fails
+      }
+    }
     
     return NextResponse.json({ 
       message: 'Post-signup processing completed',
-      newUser: true 
+      newUser: true,
+      hasPublicRecord: !!publicUser
     });
     
   } catch (error) {

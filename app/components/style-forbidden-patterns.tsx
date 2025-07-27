@@ -47,7 +47,7 @@ export function StyleForbiddenPatterns({ styleId, styleName, onClose }: StyleFor
 
   useEffect(() => {
     loadPatterns();
-  }, [styleId]);
+  }, [styleId, loadPatterns]);
 
   const loadPatterns = async () => {
     try {
@@ -123,7 +123,7 @@ export function StyleForbiddenPatterns({ styleId, styleName, onClose }: StyleFor
             Forbidden Patterns
           </h3>
           <p className="text-sm text-muted-foreground mt-1">
-            Block specific patterns from "{styleName}" style
+            Block specific patterns from &quot;{styleName}&quot; style
           </p>
         </div>
         {onClose && (

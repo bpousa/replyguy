@@ -671,13 +671,24 @@ ${customStylePrompt ? customStylePrompt : styleInstructions}
 
 ${antiAIPrompt}
 
-TWITTER FORMATTING:
-- Break your reply into short paragraphs (1-3 sentences each)
-- Use line breaks between distinct thoughts or ideas
-- Think mobile-first: how will this look on a phone screen?
-- Natural conversation flow, not a wall of text
+CRITICAL TWITTER FORMATTING RULES:
+YOU MUST USE LINE BREAKS! Add a blank line (press Enter twice) between each paragraph.
 
-Write the reply (formatted with line breaks, just the text, no quotes):`;
+Example of CORRECT formatting:
+"First thought or point goes here.
+
+Second thought or point goes here.
+
+Final thought or conclusion goes here."
+
+FORMATTING REQUIREMENTS:
+- MUST break into 2-4 short paragraphs
+- MUST add a blank line between EACH paragraph  
+- Each paragraph should be 1-3 sentences MAX
+- Think mobile: short chunks are easier to read
+- DO NOT write walls of text
+
+Write the reply WITH PROPER LINE BREAKS (just the text, no quotes):`;
   }
 }
 
@@ -723,22 +734,107 @@ function cleanReply(reply: string, charLimit: number, isWriteLikeMe: boolean = f
 }
 
 function formatForTwitter(text: string, charLimit: number): string {
+  console.log('[formatForTwitter] Input:', { 
+    length: text.length, 
+    hasLineBreaks: text.includes('\n'),
+    charLimit,
+    preview: text.substring(0, 100) + '...'
+  });
+  
   // If text already has line breaks, respect them but ensure they're properly formatted
   if (text.includes('\n')) {
     // Clean up excessive line breaks (more than 2 in a row)
     text = text.replace(/\n{3,}/g, '\n\n');
+    console.log('[formatForTwitter] Text already has line breaks, cleaned up');
     return text.trim();
   }
   
   // For text without line breaks, add them intelligently
+  console.log('[formatForTwitter] No line breaks found, adding intelligent breaks');
+  
+  // First, try to find natural break points using transition phrases
+  const transitionPhrases = [
+    // Common transitions in the user's example
+    'reminds me of',
+    'what\'s really',
+    'what\'s messed up',
+    'your friend',
+    // Other common transitions
+    'the thing is',
+    'honestly',
+    'actually',
+    'here\'s the',
+    'but seriously',
+    'the crazy part',
+    'funny thing is',
+    'what gets me',
+    'this is why',
+    'that\'s why',
+    'which is why',
+    'the stats are',
+    'according to'
+  ];
+  
+  let workingText = text;
+  let breakCount = 0;
+  
+  // Try to add breaks at natural transition points
+  for (const phrase of transitionPhrases) {
+    // Look for the phrase preceded by a sentence ending or in the middle of text
+    const regex = new RegExp(`(\\S)\\s+(${phrase})`, 'gi');
+    const matches = workingText.match(regex);
+    if (matches) {
+      // Only add break if it's not too close to the start
+      const indexOfPhrase = workingText.toLowerCase().indexOf(phrase.toLowerCase());
+      if (indexOfPhrase > 100) { // Don't break too early in the text
+        workingText = workingText.replace(regex, '$1\n\n$2');
+        breakCount++;
+        console.log(`[formatForTwitter] Added break at transition: "${phrase}"`);
+        break; // Only add one or two transition breaks to avoid over-breaking
+      }
+    }
+  }
+  
+  // If we still need more breaks, look for another transition
+  if (breakCount === 1 && workingText.length > 400) {
+    for (const phrase of transitionPhrases) {
+      const secondRegex = new RegExp(`\n\n.*?(\\S)\\s+(${phrase})`, 'gi');
+      if (secondRegex.test(workingText)) {
+        workingText = workingText.replace(secondRegex, (match, p1, p2) => {
+          return match.replace(`${p1} ${p2}`, `${p1}\n\n${p2}`);
+        });
+        breakCount++;
+        console.log(`[formatForTwitter] Added second break at: "${phrase}"`);
+        break;
+      }
+    }
+  }
+  
+  // If we found some natural breaks, use that
+  if (breakCount > 0) {
+    console.log(`[formatForTwitter] Added ${breakCount} natural breaks`);
+    return workingText.trim();
+  }
+  
+  // Otherwise, fall back to sentence-based breaking
+  console.log('[formatForTwitter] No transition phrases found, using sentence-based breaks');
+  
   const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+  console.log(`[formatForTwitter] Found ${sentences.length} sentences`);
+  
+  // Don't add breaks to very short texts
+  if (text.length < 150 || sentences.length < 2) {
+    console.log('[formatForTwitter] Text too short for breaks');
+    return text.trim();
+  }
+  
   const paragraphs: string[] = [];
   let currentParagraph: string[] = [];
   let currentLength = 0;
   
-  // For short replies (under 280 chars), limit to 2 paragraphs max
-  const isShort = charLimit <= 280;
-  const maxSentencesPerParagraph = isShort ? 2 : 3;
+  // Adjust paragraph size based on total length
+  const targetParagraphs = charLimit > 700 ? 3 : 2;
+  const sentencesPerParagraph = Math.ceil(sentences.length / targetParagraphs);
   
   sentences.forEach((sentence, index) => {
     sentence = sentence.trim();
@@ -746,15 +842,11 @@ function formatForTwitter(text: string, charLimit: number): string {
     currentLength += sentence.length;
     
     // Start new paragraph if:
-    // 1. We've hit the max sentences per paragraph
-    // 2. Current paragraph is getting long (over 200 chars)
-    // 3. There's a natural break (e.g., question followed by statement)
-    const isQuestion = sentence.endsWith('?');
-    const nextIsStatement = index < sentences.length - 1 && !sentences[index + 1].trim().endsWith('?');
+    // 1. We've hit the target sentences per paragraph
+    // 2. Current paragraph is getting long (over 250 chars for better mobile reading)
     const shouldBreak = 
-      currentParagraph.length >= maxSentencesPerParagraph ||
-      currentLength > 200 ||
-      (isQuestion && nextIsStatement);
+      currentParagraph.length >= sentencesPerParagraph ||
+      currentLength > 250;
     
     if (shouldBreak && index < sentences.length - 1) {
       paragraphs.push(currentParagraph.join(' '));
@@ -768,11 +860,14 @@ function formatForTwitter(text: string, charLimit: number): string {
     paragraphs.push(currentParagraph.join(' '));
   }
   
-  // For very short replies, don't add line breaks
-  if (text.length < 100 && paragraphs.length === 1) {
-    return text.trim();
-  }
-  
   // Join paragraphs with double line breaks
-  return paragraphs.join('\n\n').trim();
+  const formatted = paragraphs.join('\n\n').trim();
+  
+  console.log('[formatForTwitter] Final output:', {
+    length: formatted.length,
+    hasLineBreaks: formatted.includes('\n'),
+    paragraphCount: formatted.split('\n\n').length
+  });
+  
+  return formatted;
 }

@@ -357,6 +357,9 @@ export default function SignupPage() {
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
                 Phone Number <span className="text-gray-500">(optional)</span>
+                <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                  🎁 Bonus Content
+                </span>
               </label>
               <input
                 id="phone"
@@ -368,24 +371,56 @@ export default function SignupPage() {
                 className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
                 placeholder="(555) 123-4567"
               />
-              {phone && (
-                <div className="mt-2">
-                  <label className="flex items-start gap-2">
-                    <input
-                      type="checkbox"
-                      checked={smsOptIn}
-                      onChange={(e) => setSmsOptIn(e.target.checked)}
-                      className="mt-1 h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-                    />
-                    <span className="text-sm text-gray-600">
-                      <span className="font-medium text-gray-900">Get exclusive X growth tips!</span>
-                      <br />
-                      Unlock insider strategies to boost your engagement and grow your following faster. 
-                      <span className="text-purple-600">2-3 texts per month, unsubscribe anytime.</span>
-                    </span>
-                  </label>
+              
+              {/* Benefits box - always visible */}
+              <div className={`mt-3 p-4 rounded-lg border-2 transition-all duration-200 ${
+                phone 
+                  ? 'border-purple-200 bg-purple-50' 
+                  : 'border-gray-200 bg-gray-50'
+              }`}>
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0">
+                    <Gift className={`h-5 w-5 mt-0.5 ${phone ? 'text-purple-600' : 'text-gray-400'}`} />
+                  </div>
+                  <div className="flex-grow">
+                    <h4 className={`font-semibold text-sm ${phone ? 'text-purple-900' : 'text-gray-700'}`}>
+                      🚀 Get Exclusive X Growth Tips
+                    </h4>
+                    <p className={`text-sm mt-1 ${phone ? 'text-purple-700' : 'text-gray-600'}`}>
+                      Join 1,000+ creators getting insider strategies to boost engagement and grow their following faster.
+                    </p>
+                    <ul className={`text-xs mt-2 space-y-1 ${phone ? 'text-purple-600' : 'text-gray-500'}`}>
+                      <li>✓ Weekly viral content formulas</li>
+                      <li>✓ Growth hacks from top creators</li>
+                      <li>✓ Early access to new features</li>
+                    </ul>
+                    
+                    {phone && (
+                      <div className="mt-3">
+                        <label className="flex items-start gap-2">
+                          <input
+                            type="checkbox"
+                            checked={smsOptIn}
+                            onChange={(e) => setSmsOptIn(e.target.checked)}
+                            className="mt-1 h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                          />
+                          <span className="text-sm text-purple-700">
+                            <span className="font-medium">Yes, send me growth tips!</span>
+                            <br />
+                            <span className="text-xs text-purple-600">2-3 texts per month, unsubscribe anytime.</span>
+                          </span>
+                        </label>
+                      </div>
+                    )}
+                    
+                    {!phone && (
+                      <div className="mt-3 text-xs text-gray-500 italic">
+                        👆 Add your phone number above to unlock these exclusive tips
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
           </div>
 

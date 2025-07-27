@@ -307,8 +307,53 @@ FORMATTING: Use line breaks to separate distinct thoughts. Keep paragraphs short
     // Clean and validate the reply
     reply = cleanReply(reply, charLimit, validated.useCustomStyle && validated.customStyle);
     
-    // Apply Twitter-style formatting
-    reply = formatForTwitter(reply, charLimit);
+    // Apply formatting - either via LLM or fallback
+    let formattingCost = 0;
+    let formattingTime = 0;
+    
+    if (process.env.ENABLE_FORMATTING_LLM === 'true' && !reply.includes('\n')) {
+      console.log('\n🎨 === APPLYING LLM FORMATTING ===');
+      const formattingStart = Date.now();
+      
+      try {
+        // Call the formatting API
+        const formatResponse = await fetch(new URL('/api/format', req.url), {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cookie': req.headers.get('cookie') || ''
+          },
+          body: JSON.stringify({
+            text: reply,
+            replyLength: validated.replyLength
+          }),
+        });
+
+        if (formatResponse.ok) {
+          const formatData = await formatResponse.json();
+          if (formatData.data.wasFormatted) {
+            reply = formatData.data.formattedText;
+            formattingCost = formatData.data.cost || 0;
+            formattingTime = Date.now() - formattingStart;
+            console.log('✅ LLM FORMATTING SUCCESS:', {
+              hasLineBreaks: reply.includes('\n'),
+              paragraphCount: reply.split('\n\n').length,
+              cost: formattingCost,
+              time: formattingTime + 'ms'
+            });
+          }
+        } else {
+          console.warn('❌ LLM FORMATTING FAILED, using fallback');
+          reply = formatForTwitter(reply, charLimit);
+        }
+      } catch (error) {
+        console.error('❌ LLM FORMATTING ERROR:', error);
+        reply = formatForTwitter(reply, charLimit);
+      }
+    } else {
+      // Use traditional formatting
+      reply = formatForTwitter(reply, charLimit);
+    }
     
     console.log('\n✨ === FINAL CLEANED & FORMATTED REPLY ===');
     console.log('Final reply:', reply);
@@ -320,7 +365,8 @@ FORMATTING: Use line breaks to separate distinct thoughts. Keep paragraphs short
     const tokensUsed = message.usage.input_tokens + message.usage.output_tokens;
     const inputCost = message.usage.input_tokens * 0.000003; // $3 per 1M input tokens
     const outputCost = message.usage.output_tokens * 0.000015; // $15 per 1M output tokens
-    const cost = inputCost + outputCost;
+    const baseCost = inputCost + outputCost;
+    const cost = baseCost + formattingCost; // Include formatting cost if applicable
     
     // Debug token vs character ratio
     console.log('\n📊 === TOKEN VS CHARACTER ANALYSIS ===');
@@ -335,12 +381,23 @@ FORMATTING: Use line breaks to separate distinct thoughts. Keep paragraphs short
       console.warn(`Generated only ${reply.length}/${charLimit} chars but used ${message.usage.output_tokens}/${maxTokens} tokens`);
     }
 
+    timings.formattingTime = formattingTime;
     timings.totalTime = Date.now() - startTime;
     console.log('\n⏱️ === PERFORMANCE TIMINGS ===');
     console.log('Validation:', timings.validation, 'ms');
     console.log('Data fetching (DB/style):', timings.dataFetching || 0, 'ms');
     console.log('Anthropic API call:', timings.anthropicCall, 'ms');
+    if (formattingTime > 0) {
+      console.log('LLM Formatting:', formattingTime, 'ms');
+    }
     console.log('Total time:', timings.totalTime, 'ms');
+    
+    console.log('\n💰 === COST BREAKDOWN ===');
+    console.log('Claude generation cost:', baseCost.toFixed(6));
+    if (formattingCost > 0) {
+      console.log('GPT-3.5 formatting cost:', formattingCost.toFixed(6));
+    }
+    console.log('Total cost:', cost.toFixed(6));
     
     return NextResponse.json({
       data: {
@@ -671,24 +728,7 @@ ${customStylePrompt ? customStylePrompt : styleInstructions}
 
 ${antiAIPrompt}
 
-CRITICAL TWITTER FORMATTING RULES:
-YOU MUST USE LINE BREAKS! Add a blank line (press Enter twice) between each paragraph.
-
-Example of CORRECT formatting:
-"First thought or point goes here.
-
-Second thought or point goes here.
-
-Final thought or conclusion goes here."
-
-FORMATTING REQUIREMENTS:
-- MUST break into 2-4 short paragraphs
-- MUST add a blank line between EACH paragraph  
-- Each paragraph should be 1-3 sentences MAX
-- Think mobile: short chunks are easier to read
-- DO NOT write walls of text
-
-Write the reply WITH PROPER LINE BREAKS (just the text, no quotes):`;
+Write the reply (just the text, no quotes):`;
   }
 }
 

@@ -74,6 +74,11 @@ curl https://replyguy.appendment.com/api/user/plan -H "Cookie: [your-auth-cookie
 2. Ensure all environment variables are set
 3. Verify Supabase connection
 
+### To enable two-step formatting (optional):
+1. Add `ENABLE_FORMATTING_LLM=true` to Vercel environment variables
+2. Ensures OpenAI API key is set
+3. Redeploy to activate the feature
+
 ## ✅ Success Criteria
 - Daily counter increments with each reply
 - No API errors in console

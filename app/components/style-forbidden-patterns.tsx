@@ -47,7 +47,8 @@ export function StyleForbiddenPatterns({ styleId, styleName, onClose }: StyleFor
 
   useEffect(() => {
     loadPatterns();
-  }, [styleId, loadPatterns]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [styleId]);
 
   const loadPatterns = async () => {
     try {

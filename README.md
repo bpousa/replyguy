@@ -67,6 +67,9 @@ ReplyGuy helps users create natural, engaging responses to tweets (X posts) usin
    PERPLEXITY_API_KEY=pplx-...
    NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
    NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+   
+   # Optional: Enable two-step formatting with GPT-3.5-turbo
+   ENABLE_FORMATTING_LLM=true
    ```
 
 4. **Set up the database**

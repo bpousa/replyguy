@@ -34,6 +34,7 @@ const requestSchema = z.object({
   replyLength: z.enum(['short', 'medium', 'long', 'extra-long']).optional(),
   enableStyleMatching: z.boolean().optional(),
   useCustomStyle: z.boolean().optional(),
+  useExactStyleOnly: z.boolean().optional(),
   customStyle: z.any().optional(),
   customStyleExamples: z.array(z.string()).optional(),
   userId: z.string().optional(),
@@ -490,6 +491,7 @@ function diversifyExamples(examples: string[], maxExamples: number): string[] {
 
 function buildPrompt(input: any, charLimit: number, replyLength: string, styleInstructions: string, recentCorrections: any[] = [], forbiddenPatterns: string[] = []): string {
   const isWriteLikeMe = input.useCustomStyle && input.customStyle;
+  const useExactStyleOnly = input.useExactStyleOnly ?? false;
 
   const lengthGuide = replyLength === 'short' ? '1-2 sentences max' : 
                       replyLength === 'medium' ? '2-4 sentences' : 
@@ -566,6 +568,34 @@ ${correctionExamples}
 The user keeps correcting these patterns, so AVOID them completely!`;
     }
     
+    const toneBlendingInstructions = !useExactStyleOnly ? `
+
+🎨 TONE BLENDING MODE:
+The user selected "${input.tone}" tone but also wants their writing style. You need to BLEND their style with the requested tone:
+
+${input.tone === 'professional' && input.customStyle?.tone?.includes('casual') ? 
+  `- Keep their conversational patterns but elevate the language
+- Use their sentence structures but with more formal vocabulary  
+- Maintain their personality while being workplace-appropriate
+- Example: "yo this is wild" → "This is quite remarkable"
+- Example: "nah that's not it" → "I don't think that's accurate"` :
+input.tone === 'casual' && input.customStyle?.tone?.includes('professional') ?
+  `- Relax their formal patterns into friendlier language
+- Keep their thoughtful approach but with casual phrasing
+- Maintain their intelligence while being approachable
+- Example: "I would contend that" → "I'd say"
+- Example: "This demonstrates" → "This shows"` :
+input.tone === 'humorous' ?
+  `- Add levity to their usual style
+- Keep their voice but find the funny angle
+- Use their patterns but with witty observations` :
+input.tone === 'supportive' ?
+  `- Warm up their usual tone with empathy
+- Keep their style but add encouraging elements
+- Use their voice to build others up` :
+  `- Blend their natural style with ${input.tone} elements
+- Keep what makes them unique while adapting the mood`}` : '';
+
     return `Based on this writing style analysis, write a reply that captures the SPIRIT of this person while being ADAPTABLE to their feedback:
 
 Style Analysis:
@@ -578,14 +608,14 @@ Context:
 - You're replying to: "${input.originalTweet}"
 - 🎯 REQUIRED MESSAGE TO EXPRESS: "${input.responseIdea}"
 - ⚠️ This is what the user wants to say - express THIS message in their style
-- Tone: ${input.tone}
+- Tone: ${input.tone}${useExactStyleOnly ? ' (OVERRIDE: Use exact style only, ignore tone request)' : ' (BLEND with their style)'}
 - Length: ${lengthGuide} (max ${charLimit} characters)
-${researchBlock}
+${researchBlock}${toneBlendingInstructions}
 
 ${(input.perplexityData || input.includeMeme) ? `SIMPLIFIED INSTRUCTIONS (Multi-feature mode):
 1. PRIORITY: Express "${input.responseIdea}" in their style
 2. NO COPYING: Create fresh phrasing - don't copy from examples
-${input.perplexityData ? '3. INCLUDE: Weave in the research data naturally\n' : ''}4. STYLE: Match their energy/tone but with original words
+${input.perplexityData ? '3. INCLUDE: Weave in the research data naturally\n' : ''}4. STYLE: ${useExactStyleOnly ? 'Use their exact style, ignore tone request' : `BLEND their style with ${input.tone} tone`}
 5. LENGTH: Keep it concise - ${lengthGuide}
 6. FORMAT: Use line breaks between thoughts. Short paragraphs (1-3 sentences) for mobile.
 
@@ -598,14 +628,15 @@ Reply (formatted with line breaks, just the text, no quotes):` : `ADAPTIVE INSTR
    if (p === 'i_tell_people') return 'NEVER start with "I tell people"';
    return `Avoid: ${p.replace(/_/g, ' ')}`;
 }).join('; ') : 'Watch for patterns the user corrects'}
-4. STYLE FLEXIBILITY: Capture their voice's SPIRIT but be open to evolution. They may be trying to move away from certain patterns
-5. FRESH PHRASING: Create original expressions that feel authentic to them WITHOUT copying examples verbatim
-6. AVOID LOCKED-IN PATTERNS: If the style analysis suggests certain themes (like coding) but corrections show they don't want that, IGNORE those themes
-7. NATURAL VARIETY: Draw from their full range of expression, not just dominant patterns
-8. EMOJI RULE: Use emojis VERY SPARINGLY - only about 1 in 10 replies should have an emoji
-9. RESPECT USER INTENT: The user's message and corrections are more important than rigid style matching
-10. BE ADAPTIVE: Writing styles evolve. Honor their current preferences over past patterns
-11. TWITTER FORMATTING: Break your reply into short paragraphs (1-3 sentences each). Use line breaks between distinct thoughts. Format for easy mobile reading.
+4. TONE ADAPTATION: ${useExactStyleOnly ? 'IGNORE the tone request - use their exact style regardless' : `BLEND their style with ${input.tone} tone - adapt vocabulary and formality while keeping their voice`}
+5. STYLE FLEXIBILITY: Capture their voice's SPIRIT but be open to evolution. They may be trying to move away from certain patterns
+6. FRESH PHRASING: Create original expressions that feel authentic to them WITHOUT copying examples verbatim
+7. AVOID LOCKED-IN PATTERNS: If the style analysis suggests certain themes (like coding) but corrections show they don't want that, IGNORE those themes
+8. NATURAL VARIETY: Draw from their full range of expression, not just dominant patterns
+9. EMOJI RULE: Use emojis VERY SPARINGLY - only about 1 in 10 replies should have an emoji
+10. RESPECT USER INTENT: The user's message and corrections are more important than rigid style matching
+11. BE ADAPTIVE: Writing styles evolve. Honor their current preferences over past patterns
+12. TWITTER FORMATTING: Break your reply into short paragraphs (1-3 sentences each). Use line breaks between distinct thoughts. Format for easy mobile reading.
 
 Reply (formatted with line breaks, just the text, no quotes):`}`;
   } else {

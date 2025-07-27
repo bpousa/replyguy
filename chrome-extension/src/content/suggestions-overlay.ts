@@ -21,6 +21,7 @@ export class SuggestionsOverlay {
   private isSuggestingResearch: boolean = false;
   private researchSuggestions: string[] = [];
   private useCustomStyle: boolean | undefined = false;
+  private useExactStyleOnly: boolean = false;
   private enableStyleMatching: boolean = true; // Default to true like the main dashboard
   private defaultSettings: { responseType?: string; tone?: string } = {};
 
@@ -666,12 +667,51 @@ export class SuggestionsOverlay {
     
     // Write Like Me checkbox
     const writeLikeMeCheckbox = this.overlay.querySelector('#reply-guy-write-like-me') as HTMLInputElement;
+    const writeLikeMeContainer = writeLikeMeCheckbox?.closest('.reply-guy-option-group');
+    let exactStyleCheckbox: HTMLInputElement | null = null;
+    
     if (writeLikeMeCheckbox) {
       writeLikeMeCheckbox.checked = this.useCustomStyle || false;
       console.log('[ReplyGuy] Write Like Me initial state:', this.useCustomStyle);
+      
+      // Add style blending notice
+      if (writeLikeMeContainer) {
+        const styleNotice = document.createElement('div');
+        styleNotice.className = 'reply-guy-style-notice';
+        styleNotice.style.cssText = 'background: #f0f8ff; padding: 8px; border-radius: 6px; margin: 8px 0 8px 24px; font-size: 12px;';
+        styleNotice.innerHTML = `
+          <div style="color: #1a73e8; margin-bottom: 4px;">
+            ℹ️ Your writing style will blend with the selected tone
+          </div>
+          <label class="reply-guy-checkbox" style="margin: 0; font-size: 12px;">
+            <input type="checkbox" id="reply-guy-exact-style" />
+            <span>Use my exact style only (ignore tone)</span>
+          </label>
+        `;
+        styleNotice.style.display = writeLikeMeCheckbox.checked ? 'block' : 'none';
+        writeLikeMeContainer.appendChild(styleNotice);
+        
+        exactStyleCheckbox = styleNotice.querySelector('#reply-guy-exact-style') as HTMLInputElement;
+        if (exactStyleCheckbox) {
+          exactStyleCheckbox.checked = this.useExactStyleOnly || false;
+          exactStyleCheckbox.addEventListener('change', () => {
+            if (exactStyleCheckbox) {
+              this.useExactStyleOnly = exactStyleCheckbox.checked;
+              console.log('[ReplyGuy] Use exact style only:', this.useExactStyleOnly);
+            }
+          });
+        }
+      }
+      
       writeLikeMeCheckbox.addEventListener('change', () => {
         this.useCustomStyle = writeLikeMeCheckbox.checked;
         console.log('[ReplyGuy] Write Like Me changed to:', this.useCustomStyle);
+        
+        // Show/hide the style notice
+        const notice = writeLikeMeContainer?.querySelector('.reply-guy-style-notice') as HTMLElement;
+        if (notice) {
+          notice.style.display = writeLikeMeCheckbox.checked ? 'block' : 'none';
+        }
       });
     } else {
       // If checkbox doesn't exist (user plan doesn't support it), explicitly set to false
@@ -719,6 +759,7 @@ export class SuggestionsOverlay {
         needsResearch: this.needsResearch,
         includeMeme: this.includeMeme,
         useCustomStyle: this.useCustomStyle || false,
+        useExactStyleOnly: this.useExactStyleOnly || false,
         enableStyleMatching: this.enableStyleMatching || false
       };
       

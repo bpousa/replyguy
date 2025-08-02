@@ -270,7 +270,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
           },
           metadata: {
             billingCycle: priceId.includes('yearly') ? 'yearly' : 'monthly',
-            trial: !!subscription.trial_end
+            trial: !!subscription.trial_end,
+            subscriptionId: subscriptionId,
+            priceId: priceId,
+            paymentType: subscription.trial_end ? 'trial_payment' : 'direct_payment'
           }
         })
       });

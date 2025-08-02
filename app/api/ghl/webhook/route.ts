@@ -21,6 +21,10 @@ interface GHLWebhookEvent {
 // Queue for retry logic
 const retryQueue: Map<string, { event: GHLWebhookEvent; attempts: number }> = new Map();
 
+// Track recent webhook events to prevent duplicates (in-memory for now)
+const recentEvents: Map<string, number> = new Map(); // eventKey -> timestamp
+const DEDUP_WINDOW_MS = 30000; // 30 seconds
+
 async function sendEventToGHL(event: GHLWebhookEvent): Promise<boolean> {
   const ghlWebhookUrl = process.env.GHL_WEBHOOK_URL;
   const ghlApiKey = process.env.GHL_API_KEY;
@@ -131,6 +135,31 @@ export async function POST(req: NextRequest) {
       generateTrialToken
     });
     let metadata = initialMetadata || {};
+    
+    // Check for duplicate events
+    const eventKey = `${event}_${userId}`;
+    const now = Date.now();
+    const lastEventTime = recentEvents.get(eventKey);
+    
+    if (lastEventTime && (now - lastEventTime) < DEDUP_WINDOW_MS) {
+      console.log(`[GHL webhook] ⚠️ Duplicate event ignored: ${eventKey} (within ${DEDUP_WINDOW_MS}ms)`);
+      return NextResponse.json({
+        message: 'Duplicate event ignored',
+        eventKey,
+        timeSinceLastEvent: now - lastEventTime
+      });
+    }
+    
+    // Clean up old events (older than 5 minutes)
+    const fiveMinutesAgo = now - (5 * 60 * 1000);
+    for (const [key, timestamp] of recentEvents.entries()) {
+      if (timestamp < fiveMinutesAgo) {
+        recentEvents.delete(key);
+      }
+    }
+    
+    // Record this event
+    recentEvents.set(eventKey, now);
     
     if (!event || !userId) {
       return NextResponse.json(

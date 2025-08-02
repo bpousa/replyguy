@@ -74,7 +74,7 @@ function getPaymentStatus(subscription: any): GHLUserPayload['payment_status'] {
   return 'current';
 }
 
-async function getUserData(userId: string): Promise<GHLUserPayload | null> {
+async function getUserData(userId: string): Promise<GHLUserPayload & { trial_offer_url?: string; trial_offer_token?: string; trial_expires_at?: string } | null> {
   try {
     // Get user info with subscription data
     const { data: userInfo, error: userError } = await supabase
@@ -86,6 +86,56 @@ async function getUserData(userId: string): Promise<GHLUserPayload | null> {
     if (userError || !userInfo) {
       console.error('Error fetching user info:', userError);
       return null;
+    }
+
+    // Check if user is eligible for trial offer and get trial token
+    let trialOfferData = null;
+    if (userInfo.plan_id === 'free') {
+      const userCreatedAt = new Date(userInfo.created_at);
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      // Only generate trial token if within 7 days and hasn't claimed any trial
+      if (userCreatedAt >= sevenDaysAgo && !userInfo.trial_offer_accepted) {
+        try {
+          // Check for existing valid trial token
+          const { data: existingToken } = await supabase
+            .from('trial_offer_tokens')
+            .select('token, expires_at')
+            .eq('user_id', userId)
+            .gt('expires_at', new Date().toISOString())
+            .is('used_at', null)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+            
+          if (existingToken) {
+            trialOfferData = {
+              token: existingToken.token,
+              expires_at: existingToken.expires_at,
+              url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://replyguy.appendment.com'}/auth/trial-offer?token=${existingToken.token}`
+            };
+          } else {
+            // Generate new trial token using the function
+            const { data: newToken } = await supabase
+              .rpc('create_trial_offer_token', {
+                p_user_id: userId,
+                p_source: 'sync'
+              })
+              .single() as { data: { token: string; expires_at: string; url: string } | null };
+              
+            if (newToken) {
+              trialOfferData = {
+                token: newToken.token,
+                expires_at: newToken.expires_at,
+                url: newToken.url
+              };
+            }
+          }
+        } catch (error) {
+          console.error('Error generating trial token for sync:', error);
+        }
+      }
     }
     
     // Get usage stats
@@ -133,7 +183,7 @@ async function getUserData(userId: string): Promise<GHLUserPayload | null> {
       billingDay = userInfo.billing_anchor_day;
     }
     
-    const payload: GHLUserPayload = {
+    const payload: GHLUserPayload & { trial_offer_url?: string; trial_offer_token?: string; trial_expires_at?: string } = {
       external_id: userId,
       email: userInfo.email,
       name: userInfo.full_name || userInfo.email.split('@')[0],
@@ -157,7 +207,13 @@ async function getUserData(userId: string): Promise<GHLUserPayload | null> {
       referral_code: userInfo.referral_code,
       monthly_reply_limit: userInfo.reply_limit || 10,
       monthly_meme_limit: userInfo.meme_limit || 0,
-      features
+      features,
+      // Include trial offer data if available
+      ...(trialOfferData && {
+        trial_offer_url: trialOfferData.url,
+        trial_offer_token: trialOfferData.token,
+        trial_expires_at: trialOfferData.expires_at
+      })
     };
     
     return payload;

@@ -74,6 +74,37 @@ export async function POST(req: NextRequest) {
       createdAt: authUser.created_at
     });
     
+    // Generate trial offer token for free users
+    let trialOfferData = null;
+    const selectedPlan = authUser.user_metadata?.selected_plan || 'free';
+    
+    if (selectedPlan === 'free') {
+      try {
+        const tokenResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/trial-offer/generate-token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            userId: userId, 
+            source: 'post_signup_fallback' 
+          })
+        });
+        
+        if (tokenResponse.ok) {
+          const tokenData = await tokenResponse.json();
+          trialOfferData = {
+            token: tokenData.token,
+            url: tokenData.url,
+            expires_at: tokenData.expires_at
+          };
+          console.log(`✅ [post-signup] Trial offer token generated for free user ${userId}`);
+        }
+      } catch (error) {
+        console.error('[post-signup] Failed to generate trial offer token:', error);
+      }
+    } else {
+      console.log(`[post-signup] Skipping trial token for paid signup: ${selectedPlan}`);
+    }
+
     // Send user_created event to GHL (fallback if database trigger failed)
     if (process.env.GHL_SYNC_ENABLED === 'true') {
       try {
@@ -88,13 +119,21 @@ export async function POST(req: NextRequest) {
               full_name: authUser.user_metadata?.full_name || null,
               phone: authUser.user_metadata?.phone || null,
               sms_opt_in: authUser.user_metadata?.sms_opt_in || false,
-              selected_plan: authUser.user_metadata?.selected_plan || 'free'
+              selected_plan: selectedPlan,
+              // Include trial data in main data payload
+              ...(trialOfferData && {
+                trial_offer_url: trialOfferData.url,
+                trial_offer_token: trialOfferData.token,
+                trial_expires_at: trialOfferData.expires_at
+              })
             },
             metadata: {
               source: 'post_signup_fallback',
               timestamp: createdAt.toISOString(),
-              has_public_record: !!publicUser
-            }
+              has_public_record: !!publicUser,
+              has_trial_token: !!trialOfferData
+            },
+            generateTrialToken: false // We already generated it
           })
         });
         

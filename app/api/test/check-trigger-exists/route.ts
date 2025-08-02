@@ -23,18 +23,18 @@ export async function GET(req: NextRequest) {
 
     // Check if the trigger function exists using information_schema
     try {
-      const { data: functions, error } = await supabase
+      const { data: functions, error: funcError } = await supabase
         .from('information_schema.routines')
-        .select('routine_name, routine_type, routine_schema, specific_name')
+        .select('routine_name, routine_type, specific_name')
         .eq('routine_name', 'handle_new_user')
         .eq('routine_schema', 'public');
 
       results.checks.push({
         type: 'function_exists',
-        success: !error,
+        success: !funcError,
         data: functions,
         count: functions?.length || 0,
-        error: error?.message
+        error: funcError?.message
       });
     } catch (error) {
       results.checks.push({

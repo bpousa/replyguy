@@ -100,36 +100,43 @@ export async function POST(req: NextRequest) {
       }
     }
     
-    // Generate trial offer token for new user
+    // Generate trial offer token for new user (only for free signups)
     let trialOfferData = null;
-    try {
-      // Generate token using the API endpoint
-      const tokenResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/trial-offer/generate-token`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          userId: record.id, 
-          source: 'webhook' 
-        })
-      });
-      
-      if (tokenResponse.ok) {
-        const tokenData = await tokenResponse.json();
-        trialOfferData = {
-          token: tokenData.token,
-          url: tokenData.url,
-          expires_at: tokenData.expires_at
-        };
-        console.log(`✅ Trial offer token generated for user ${record.id}`);
+    const selectedPlan = selected_plan || 'free';
+    
+    if (selectedPlan === 'free') {
+      try {
+        // Generate token using the API endpoint
+        const tokenResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/trial-offer/generate-token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            userId: record.id, 
+            source: 'webhook' 
+          })
+        });
+        
+        if (tokenResponse.ok) {
+          const tokenData = await tokenResponse.json();
+          trialOfferData = {
+            token: tokenData.token,
+            url: tokenData.url,
+            expires_at: tokenData.expires_at
+          };
+          console.log(`✅ Trial offer token generated for free user ${record.id}`);
+        }
+      } catch (error) {
+        console.error('Failed to generate trial offer token:', error);
       }
-    } catch (error) {
-      console.error('Failed to generate trial offer token:', error);
+    } else {
+      console.log(`[handle-new-user] Skipping trial token for paid signup: ${selectedPlan}`);
     }
     
     // Send GHL notification for new user
     console.log('[handle-new-user] GHL sync check:', {
       enabled: process.env.GHL_SYNC_ENABLED === 'true',
-      webhookUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/ghl/webhook`
+      webhookUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/ghl/webhook`,
+      hasTrialData: !!trialOfferData
     });
     
     if (process.env.GHL_SYNC_ENABLED === 'true') {
@@ -147,16 +154,18 @@ export async function POST(req: NextRequest) {
               full_name: full_name || null,
               phone: phone || null,
               sms_opt_in: sms_opt_in || false,
-              selected_plan: selected_plan || 'free'
-            },
-            metadata: {
-              source: 'signup_form',
-              timestamp: new Date().toISOString(),
+              selected_plan: selectedPlan,
+              // Include trial data in main data payload
               ...(trialOfferData && {
                 trial_offer_url: trialOfferData.url,
                 trial_offer_token: trialOfferData.token,
                 trial_expires_at: trialOfferData.expires_at
               })
+            },
+            metadata: {
+              source: 'signup_form',
+              timestamp: new Date().toISOString(),
+              has_trial_token: !!trialOfferData
             },
             generateTrialToken: false // We already generated it
           })
@@ -165,7 +174,8 @@ export async function POST(req: NextRequest) {
         const ghlResult = await ghlResponse.json();
         console.log(`[handle-new-user] ✅ GHL user_created event sent for user ${record.id}`, {
           status: ghlResponse.status,
-          result: ghlResult
+          result: ghlResult,
+          hadTrialData: !!trialOfferData
         });
       } catch (error) {
         console.error('Failed to send user_created event to GHL:', error);

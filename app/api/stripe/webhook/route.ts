@@ -233,10 +233,21 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   // Update trial offer accepted if this is a trial subscription
   if (subscription.trial_end) {
+    // Determine the correct trial type based on plan ID
+    let trialType: string;
+    if (plan.id === 'professional' || plan.id === 'pro') {
+      trialType = 'professional_trial';
+    } else if (plan.id === 'growth' || plan.id === 'basic') {
+      trialType = 'growth_trial';
+    } else {
+      // Default fallback - use plan ID + '_trial'
+      trialType = `${plan.id}_trial`;
+    }
+
     await supabase
       .from('users')
       .update({ 
-        trial_offer_accepted: true,
+        trial_offer_accepted: trialType,
         has_seen_trial_offer: true
       })
       .eq('id', userId);

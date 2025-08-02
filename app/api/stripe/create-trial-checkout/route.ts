@@ -80,20 +80,30 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if user has already claimed a trial
+    // Check if user has already claimed this specific trial type
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('trial_offer_accepted')
       .eq('id', user.id)
       .maybeSingle(); // Use maybeSingle to handle no rows gracefully
 
-    if (userData?.trial_offer_accepted) {
-      console.log('[trial-checkout] User already claimed trial:', userData.trial_offer_accepted);
+    // Determine the expected trial type for this plan
+    const expectedTrialType = plan === 'professional' ? 'professional_trial' : 'growth_trial';
+    
+    if (userData?.trial_offer_accepted === expectedTrialType) {
+      console.log('[trial-checkout] User already claimed this specific trial:', userData.trial_offer_accepted);
       return NextResponse.json(
-        { error: 'You have already claimed a trial offer' },
+        { error: `You have already claimed the ${plan} trial offer` },
         { status: 400 }
       );
     }
+
+    // Allow if they haven't claimed any trial, or claimed a different trial type
+    console.log('[trial-checkout] User trial status:', {
+      current: userData?.trial_offer_accepted || 'none',
+      requesting: expectedTrialType,
+      allowed: userData?.trial_offer_accepted !== expectedTrialType
+    });
 
     console.log(`[trial-checkout] Creating checkout session for ${plan} trial, price ID: ${priceId}`);
 

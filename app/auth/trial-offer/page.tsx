@@ -147,15 +147,7 @@ export default function TrialOfferPage() {
       }
       
       if (data.url) {
-        // Update user record
-        await supabase
-          .from('users')
-          .update({ 
-            trial_offer_accepted: `${plan === 'pro' ? 'professional' : 'growth'}_trial`
-          })
-          .eq('id', userId);
-        
-        // Redirect to Stripe checkout
+        // Redirect to Stripe checkout (don't set trial_offer_accepted until payment completes)
         window.location.href = data.url;
       } else {
         throw new Error('Failed to create checkout session');

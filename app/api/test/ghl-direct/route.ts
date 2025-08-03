@@ -5,7 +5,7 @@ export async function POST(req: NextRequest) {
   const ghlWebhookUrl = process.env.GHL_WEBHOOK_URL;
   const ghlApiKey = process.env.GHL_API_KEY;
   
-  if (\!ghlWebhookUrl) {
+  if (!ghlWebhookUrl) {
     return NextResponse.json({
       error: 'GHL_WEBHOOK_URL not configured'
     }, { status: 400 });
@@ -68,4 +68,3 @@ export async function POST(req: NextRequest) {
     }, { status: 500 });
   }
 }
-EOF < /dev/null

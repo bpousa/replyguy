@@ -1,116 +1,71 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Direct test to GHL webhook URL
 export async function POST(req: NextRequest) {
-  try {
-    const { email = 'test-direct-ghl@example.com' } = await req.json();
-    
-    console.log('[ghl-direct] Testing direct GHL webhook call');
-    
-    // Check environment variables
-    const ghlWebhookUrl = process.env.GHL_WEBHOOK_URL;
-    const ghlApiKey = process.env.GHL_API_KEY;
-    
-    console.log('[ghl-direct] Environment check:', {
-      hasWebhookUrl: !!ghlWebhookUrl,
-      webhookUrl: ghlWebhookUrl?.substring(0, 80) + '...',
-      hasApiKey: !!ghlApiKey
-    });
-    
-    if (!ghlWebhookUrl) {
-      return NextResponse.json(
-        { error: 'GHL_WEBHOOK_URL not configured' },
-        { status: 500 }
-      );
+  const ghlWebhookUrl = process.env.GHL_WEBHOOK_URL;
+  const ghlApiKey = process.env.GHL_API_KEY;
+  
+  if (\!ghlWebhookUrl) {
+    return NextResponse.json({
+      error: 'GHL_WEBHOOK_URL not configured'
+    }, { status: 400 });
+  }
+
+  // Simple test payload
+  const testPayload = {
+    event: 'user_created',
+    timestamp: new Date().toISOString(),
+    user: {
+      external_id: 'direct-test-user-123',
+      email: 'direct-test@example.com',
+      name: 'Direct Test User',
+      phone: '+17275551234',
+      sms_opt_in: true,
+      selected_plan: 'free',
+      trial_offer_token: 'DIRECT_TEST_TOKEN_123',
+      trial_offer_url: 'https://replyguy.appendment.com/auth/trial-offer?token=DIRECT_TEST_TOKEN_123',
+      trial_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
     }
-    
-    // Prepare test data
-    const testData = {
-      event: 'user_created',
-      timestamp: new Date().toISOString(),
-      user: {
-        id: 'test-direct-' + Date.now(),
-        email: email,
-        full_name: 'Test Direct GHL User',
-        phone: '+1234567890',
-        sms_opt_in: true,
-        selected_plan: 'free',
-        referral_code: 'TEST123'
-      },
-      metadata: {
-        source: 'direct_test',
-        timestamp: new Date().toISOString(),
-        test: true
-      }
-    };
-    
-    console.log('[ghl-direct] Sending to GHL:', {
-      url: ghlWebhookUrl,
-      dataPreview: JSON.stringify(testData).substring(0, 200) + '...'
-    });
-    
-    // Send to GHL
+  };
+
+  try {
     const response = await fetch(ghlWebhookUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'User-Agent': 'ReplyGuy-Webhook/1.0',
         ...(ghlApiKey && { 'Authorization': `Bearer ${ghlApiKey}` })
       },
-      body: JSON.stringify(testData)
+      body: JSON.stringify(testPayload)
     });
-    
+
     const responseText = await response.text();
+    let responseData;
     
-    console.log('[ghl-direct] GHL Response:', {
-      status: response.status,
-      statusText: response.statusText,
-      headers: Object.fromEntries(response.headers.entries()),
-      body: responseText.substring(0, 500)
-    });
-    
+    try {
+      responseData = JSON.parse(responseText);
+    } catch {
+      responseData = responseText;
+    }
+
     return NextResponse.json({
-      success: response.ok,
-      ghl_response: {
+      message: 'Direct GHL webhook test completed',
+      ghlWebhookUrl: ghlWebhookUrl.substring(0, 50) + '...',
+      response: {
         status: response.status,
         statusText: response.statusText,
-        body: responseText,
-        headers: Object.fromEntries(response.headers.entries())
+        data: responseData
       },
-      test_data: testData,
-      config: {
-        webhook_url: ghlWebhookUrl,
-        has_api_key: !!ghlApiKey,
-        url_preview: ghlWebhookUrl?.substring(0, 80) + '...'
-      },
+      success: response.ok,
       timestamp: new Date().toISOString()
     });
-    
+
   } catch (error) {
-    console.error('[ghl-direct] Error:', error);
-    return NextResponse.json(
-      { 
-        error: 'Failed to test GHL webhook',
-        message: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      message: 'Failed to send to GHL',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    }, { status: 500 });
   }
 }
-
-// GET endpoint to show configuration
-export async function GET(req: NextRequest) {
-  const ghlWebhookUrl = process.env.GHL_WEBHOOK_URL;
-  const ghlApiKey = process.env.GHL_API_KEY;
-  
-  return NextResponse.json({
-    config: {
-      has_webhook_url: !!ghlWebhookUrl,
-      webhook_url_preview: ghlWebhookUrl?.substring(0, 80) + '...',
-      has_api_key: !!ghlApiKey,
-      full_webhook_url: ghlWebhookUrl, // Show full URL for debugging
-    },
-    expected_url_format: 'https://services.leadconnectorhq.com/hooks/...',
-    your_url: ghlWebhookUrl,
-    timestamp: new Date().toISOString()
-  });
-}
+EOF < /dev/null

@@ -105,8 +105,10 @@ export async function POST(req: NextRequest) {
       console.log(`[post-signup] Skipping trial token for paid signup: ${selectedPlan}`);
     }
 
-    // Send user_created event to GHL (fallback if database trigger failed)
-    if (process.env.GHL_SYNC_ENABLED === 'true') {
+    // Skip GHL webhook - database trigger now handles this properly
+    // Keeping this code for emergency fallback but disabled by default
+    console.log('[post-signup] Skipping GHL webhook - database trigger handles this now');
+    if (false && process.env.GHL_SYNC_ENABLED === 'true') {
       try {
         const ghlResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/ghl/webhook`, {
           method: 'POST',

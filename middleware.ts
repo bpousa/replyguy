@@ -43,7 +43,8 @@ export async function middleware(request: NextRequest) {
       !pathname.startsWith('/api/health') &&
       !pathname.startsWith('/api/test/') &&
       !pathname.startsWith('/api/debug/') &&
-      !pathname.startsWith('/api/ghl/')) {
+      !pathname.startsWith('/api/ghl/') &&
+      !pathname.startsWith('/api/trial-offer/')) {
     
     // Look for Supabase auth cookie - be more flexible with cookie names
     const cookies = request.cookies;

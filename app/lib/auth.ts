@@ -13,10 +13,9 @@ export const resetBrowserClient = () => {
 // Client-side Supabase client with proper cookie handling
 export const createBrowserClient = () => {
   if (!browserClient) {
-    // Determine cookie options based on environment
-    const cookieOptions = process.env.NODE_ENV === 'production'
-      ? { domain: '.appendment.com' }
-      : undefined; // Omit domain in dev for localhost
+    // Remove problematic cookie domain configuration that caused session collisions
+    // Cookies will default to current domain, preventing cross-user session mix-ups
+    const cookieOptions = undefined;
     
     browserClient = createSSRBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -133,14 +132,14 @@ export const createServerClient = (cookieStore: ReturnType<typeof cookies>) => {
                 secure: isProduction,
                 sameSite: 'lax' as const,
                 path: '/',
-                // Set domain to parent domain in production for cross-subdomain access
-                ...(isProduction ? { domain: '.appendment.com' } : {}),
+                // Remove domain setting to prevent cookie collisions between users
+                // Cookies will default to current domain for security
                 // Preserve Supabase's original maxAge if provided
                 ...(options.maxAge ? { maxAge: options.maxAge } : {})
               } : {})
             };
             
-            console.log(`[auth] Setting cookie: ${name}, httpOnly: ${cookieOptions.httpOnly}, secure: ${cookieOptions.secure}, domain: ${cookieOptions.domain || 'default'}`)
+            console.log(`[auth] Setting cookie: ${name}, httpOnly: ${cookieOptions.httpOnly}, secure: ${cookieOptions.secure}, domain: default`)
             cookieStore.set(cookieOptions);
           } catch (error) {
             // This is critical for auth - log the full error

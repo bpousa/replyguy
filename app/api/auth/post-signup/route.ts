@@ -40,9 +40,9 @@ export async function POST(req: NextRequest) {
     }
     
     console.log('[post-signup] Auth user found:', {
-      id: authUser.id,
-      email: authUser.email,
-      created_at: authUser.created_at
+      id: authUser?.id,
+      email: authUser?.email,
+      created_at: authUser?.created_at
     });
     
     // Check if user exists in public.users table
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
       console.error('[post-signup] Error checking public user:', publicUserError);
     }
     
-    const createdAt = new Date(authUser.created_at);
+    const createdAt = new Date(authUser?.created_at || new Date());
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
     
     if (createdAt < fiveMinutesAgo) {
@@ -69,14 +69,14 @@ export async function POST(req: NextRequest) {
     
     console.log('[post-signup] Processing new user for GHL webhook:', {
       userId,
-      email: authUser.email,
+      email: authUser?.email,
       hasPublicRecord: !!publicUser,
-      createdAt: authUser.created_at
+      createdAt: authUser?.created_at
     });
     
     // Generate trial offer token for free users
     let trialOfferData = null;
-    const selectedPlan = authUser.user_metadata?.selected_plan || 'free';
+    const selectedPlan = authUser?.user_metadata?.selected_plan || 'free';
     
     if (selectedPlan === 'free') {
       try {
@@ -117,10 +117,10 @@ export async function POST(req: NextRequest) {
             event: 'user_created',
             userId: userId,
             data: {
-              email: authUser.email,
-              full_name: authUser.user_metadata?.full_name || null,
-              phone: authUser.user_metadata?.phone || null,
-              sms_opt_in: authUser.user_metadata?.sms_opt_in || false,
+              email: authUser?.email || '',
+              full_name: authUser?.user_metadata?.full_name || null,
+              phone: authUser?.user_metadata?.phone || null,
+              sms_opt_in: authUser?.user_metadata?.sms_opt_in || false,
               selected_plan: selectedPlan,
               // Include trial data in main data payload
               ...(trialOfferData && {

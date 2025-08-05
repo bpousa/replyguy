@@ -339,6 +339,14 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     message: 'User data preview (not sent to GHL)',
     data: userData,
-    ghlConfigured: !!process.env.GHL_WEBHOOK_URL
+    ghlConfigured: !!process.env.GHL_WEBHOOK_URL,
+    debug: {
+      hasTrialData: !!(userData as any).trial_offer_url,
+      trialFields: {
+        trial_offer_url: (userData as any).trial_offer_url,
+        trial_offer_token: (userData as any).trial_offer_token ? 'exists' : 'missing',
+        trial_expires_at: (userData as any).trial_expires_at
+      }
+    }
   });
 }

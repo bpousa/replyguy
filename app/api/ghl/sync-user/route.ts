@@ -96,19 +96,19 @@ async function getUserData(userId: string): Promise<GHLUserPayload & { trial_off
       try {
         // Call the database function directly (same as generate-token API)
         const { data: tokenData, error: tokenError } = await supabase
-          .rpc('generate_user_trial_token', {
+          .rpc('create_trial_offer_token', {
             p_user_id: userId,
             p_source: 'sync'
           })
-          .single() as { data: { result_token: string; result_expires_at: string; result_url: string } | null; error: any };
+          .single() as { data: { token: string; expires_at: string; url: string } | null; error: any };
           
         if (tokenError) {
           console.error(`[sync-user] Token generation failed:`, tokenError);
         } else if (tokenData) {
           trialOfferData = {
-            token: tokenData.result_token,
-            expires_at: tokenData.result_expires_at,
-            url: tokenData.result_url
+            token: tokenData.token,
+            expires_at: tokenData.expires_at,
+            url: tokenData.url
           };
           console.log(`[sync-user] Successfully generated trial token for user ${userId}`);
         }

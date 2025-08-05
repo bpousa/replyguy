@@ -33,14 +33,14 @@ export function Hero() {
           
           {/* Main heading */}
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
-            Be the <span className="gradient-text">Reply Guy</span> Everyone Loves
+            AI Twitter Reply Generator That <span className="gradient-text">Writes Like You</span>
           </h1>
           
           {/* Subheading */}
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Create authentic, engaging replies to tweets in seconds. Build your audience, 
-            increase engagement, and save hours every day with AI that sounds genuinely human. 
-            Now works directly in X with our Chrome extension!
+            Generate authentic, human-like replies to X (Twitter) posts in seconds with our AI reply generator. 
+            Build your audience, increase engagement, and save hours daily with replies that sound genuinely like you. 
+            Chrome extension included for seamless Twitter integration!
           </p>
           
           {/* CTA buttons */}

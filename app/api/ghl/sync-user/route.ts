@@ -118,17 +118,17 @@ async function getUserData(userId: string): Promise<GHLUserPayload & { trial_off
           } else {
             // Generate new trial token using the function
             const { data: newToken } = await supabase
-              .rpc('create_trial_offer_token', {
+              .rpc('generate_user_trial_token', {
                 p_user_id: userId,
                 p_source: 'sync'
               })
-              .single() as { data: { token: string; expires_at: string; url: string } | null };
+              .single() as { data: { result_token: string; result_expires_at: string; result_url: string } | null };
               
             if (newToken) {
               trialOfferData = {
-                token: newToken.token,
-                expires_at: newToken.expires_at,
-                url: newToken.url
+                token: newToken.result_token,
+                expires_at: newToken.result_expires_at,
+                url: newToken.result_url
               };
             }
           }

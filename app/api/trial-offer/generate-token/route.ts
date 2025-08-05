@@ -69,11 +69,11 @@ export async function POST(req: NextRequest) {
     
     // Generate token using database function
     const { data: tokenData, error: tokenError } = await supabase
-      .rpc('create_trial_offer_token', {
+      .rpc('generate_user_trial_token', {
         p_user_id: userId,
         p_source: source
       })
-      .single() as { data: { token: string; expires_at: string; url: string } | null; error: any };
+      .single() as { data: { result_token: string; result_expires_at: string; result_url: string } | null; error: any };
       
     if (tokenError || !tokenData) {
       console.error('[generate-token] Error creating token:', tokenError);
@@ -89,22 +89,22 @@ export async function POST(req: NextRequest) {
         .from('users')
         .update({ 
           trial_offer_email_sent_at: new Date().toISOString(),
-          trial_offer_expires_at: tokenData.expires_at
+          trial_offer_expires_at: tokenData.result_expires_at
         })
         .eq('id', userId);
     }
     
     console.log(`[generate-token] Token generated for user ${userId}:`, {
-      token: tokenData.token.substring(0, 8) + '...',
-      expires_at: tokenData.expires_at,
+      token: tokenData.result_token.substring(0, 8) + '...',
+      expires_at: tokenData.result_expires_at,
       source
     });
     
     return NextResponse.json({
       success: true,
-      token: tokenData.token,
-      expires_at: tokenData.expires_at,
-      url: tokenData.url,
+      token: tokenData.result_token,
+      expires_at: tokenData.result_expires_at,
+      url: tokenData.result_url,
       user_email: user.email
     });
     

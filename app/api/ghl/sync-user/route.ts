@@ -94,23 +94,26 @@ async function getUserData(userId: string): Promise<GHLUserPayload & { trial_off
     
     if (userInfo.plan_id === 'free') {
       try {
-        // Call the database function directly (same as generate-token API)
-        const { data: tokenData, error: tokenError } = await supabase
-          .rpc('create_trial_offer_token', {
-            p_user_id: userId,
-            p_source: 'sync'
+        // Call the generate-token API instead of database function directly
+        const tokenResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/trial-offer/generate-token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            userId: userId, 
+            source: 'sync' 
           })
-          .single() as { data: { token: string; expires_at: string; url: string } | null; error: any };
-          
-        if (tokenError) {
-          console.error(`[sync-user] Token generation failed:`, tokenError);
-        } else if (tokenData) {
+        });
+        
+        if (tokenResponse.ok) {
+          const tokenData = await tokenResponse.json();
           trialOfferData = {
             token: tokenData.token,
             expires_at: tokenData.expires_at,
             url: tokenData.url
           };
-          console.log(`[sync-user] Successfully generated trial token for user ${userId}`);
+          console.log(`[sync-user] Successfully got trial token for user ${userId}`);
+        } else {
+          console.error(`[sync-user] Token API failed:`, tokenResponse.status, await tokenResponse.text());
         }
       } catch (error) {
         console.error('Error generating trial token for sync:', error);

@@ -88,35 +88,32 @@ async function getUserData(userId: string): Promise<GHLUserPayload & { trial_off
       return null;
     }
 
-    // Get trial token for free users by calling the generate-token API
+    // Get trial token for free users - direct database call
     let trialOfferData = null;
     console.log(`[sync-user] Checking trial tokens for user ${userId}, plan: ${userInfo.plan_id}`);
     
     if (userInfo.plan_id === 'free') {
       try {
-        // Call the generate-token API internally to get or create trial token
-        const tokenResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/trial-offer/generate-token`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            userId: userId, 
-            source: 'sync' 
+        // Call the database function directly (same as generate-token API)
+        const { data: tokenData, error: tokenError } = await supabase
+          .rpc('generate_user_trial_token', {
+            p_user_id: userId,
+            p_source: 'sync'
           })
-        });
-        
-        if (tokenResponse.ok) {
-          const tokenData = await tokenResponse.json();
+          .single() as { data: { result_token: string; result_expires_at: string; result_url: string } | null; error: any };
+          
+        if (tokenError) {
+          console.error(`[sync-user] Token generation failed:`, tokenError);
+        } else if (tokenData) {
           trialOfferData = {
-            token: tokenData.token,
-            expires_at: tokenData.expires_at,
-            url: tokenData.url
+            token: tokenData.result_token,
+            expires_at: tokenData.result_expires_at,
+            url: tokenData.result_url
           };
-          console.log(`[sync-user] Successfully got trial token for user ${userId}`);
-        } else {
-          console.error(`[sync-user] Token API failed:`, tokenResponse.status, await tokenResponse.text());
+          console.log(`[sync-user] Successfully generated trial token for user ${userId}`);
         }
       } catch (error) {
-        console.error('Error getting trial token for sync:', error);
+        console.error('Error generating trial token for sync:', error);
       }
     } else {
       console.log(`[sync-user] Skipping trial tokens for non-free plan: ${userInfo.plan_id}`);

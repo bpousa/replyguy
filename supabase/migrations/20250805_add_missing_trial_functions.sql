@@ -102,9 +102,9 @@ BEGIN
   );
   
   RETURN QUERY SELECT 
-    v_token,
-    v_expires_at,
-    v_app_url || '/auth/trial-offer?token=' || v_token;
+    v_token::VARCHAR as token,
+    v_expires_at as expires_at,
+    (v_app_url || '/auth/trial-offer?token=' || v_token)::TEXT as url;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

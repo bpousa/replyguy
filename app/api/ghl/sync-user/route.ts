@@ -95,7 +95,7 @@ async function getUserData(userId: string): Promise<GHLUserPayload & { trial_off
     if (userInfo.plan_id === 'free') {
       try {
         // Check for existing valid trial token first
-        const { data: existingToken } = await supabase
+        const { data: existingToken, error: tokenError } = await supabase
           .from('trial_offer_tokens')
           .select('token, expires_at')
           .eq('user_id', userId)
@@ -103,7 +103,13 @@ async function getUserData(userId: string): Promise<GHLUserPayload & { trial_off
           .is('used_at', null)
           .order('created_at', { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle();
+          
+        console.log(`[sync-user] Token query result:`, { 
+          hasToken: !!existingToken, 
+          error: tokenError?.code,
+          userId 
+        });
           
         if (existingToken) {
           trialOfferData = {

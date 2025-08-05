@@ -38,13 +38,24 @@ const socialLinks = [
 
 const footerLinks = {
   product: [
-    { name: 'Features', href: '/#features' },
+    { name: 'AI Reply Generator', href: '/ai-reply-generator' },
+    { name: 'Twitter Reply Generator', href: '/twitter-reply-generator' },
+    { name: 'X Reply Generator', href: '/x-reply-generator' },
+    { name: 'Chrome Extension', href: '/chrome-extension' },
+    { name: 'How It Works', href: '/how-it-works' },
     { name: 'Pricing', href: '/pricing' },
-    { name: 'How it Works', href: '/#features' },
+  ],
+  features: [
+    { name: 'Write Like Me™', href: '/write-like-me' },
+    { name: 'Human-Like Replies', href: '/ai-reply-generator#features' },
+    { name: 'Anti-AI Detection', href: '/how-it-works#benefits' },
+    { name: 'Real-time Research', href: '/how-it-works#ai-models' },
   ],
   company: [
     { name: 'About', href: 'https://appendment.com' },
     { name: 'Contact', href: 'https://appendment.com/contact' },
+    { name: 'Blog', href: '/blog' },
+    { name: 'Alternatives', href: '/alternatives' },
   ],
   legal: [
     { name: 'Privacy Policy', href: '/privacy' },
@@ -57,15 +68,15 @@ export function Footer() {
   return (
     <footer className="bg-white dark:bg-gray-900 border-t">
       <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Brand and Description */}
-          <div className="col-span-1">
+          <div className="col-span-1 lg:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4">
               <Sparkles className="w-6 h-6 text-purple-600" />
               <span className="text-xl font-bold">ReplyGuy</span>
             </Link>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              AI-powered replies that actually sound human. Build your X presence with authentic engagement.
+              AI-powered Twitter reply generator that writes like you. Boost engagement with authentic, human-like responses.
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-500">
               A product by Appendment LLC<br />
@@ -77,10 +88,29 @@ export function Footer() {
           {/* Product Links */}
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              Product
+              Reply Generators
             </h3>
             <ul className="space-y-2">
               {footerLinks.product.map((link) => (
+                <li key={link.name}>
+                  <Link
+                    href={link.href}
+                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+                  >
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Features Links */}
+          <div>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              Features
+            </h3>
+            <ul className="space-y-2">
+              {footerLinks.features.map((link) => (
                 <li key={link.name}>
                   <Link
                     href={link.href}
@@ -101,14 +131,23 @@ export function Footer() {
             <ul className="space-y-2">
               {footerLinks.company.map((link) => (
                 <li key={link.name}>
-                  <a
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
-                  >
-                    {link.name}
-                  </a>
+                  {link.href.startsWith('http') ? (
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+                    >
+                      {link.name}
+                    </a>
+                  ) : (
+                    <Link
+                      href={link.href}
+                      className="text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
+                    >
+                      {link.name}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>

@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { Button } from '@/app/components/ui/button';
 import { Card, CardContent } from '@/app/components/ui/card';
 import { MarketingWrapper } from '@/app/components/marketing-wrapper';
+import { Breadcrumb } from '@/app/components/breadcrumb';
 import { ArrowRight, CheckCircle, Zap, Shield, Brain, Chrome, Users, TrendingUp } from 'lucide-react';
 
 export const metadata: Metadata = {
@@ -73,6 +74,11 @@ export default function AIReplyGeneratorPage() {
 
   return (
     <MarketingWrapper>
+      <Breadcrumb 
+        items={[
+          { label: 'AI Reply Generator' }
+        ]} 
+      />
       {/* Hero Section */}
       <section className="py-20 md:py-32">
         <div className="container mx-auto px-4">

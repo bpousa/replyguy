@@ -42,20 +42,19 @@ async function sendEventToGHL(event: GHLWebhookEvent): Promise<boolean> {
   }
   
   try {
-    // First, sync the full user data
-    const syncResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/ghl/sync-user`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: event.userId })
+    // Get user data directly without calling sync-user (which sends its own webhook)
+    const userDataResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/ghl/sync-user?userId=${event.userId}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
     });
     
-    if (!syncResponse.ok) {
-      console.error('Failed to sync user data before sending event');
+    if (!userDataResponse.ok) {
+      console.error('Failed to get user data for event');
       return false;
     }
     
-    const syncResult = await syncResponse.json();
-    const userData = syncResult.results?.[0]?.data;
+    const userDataResult = await userDataResponse.json();
+    const userData = userDataResult.data;
     
     if (!userData) {
       console.error('No user data found for event');

@@ -132,14 +132,24 @@ export async function POST(req: NextRequest) {
       console.log(`[handle-new-user] Skipping trial token for paid signup: ${selectedPlan}`);
     }
     
+    // Check if this is an OAuth user (needs profile completion)
+    const isOAuthUser = record.app_metadata?.provider && record.app_metadata.provider !== 'email';
+    const hasCompleteProfile = full_name && full_name.trim() !== '';
+    
+    // For OAuth users without complete profile, delay webhook until profile completion
+    const shouldDelayWebhook = isOAuthUser && !hasCompleteProfile;
+    
     // Send GHL notification for new user
     console.log('[handle-new-user] GHL sync check:', {
       enabled: process.env.GHL_SYNC_ENABLED === 'true',
       webhookUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/ghl/webhook`,
-      hasTrialData: !!trialOfferData
+      hasTrialData: !!trialOfferData,
+      isOAuthUser,
+      hasCompleteProfile,
+      shouldDelayWebhook
     });
     
-    if (process.env.GHL_SYNC_ENABLED === 'true') {
+    if (process.env.GHL_SYNC_ENABLED === 'true' && !shouldDelayWebhook) {
       console.log('[handle-new-user] Sending user_created event to GHL webhook');
       
       try {
@@ -180,11 +190,14 @@ export async function POST(req: NextRequest) {
       } catch (error) {
         console.error('Failed to send user_created event to GHL:', error);
       }
+    } else if (shouldDelayWebhook) {
+      console.log('[handle-new-user] Delaying webhook for OAuth user until profile completion');
     }
     
     return NextResponse.json({ 
       message: 'New user processing completed',
       userId: record.id,
+      webhookDelayed: shouldDelayWebhook,
       ...(trialOfferData && {
         trial_offer: {
           token: trialOfferData.token,

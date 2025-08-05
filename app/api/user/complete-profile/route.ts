@@ -109,22 +109,32 @@ export async function POST(req: NextRequest) {
 
     console.log(`[complete-profile] ✅ Profile updated for user ${user.id}`);
 
-    // Send updated data to GHL if sync is enabled
+    // Check if this user was an OAuth user who had their webhook delayed
+    const isOAuthUser = user.app_metadata?.provider && user.app_metadata.provider !== 'email';
+    
+    // Send data to GHL if sync is enabled
     if (process.env.GHL_SYNC_ENABLED === 'true') {
-      console.log('[complete-profile] Sending profile update to GHL');
+      console.log('[complete-profile] Sending profile data to GHL');
       
       try {
+        // For OAuth users, this is their first webhook (user_created with complete profile)
+        // For email users, this is a profile update (user_profile_completed)
+        const webhookEvent = isOAuthUser ? 'user_created' : 'user_profile_completed';
+        
+        console.log(`[complete-profile] Sending ${webhookEvent} event for ${isOAuthUser ? 'OAuth' : 'email'} user`);
+        
         const ghlResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/ghl/webhook`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            event: 'user_profile_completed',
+            event: webhookEvent,
             userId: user.id,
             data: {
               email: user.email,
               full_name: fullName.trim(),
               phone: e164Phone,
-              sms_opt_in: smsOptIn && e164Phone ? true : false
+              sms_opt_in: smsOptIn && e164Phone ? true : false,
+              selected_plan: 'free' // OAuth users default to free plan
             },
             metadata: {
               source: 'profile_completion_modal',
@@ -133,20 +143,21 @@ export async function POST(req: NextRequest) {
                 full_name: true,
                 phone: !!e164Phone,
                 sms_opt_in: smsOptIn && e164Phone ? true : false
-              }
+              },
+              oauth_delayed_webhook: isOAuthUser
             },
-            generateTrialToken: false
+            generateTrialToken: isOAuthUser // Generate trial token for OAuth users at this point
           })
         });
         
         if (ghlResponse.ok) {
           const ghlResult = await ghlResponse.json();
-          console.log(`[complete-profile] ✅ GHL profile update sent for user ${user.id}`, ghlResult);
+          console.log(`[complete-profile] ✅ GHL ${webhookEvent} event sent for user ${user.id}`, ghlResult);
         } else {
-          console.error('[complete-profile] GHL update failed:', ghlResponse.status);
+          console.error('[complete-profile] GHL webhook failed:', ghlResponse.status);
         }
       } catch (error) {
-        console.error('[complete-profile] Failed to send profile update to GHL:', error);
+        console.error('[complete-profile] Failed to send GHL webhook:', error);
       }
     }
 

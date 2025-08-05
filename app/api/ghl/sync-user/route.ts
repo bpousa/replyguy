@@ -88,55 +88,62 @@ async function getUserData(userId: string): Promise<GHLUserPayload & { trial_off
       return null;
     }
 
-    // Check if user is eligible for trial offer and get trial token
+    // Get trial token for free users (simplified logic)
     let trialOfferData = null;
+    console.log(`[sync-user] Checking trial tokens for user ${userId}, plan: ${userInfo.plan_id}`);
+    
     if (userInfo.plan_id === 'free') {
-      const userCreatedAt = new Date(userInfo.created_at);
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      
-      // Only generate trial token if within 7 days and hasn't claimed any trial
-      if (userCreatedAt >= sevenDaysAgo && !userInfo.trial_offer_accepted) {
-        try {
-          // Check for existing valid trial token
-          const { data: existingToken } = await supabase
-            .from('trial_offer_tokens')
-            .select('token, expires_at')
-            .eq('user_id', userId)
-            .gt('expires_at', new Date().toISOString())
-            .is('used_at', null)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
+      try {
+        // Check for existing valid trial token first
+        const { data: existingToken } = await supabase
+          .from('trial_offer_tokens')
+          .select('token, expires_at')
+          .eq('user_id', userId)
+          .gt('expires_at', new Date().toISOString())
+          .is('used_at', null)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+          
+        if (existingToken) {
+          trialOfferData = {
+            token: existingToken.token,
+            expires_at: existingToken.expires_at,
+            url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://replyguy.appendment.com'}/auth/trial-offer?token=${existingToken.token}`
+          };
+          console.log(`[sync-user] Found existing trial token for user ${userId}`);
+        } else {
+          // No existing token, generate new one using the same logic as generate-token API
+          console.log(`[sync-user] No existing trial token, generating new one for user ${userId}`);
+          
+          const { data: newToken } = await supabase
+            .rpc('generate_user_trial_token', {
+              p_user_id: userId,
+              p_source: 'sync'
+            })
+            .single() as { data: { result_token: string; result_expires_at: string; result_url: string } | null };
             
-          if (existingToken) {
+          if (newToken) {
             trialOfferData = {
-              token: existingToken.token,
-              expires_at: existingToken.expires_at,
-              url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://replyguy.appendment.com'}/auth/trial-offer?token=${existingToken.token}`
+              token: newToken.result_token,
+              expires_at: newToken.result_expires_at,
+              url: newToken.result_url
             };
-          } else {
-            // Generate new trial token using the function
-            const { data: newToken } = await supabase
-              .rpc('generate_user_trial_token', {
-                p_user_id: userId,
-                p_source: 'sync'
-              })
-              .single() as { data: { result_token: string; result_expires_at: string; result_url: string } | null };
-              
-            if (newToken) {
-              trialOfferData = {
-                token: newToken.result_token,
-                expires_at: newToken.result_expires_at,
-                url: newToken.result_url
-              };
-            }
+            console.log(`[sync-user] Generated new trial token for user ${userId}`);
           }
-        } catch (error) {
-          console.error('Error generating trial token for sync:', error);
         }
+      } catch (error) {
+        console.error('Error checking trial token for sync:', error);
       }
+    } else {
+      console.log(`[sync-user] Skipping trial tokens for non-free plan: ${userInfo.plan_id}`);
     }
+    
+    console.log(`[sync-user] Final trialOfferData:`, trialOfferData ? { 
+      hasToken: !!trialOfferData.token,
+      hasUrl: !!trialOfferData.url,
+      expires: trialOfferData.expires_at 
+    } : null);
     
     // Get usage stats
     const currentDate = new Date();

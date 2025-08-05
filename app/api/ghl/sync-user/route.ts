@@ -88,58 +88,35 @@ async function getUserData(userId: string): Promise<GHLUserPayload & { trial_off
       return null;
     }
 
-    // Get trial token for free users (simplified logic)
+    // Get trial token for free users by calling the generate-token API
     let trialOfferData = null;
     console.log(`[sync-user] Checking trial tokens for user ${userId}, plan: ${userInfo.plan_id}`);
     
     if (userInfo.plan_id === 'free') {
       try {
-        // Check for existing valid trial token first
-        const { data: existingToken, error: tokenError } = await supabase
-          .from('trial_offer_tokens')
-          .select('token, expires_at')
-          .eq('user_id', userId)
-          .gt('expires_at', new Date().toISOString())
-          .is('used_at', null)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-          
-        console.log(`[sync-user] Token query result:`, { 
-          hasToken: !!existingToken, 
-          error: tokenError?.code,
-          userId 
+        // Call the generate-token API internally to get or create trial token
+        const tokenResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/trial-offer/generate-token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            userId: userId, 
+            source: 'sync' 
+          })
         });
-          
-        if (existingToken) {
+        
+        if (tokenResponse.ok) {
+          const tokenData = await tokenResponse.json();
           trialOfferData = {
-            token: existingToken.token,
-            expires_at: existingToken.expires_at,
-            url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://replyguy.appendment.com'}/auth/trial-offer?token=${existingToken.token}`
+            token: tokenData.token,
+            expires_at: tokenData.expires_at,
+            url: tokenData.url
           };
-          console.log(`[sync-user] Found existing trial token for user ${userId}`);
+          console.log(`[sync-user] Successfully got trial token for user ${userId}`);
         } else {
-          // No existing token, generate new one using the same logic as generate-token API
-          console.log(`[sync-user] No existing trial token, generating new one for user ${userId}`);
-          
-          const { data: newToken } = await supabase
-            .rpc('generate_user_trial_token', {
-              p_user_id: userId,
-              p_source: 'sync'
-            })
-            .single() as { data: { result_token: string; result_expires_at: string; result_url: string } | null };
-            
-          if (newToken) {
-            trialOfferData = {
-              token: newToken.result_token,
-              expires_at: newToken.result_expires_at,
-              url: newToken.result_url
-            };
-            console.log(`[sync-user] Generated new trial token for user ${userId}`);
-          }
+          console.error(`[sync-user] Token API failed:`, tokenResponse.status, await tokenResponse.text());
         }
       } catch (error) {
-        console.error('Error checking trial token for sync:', error);
+        console.error('Error getting trial token for sync:', error);
       }
     } else {
       console.log(`[sync-user] Skipping trial tokens for non-free plan: ${userInfo.plan_id}`);

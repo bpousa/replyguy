@@ -5,17 +5,17 @@ export async function GET() {
   const currentDate = new Date().toISOString();
   
   const staticPages = [
-    { url: '', changeFreq: 'daily', priority: '1.0' }, // Homepage
-    { url: '/pricing', changeFreq: 'weekly', priority: '0.9' },
-    { url: '/ai-reply-generator', changeFreq: 'weekly', priority: '0.8' },
-    { url: '/twitter-reply-generator', changeFreq: 'weekly', priority: '0.8' },
-    { url: '/x-reply-generator', changeFreq: 'weekly', priority: '0.8' },
-    { url: '/write-like-me', changeFreq: 'weekly', priority: '0.8' },
-    { url: '/chrome-extension', changeFreq: 'weekly', priority: '0.7' },
-    { url: '/how-it-works', changeFreq: 'monthly', priority: '0.7' },
-    { url: '/alternatives', changeFreq: 'monthly', priority: '0.6' },
-    { url: '/auth/login', changeFreq: 'monthly', priority: '0.5' },
-    { url: '/auth/signup', changeFreq: 'monthly', priority: '0.5' },
+    { url: '', changeFreq: 'daily', priority: '1.0', lastmod: currentDate }, // Homepage
+    { url: '/pricing', changeFreq: 'weekly', priority: '0.9', lastmod: currentDate },
+    { url: '/ai-reply-generator', changeFreq: 'weekly', priority: '0.8', lastmod: currentDate },
+    { url: '/twitter-reply-generator', changeFreq: 'weekly', priority: '0.8', lastmod: currentDate },
+    { url: '/x-reply-generator', changeFreq: 'weekly', priority: '0.8', lastmod: currentDate },
+    { url: '/write-like-me', changeFreq: 'weekly', priority: '0.8', lastmod: currentDate },
+    { url: '/chrome-extension', changeFreq: 'weekly', priority: '0.7', lastmod: currentDate },
+    { url: '/how-it-works', changeFreq: 'monthly', priority: '0.7', lastmod: currentDate },
+    { url: '/alternatives', changeFreq: 'monthly', priority: '0.6', lastmod: currentDate },
+    { url: '/auth/login', changeFreq: 'monthly', priority: '0.5', lastmod: currentDate },
+    { url: '/auth/signup', changeFreq: 'monthly', priority: '0.5', lastmod: currentDate },
   ];
 
   const blogPosts = [

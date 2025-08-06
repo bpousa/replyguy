@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://replyguy.com'
+  const baseUrl = 'https://replyguy.appendment.com'
   const now = new Date()
   const lastModified = now.toISOString()
 
@@ -80,7 +80,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.6,
     },
     
-    // Blog pages (will be added when created)
+    // Blog pages
     {
       url: `${baseUrl}/blog`,
       lastModified,
@@ -88,19 +88,43 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
+      url: `${baseUrl}/blog/10-twitter-reply-templates-that-actually-get-engagement`,
+      lastModified: '2024-01-15T10:00:00Z',
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/blog/how-to-write-twitter-replies-that-dont-sound-like-ai`,
+      lastModified: '2024-01-15T10:00:00Z',
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/blog/twitter-engagement-strategy-beyond-just-replying`,
+      lastModified: '2024-01-15T10:00:00Z',
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/blog/chrome-extensions-every-twitter-marketer-needs`,
+      lastModified: '2024-01-15T10:00:00Z',
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/blog/ai-writing-tools-vs-human-writers-future-social-media`,
+      lastModified: '2024-01-15T10:00:00Z',
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/blog/building-personal-brand-twitter-reply-strategy`,
+      lastModified: '2024-01-15T10:00:00Z',
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
       url: `${baseUrl}/blog/how-to-write-engaging-twitter-replies`,
-      lastModified,
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/blog/twitter-reply-strategies-2025`,
-      lastModified,
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/blog/ai-vs-human-social-media-engagement`,
       lastModified,
       changeFrequency: 'monthly',
       priority: 0.7,

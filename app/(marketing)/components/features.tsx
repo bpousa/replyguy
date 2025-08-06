@@ -74,14 +74,45 @@ export function Features() {
   return (
     <section id="features" className="py-20 bg-gray-50">
       <div className="container mx-auto px-4">
-        <div className="max-w-3xl mx-auto text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Everything You Need to Win on X
+        <div className="max-w-4xl mx-auto text-center mb-16">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">
+            Everything You Need to Win on X (Twitter)
           </h2>
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-gray-600 mb-8">
             ReplyGuy combines advanced AI with smart features to help you engage 
-            authentically and grow your presence.
+            authentically and grow your presence. Our comprehensive suite of tools 
+            transforms your Twitter engagement strategy from time-consuming to effortless.
           </p>
+          
+          {/* Detailed Introduction */}
+          <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 text-left max-w-5xl mx-auto mb-12">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">The Complete Twitter Engagement Platform</h3>
+            <div className="prose prose-gray max-w-none">
+              <p className="text-gray-700 leading-relaxed mb-4">
+                <strong>ReplyGuy isn&apos;t just another AI writing tool</strong> - it&apos;s a comprehensive engagement platform designed specifically for Twitter (X) success. 
+                While other tools generate generic responses, ReplyGuy focuses on authentic human-like interactions that build real relationships and grow your audience organically.
+              </p>
+              <p className="text-gray-700 leading-relaxed mb-4">
+                Our AI technology analyzes tweet context, understands conversational nuance, and generates replies that match your unique voice and personality. 
+                Whether you&apos;re a content creator, business owner, or social media manager, ReplyGuy helps you maintain consistent, quality engagement 
+                without the time investment traditional methods require.
+              </p>
+              <div className="grid md:grid-cols-3 gap-6 mt-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600 mb-2">10x</div>
+                  <div className="text-sm text-gray-600">Faster Reply Generation</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600 mb-2">50+</div>
+                  <div className="text-sm text-gray-600">Reply Type Options</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600 mb-2">99%</div>
+                  <div className="text-sm text-gray-600">Human-Like Authenticity</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">

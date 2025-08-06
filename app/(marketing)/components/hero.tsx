@@ -42,6 +42,69 @@ export function Hero() {
             Build your audience, increase engagement, and save hours daily with replies that sound genuinely like you. 
             Chrome extension included for seamless Twitter integration!
           </p>
+
+          {/* Extended Value Proposition */}
+          <div className="max-w-4xl mx-auto mb-12">
+            <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-8 border border-purple-100">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Why ReplyGuy is Different</h2>
+              <div className="grid md:grid-cols-2 gap-6 text-left">
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2">🎯 Write Like Me™ Technology</h3>
+                  <p className="text-gray-600 text-sm">
+                    Our proprietary AI learns your unique writing style, tone, and voice to generate replies that authentically represent you. 
+                    No more generic, robotic responses - just authentic engagement that builds real connections.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2">🛡️ Anti-AI Detection</h3>
+                  <p className="text-gray-600 text-sm">
+                    Advanced algorithms ensure your AI-generated replies pass human detection. We use sophisticated techniques 
+                    to maintain natural language patterns and avoid common AI tells that could damage your credibility.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2">⚡ Real-Time Fact Checking</h3>
+                  <p className="text-gray-600 text-sm">
+                    Optional Perplexity AI integration provides real-time fact-finding for complex topics, ensuring your replies are 
+                    not just authentic but also accurate and informed when discussing current events or technical subjects.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2">🔧 Chrome Extension Integration</h3>
+                  <p className="text-gray-600 text-sm">
+                    Generate replies directly within X (Twitter) without switching tabs. Our Chrome extension seamlessly integrates 
+                    with your existing workflow, making engagement effortless and efficient.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Problem/Solution Section */}
+          <div className="max-w-4xl mx-auto mb-12 text-left">
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="bg-red-50 rounded-xl p-6 border border-red-100">
+                <h3 className="text-lg font-bold text-red-800 mb-3">❌ The Twitter Engagement Problem</h3>
+                <ul className="space-y-2 text-red-700 text-sm">
+                  <li>• Spend hours crafting individual replies</li>
+                  <li>• Generic responses that don&apos;t reflect your voice</li>
+                  <li>• Miss opportunities due to time constraints</li>
+                  <li>• Inconsistent engagement hurts growth</li>
+                  <li>• Writer&apos;s block prevents meaningful participation</li>
+                </ul>
+              </div>
+              <div className="bg-green-50 rounded-xl p-6 border border-green-100">
+                <h3 className="text-lg font-bold text-green-800 mb-3">✅ The ReplyGuy Solution</h3>
+                <ul className="space-y-2 text-green-700 text-sm">
+                  <li>• Generate 10+ replies in seconds</li>
+                  <li>• Maintain your authentic voice and tone</li>
+                  <li>• Never miss engagement opportunities</li>
+                  <li>• Consistent, quality interactions daily</li>
+                  <li>• AI-powered creativity and context awareness</li>
+                </ul>
+              </div>
+            </div>
+          </div>
           
           {/* CTA buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">

@@ -8,9 +8,9 @@ import { Breadcrumb } from '@/app/components/breadcrumb';
 import { ArrowRight, CheckCircle, Zap, Shield, Brain, Chrome, Users, TrendingUp } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'AI Reply Generator - Create Human-Like Responses Instantly | ReplyGuy',
-  description: 'Generate authentic AI replies for social media posts in seconds. Our advanced AI reply generator creates human-like responses that boost engagement. Free trial - no credit card required.',
-  keywords: 'AI reply generator, artificial intelligence replies, automated responses, AI-generated replies, smart reply generator, AI response tool, intelligent replies, automated reply system, AI chat responses, machine learning replies',
+  title: 'Best AI Reply Generator 2024 - Human-Like Social Media Responses | ReplyGuy',
+  description: 'The most advanced AI reply generator creates authentic, human-like social media responses instantly. Generate intelligent replies that boost engagement, bypass AI detection, and match your unique voice. 10 free replies monthly, Chrome extension included.',
+  keywords: 'AI reply generator, best AI reply tool 2024, artificial intelligence replies, automated social media responses, AI-generated replies, smart reply generator, AI response tool, intelligent replies, human-like AI responses, automated reply system, AI chat responses, machine learning replies, social media AI assistant, reply automation tool',
   openGraph: {
     title: 'AI Reply Generator - Create Human-Like Responses Instantly',
     description: 'Generate authentic AI replies for social media posts in seconds. Advanced AI reply generator with human-like responses. Free trial available.',
@@ -290,30 +290,264 @@ export default function AIReplyGeneratorPage() {
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* AI Technology Deep Dive */}
       <section className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                The Technology Behind Our AI Reply Generator
+              </h2>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                Understanding what makes ReplyGuy the most advanced AI reply generator on the market
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8 mb-12">
+              <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+                <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-6">
+                  <Brain className="w-8 h-8 text-blue-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">Multi-Model AI Architecture</h3>
+                <p className="text-gray-600 text-center leading-relaxed mb-4">
+                  We use a sophisticated combination of GPT-3.5 for classification, Claude 3.5 Sonnet for reasoning, 
+                  and Claude 3 Opus for generation - each optimized for specific tasks.
+                </p>
+                <ul className="text-sm text-gray-600 space-y-2">
+                  <li>• GPT-3.5: Fast, cost-effective reply classification</li>
+                  <li>• Claude Sonnet: Intelligent context analysis</li>
+                  <li>• Claude Opus: Human-like content generation</li>
+                  <li>• Perplexity: Real-time fact verification</li>
+                </ul>
+              </div>
+
+              <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+                <div className="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-6">
+                  <Shield className="w-8 h-8 text-green-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">Advanced Anti-Detection</h3>
+                <p className="text-gray-600 text-center leading-relaxed mb-4">
+                  Our proprietary algorithms ensure your AI-generated replies maintain natural language patterns 
+                  and avoid common AI detection signals.
+                </p>
+                <ul className="text-sm text-gray-600 space-y-2">
+                  <li>• Natural sentence structure variations</li>
+                  <li>• Human-like typing patterns</li>
+                  <li>• Contextual vocabulary selection</li>
+                  <li>• Emotional tone matching</li>
+                </ul>
+              </div>
+
+              <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+                <div className="w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-6">
+                  <Users className="w-8 h-8 text-purple-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">Write Like Me™ Learning</h3>
+                <p className="text-gray-600 text-center leading-relaxed mb-4">
+                  Machine learning algorithms analyze your writing patterns, vocabulary, and communication style 
+                  to create personalized reply models.
+                </p>
+                <ul className="text-sm text-gray-600 space-y-2">
+                  <li>• Writing style pattern recognition</li>
+                  <li>• Vocabulary preference learning</li>
+                  <li>• Tone consistency maintenance</li>
+                  <li>• Personal brand voice adaptation</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Benefits Comparison */}
+      <section className="py-20 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                Why AI Reply Generation Beats Manual Responses
+              </h2>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                Compare traditional manual reply writing with AI-powered generation
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="bg-red-50 rounded-2xl p-8 border border-red-100">
+                <h3 className="text-2xl font-bold text-red-800 mb-6 text-center">❌ Manual Reply Writing</h3>
+                <ul className="space-y-4">
+                  <li className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-red-200 rounded-full flex items-center justify-center mt-0.5">
+                      <span className="text-red-800 text-sm">✗</span>
+                    </div>
+                    <span className="text-red-700"><strong>Time-consuming:</strong> 2-5 minutes per reply</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-red-200 rounded-full flex items-center justify-center mt-0.5">
+                      <span className="text-red-800 text-sm">✗</span>
+                    </div>
+                    <span className="text-red-700"><strong>Inconsistent quality:</strong> Varies by mood and energy</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-red-200 rounded-full flex items-center justify-center mt-0.5">
+                      <span className="text-red-800 text-sm">✗</span>
+                    </div>
+                    <span className="text-red-700"><strong>Limited scalability:</strong> Can only handle few replies daily</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-red-200 rounded-full flex items-center justify-center mt-0.5">
+                      <span className="text-red-800 text-sm">✗</span>
+                    </div>
+                    <span className="text-red-700"><strong>Writer&apos;s block:</strong> Struggles with creative responses</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-red-200 rounded-full flex items-center justify-center mt-0.5">
+                      <span className="text-red-800 text-sm">✗</span>
+                    </div>
+                    <span className="text-red-700"><strong>High opportunity cost:</strong> Misses engagement windows</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-green-50 rounded-2xl p-8 border border-green-100">
+                <h3 className="text-2xl font-bold text-green-800 mb-6 text-center">✅ AI Reply Generation</h3>
+                <ul className="space-y-4">
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="w-6 h-6 text-green-600 mt-0.5" />
+                    <span className="text-green-700"><strong>Lightning fast:</strong> Generate replies in 5-10 seconds</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="w-6 h-6 text-green-600 mt-0.5" />
+                    <span className="text-green-700"><strong>Consistent excellence:</strong> High-quality responses every time</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="w-6 h-6 text-green-600 mt-0.5" />
+                    <span className="text-green-700"><strong>Unlimited scale:</strong> Generate hundreds of replies daily</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="w-6 h-6 text-green-600 mt-0.5" />
+                    <span className="text-green-700"><strong>Creative variety:</strong> Always fresh, engaging responses</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="w-6 h-6 text-green-600 mt-0.5" />
+                    <span className="text-green-700"><strong>Perfect timing:</strong> Never miss engagement opportunities</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="text-center mt-12">
+              <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+                <h4 className="text-xl font-bold text-gray-900 mb-4">The Numbers Don&apos;t Lie</h4>
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div>
+                    <div className="text-3xl font-bold text-purple-600 mb-2">10x</div>
+                    <div className="text-gray-600">Faster reply generation</div>
+                  </div>
+                  <div>
+                    <div className="text-3xl font-bold text-green-600 mb-2">5x</div>
+                    <div className="text-gray-600">More daily engagement</div>
+                  </div>
+                  <div>
+                    <div className="text-3xl font-bold text-blue-600 mb-2">90%</div>
+                    <div className="text-gray-600">Time saved on social media</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Integration & Platforms */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                Works Across All Major Platforms
+              </h2>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                Our AI reply generator integrates seamlessly with your existing social media workflow
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+              <div className="text-center">
+                <div className="w-20 h-20 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl font-bold text-blue-600">𝕏</span>
+                </div>
+                <h3 className="font-bold text-gray-900 mb-2">X (Twitter)</h3>
+                <p className="text-gray-600 text-sm">Native integration with Chrome extension for seamless reply generation</p>
+              </div>
+              
+              <div className="text-center">
+                <div className="w-20 h-20 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl font-bold text-blue-600">in</span>
+                </div>
+                <h3 className="font-bold text-gray-900 mb-2">LinkedIn</h3>
+                <p className="text-gray-600 text-sm">Professional networking replies that maintain your business voice</p>
+              </div>
+              
+              <div className="text-center">
+                <div className="w-20 h-20 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl font-bold text-purple-600">ig</span>
+                </div>
+                <h3 className="font-bold text-gray-900 mb-2">Instagram</h3>
+                <p className="text-gray-600 text-sm">Engaging comment responses that boost social media presence</p>
+              </div>
+              
+              <div className="text-center">
+                <div className="w-20 h-20 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl font-bold text-red-600">yt</span>
+                </div>
+                <h3 className="font-bold text-gray-900 mb-2">YouTube</h3>
+                <p className="text-gray-600 text-sm">Thoughtful video comment replies that build community engagement</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 bg-gradient-to-br from-purple-50 to-blue-50">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-              Start Generating Better AI Replies Today
+              Ready to Transform Your Social Media Engagement?
             </h2>
             <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
               Join thousands who trust our AI reply generator for authentic, engaging responses. 
               Get 10 free AI-generated replies to start - no credit card required.
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <Link href="/auth/signup">
                 <Button size="lg" className="gap-2">
-                  Start Free Trial
+                  Start Free Trial - 10 Replies Free
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
               <Link href="/twitter-reply-generator">
                 <Button size="lg" variant="outline">
-                  Try Twitter Reply Generator
+                  Try Twitter-Specific Generator
                 </Button>
               </Link>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center text-sm text-gray-600">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+                <span>Chrome extension included</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+                <span>Human-like responses guaranteed</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+                <span>30-day money-back guarantee</span>
+              </div>
             </div>
           </div>
         </div>

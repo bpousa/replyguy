@@ -16,7 +16,7 @@ export function PerformanceMonitor() {
 
     // Only load web-vitals in production
     if (process.env.NODE_ENV === 'production') {
-      import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
+      import('web-vitals').then(({ onCLS, onFID, onFCP, onLCP, onTTFB }) => {
         const handleMetric = (metric: WebVitalsMetric) => {
           // Log to console in development
           if (process.env.NODE_ENV === 'development') {
@@ -38,11 +38,11 @@ export function PerformanceMonitor() {
           // Example: PostHog, Mixpanel, custom analytics, etc.
         };
 
-        getCLS(handleMetric);
-        getFID(handleMetric);
-        getFCP(handleMetric);
-        getLCP(handleMetric);
-        getTTFB(handleMetric);
+        onCLS(handleMetric);
+        onFID(handleMetric);
+        onFCP(handleMetric);
+        onLCP(handleMetric);
+        onTTFB(handleMetric);
       });
     }
 

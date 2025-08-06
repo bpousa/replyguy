@@ -61,7 +61,33 @@ async function sendEventToGHL(event: GHLWebhookEvent): Promise<boolean> {
       return false;
     }
     
-    // Send the event with full user data
+    // For free users, get trial token data and merge it into user data
+    if (userData.member_level === 'free' && event.event === 'user_created') {
+      try {
+        const tokenResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/trial-offer/generate-token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            userId: event.userId, 
+            source: 'ghl_webhook' 
+          })
+        });
+        
+        if (tokenResponse.ok) {
+          const tokenData = await tokenResponse.json();
+          userData.trial_offer_token = tokenData.token;
+          userData.trial_offer_url = tokenData.url;
+          userData.trial_expires_at = tokenData.expires_at;
+          console.log(`[GHL webhook] ✅ Added trial token to user data for ${event.userId}`);
+        } else {
+          console.error(`[GHL webhook] Trial token API failed:`, tokenResponse.status, await tokenResponse.text());
+        }
+      } catch (error) {
+        console.error('[GHL webhook] Error getting trial token:', error);
+      }
+    }
+
+    // Send the event with full user data (including trial tokens if generated)
     const response = await fetch(ghlWebhookUrl, {
       method: 'POST',
       headers: {

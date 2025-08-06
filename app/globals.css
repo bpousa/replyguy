@@ -55,6 +55,29 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Performance optimizations */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeSpeed;
+    /* Prevent horizontal scroll */
+    overflow-x: hidden;
+  }
+  
+  /* Optimize images for performance */
+  img {
+    height: auto;
+    max-width: 100%;
+  }
+  
+  /* Prevent layout shift for videos */
+  video {
+    height: auto;
+    max-width: 100%;
+  }
+  
+  /* Prevent layout shift for iframes */
+  iframe {
+    width: 100%;
   }
 }
 
@@ -117,5 +140,77 @@
     [role="tooltip"] {
       max-width: calc(100vw - 2rem) !important;
     }
+  }
+  
+  /* Performance optimizations for Core Web Vitals */
+  
+  /* Improve Largest Contentful Paint (LCP) */
+  .hero-image, .lcp-image {
+    content-visibility: auto;
+    contain-intrinsic-size: 800px 400px;
+  }
+  
+  /* Improve First Input Delay (FID) */
+  .interactive-element {
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Improve Cumulative Layout Shift (CLS) */
+  .aspect-video {
+    aspect-ratio: 16/9;
+  }
+  
+  .aspect-square {
+    aspect-ratio: 1/1;
+  }
+  
+  /* Prevent layout shift for loading states */
+  .skeleton {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+  }
+  
+  @keyframes pulse {
+    0%, 100% {
+      background-position: 200% 0;
+    }
+    50% {
+      background-position: -200% 0;
+    }
+  }
+  
+  /* Optimize scroll performance */
+  .smooth-scroll {
+    scroll-behavior: smooth;
+  }
+  
+  /* GPU acceleration for animations */
+  .gpu-accelerated {
+    transform: translateZ(0);
+    will-change: transform;
+  }
+  
+  /* Optimize for mobile performance */
+  @media (max-width: 768px) {
+    /* Reduce animation complexity on mobile */
+    .animate-blob {
+      animation: none;
+    }
+    
+    /* Simplify gradients on mobile */
+    .gradient-text {
+      background: linear-gradient(45deg, #2563eb, #7c3aed);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  }
+  
+  /* Preload critical resources */
+  .preload-font {
+    font-display: swap;
   }
 }

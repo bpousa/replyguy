@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import { Providers } from './providers'
+import { PerformanceMonitor } from './components/performance-monitor'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -212,6 +213,7 @@ export default function RootLayout({
             },
           }}
         />
+        <PerformanceMonitor />
       </body>
     </html>
   )

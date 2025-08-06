@@ -10,22 +10,26 @@ export default function EstablishingSessionPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState('Establishing session...');
-  const [attempts, setAttempts] = useState(0);
-  const [isNewUser, setIsNewUser] = useState<boolean | null>(null);
+  const attemptsRef = useRef(0);
+  const isNewUserRef = useRef<boolean | null>(null);
   const hasRedirected = useRef(false);
+  const isEstablishing = useRef(false);
   
   const plan = searchParams.get('plan');
   const from = searchParams.get('from');
   const next = searchParams.get('next');
 
   useEffect(() => {
-    // Prevent multiple redirects
-    if (hasRedirected.current) return;
+    // Prevent multiple redirects or concurrent establishment
+    if (hasRedirected.current || isEstablishing.current) return;
     
     const supabase = createBrowserClient();
     let mounted = true;
     
     const establishSession = async () => {
+      // Mark as establishing to prevent concurrent calls
+      if (isEstablishing.current) return;
+      isEstablishing.current = true;
       console.log('[establishing-session] Starting session establishment process');
       
       // Mark auth flow as active
@@ -66,7 +70,7 @@ export default function EstablishingSessionPage() {
           // For OAuth users, consider them new if recently created
           // For email users, use the more strict check
           const isNew = isOAuthUser ? isRecentlyCreated : (isRecentlyCreated && !hasSignedInBefore || fromSignup);
-          setIsNewUser(isNew);
+          isNewUserRef.current = isNew;
           
           // Clear the OAuth signup flag after checking
           if (sessionStorage.getItem('oauth_signup') === 'true') {
@@ -85,7 +89,7 @@ export default function EstablishingSessionPage() {
       } catch (e) {
         console.error('[establishing-session] Error checking user status:', e);
         // Default to generic message on error
-        setIsNewUser(null);
+        isNewUserRef.current = null;
       }
       
       // Listen for auth state changes
@@ -99,15 +103,19 @@ export default function EstablishingSessionPage() {
           // Clear auth flow
           endAuthFlow();
           
-          // Send post-signup notification for new users
+          // Send post-signup notification for new users (don't fail on errors)
           try {
-            await fetch('/api/auth/post-signup', {
+            const response = await fetch('/api/auth/post-signup', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ userId: session.user.id })
             });
+            
+            if (!response.ok) {
+              console.warn(`[establishing-session] Post-signup API returned ${response.status}, continuing...`);
+            }
           } catch (error) {
-            console.error('[establishing-session] Post-signup notification failed:', error);
+            console.warn('[establishing-session] Post-signup notification failed (continuing):', error);
           }
           
           // Determine redirect based on plan
@@ -152,12 +160,12 @@ export default function EstablishingSessionPage() {
                 // Handle 406 errors or database issues gracefully
                 if (userError.code === 'PGRST116' || userError.code === 'PGRST301' || userError.message?.includes('406')) {
                   console.log('[establishing-session] 406/PGRST116 error - user record missing, treating as new user');
-                  if (isNewUser || isNewUser === null) {
+                  if (isNewUserRef.current || isNewUserRef.current === null) {
                     console.log('[establishing-session] Showing trial offer for missing user record');
                     router.push('/auth/trial-offer');
                     return;
                   }
-                } else if (isNewUser) {
+                } else if (isNewUserRef.current) {
                   console.log('[establishing-session] Other error but user is new, showing trial offer');
                   router.push('/auth/trial-offer');
                   return;
@@ -166,7 +174,7 @@ export default function EstablishingSessionPage() {
                 console.log('[establishing-session] User eligible for trial offer, redirecting');
                 router.push('/auth/trial-offer');
                 return;
-              } else if (!userData && (isNewUser || isNewUser === null)) {
+              } else if (!userData && (isNewUserRef.current || isNewUserRef.current === null)) {
                 // No user record found but user appears to be new
                 console.log('[establishing-session] No user record found for new user, showing trial offer');
                 router.push('/auth/trial-offer');
@@ -175,7 +183,7 @@ export default function EstablishingSessionPage() {
             } catch (error) {
               console.error('[establishing-session] Unexpected error checking trial offer:', error);
               // For new users, show the trial offer anyway
-              if (isNewUser || isNewUser === null) {
+              if (isNewUserRef.current || isNewUserRef.current === null) {
                 console.log('[establishing-session] Error but user appears new, showing trial offer');
                 router.push('/auth/trial-offer');
                 return;
@@ -194,8 +202,8 @@ export default function EstablishingSessionPage() {
       const checkSession = async () => {
         if (!mounted || hasRedirected.current) return;
         
-        const attemptNum = attempts + 1;
-        setAttempts(attemptNum);
+        const attemptNum = attemptsRef.current + 1;
+        attemptsRef.current = attemptNum;
         setStatus(`Establishing session... (attempt ${attemptNum}/${maxAttempts})`);
         
         try {
@@ -213,15 +221,19 @@ export default function EstablishingSessionPage() {
             // Clear auth flow
             endAuthFlow();
             
-            // Send post-signup notification for new users
+            // Send post-signup notification for new users (don't fail on errors)
             try {
-              await fetch('/api/auth/post-signup', {
+              const response = await fetch('/api/auth/post-signup', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: session.user.id })
               });
+              
+              if (!response.ok) {
+                console.warn(`[establishing-session] Post-signup API returned ${response.status}, continuing...`);
+              }
             } catch (error) {
-              console.error('[establishing-session] Post-signup notification failed:', error);
+              console.warn('[establishing-session] Post-signup notification failed (continuing):', error);
             }
             
             // Handle redirect based on plan
@@ -262,12 +274,12 @@ export default function EstablishingSessionPage() {
                   // Handle 406 errors or database issues gracefully
                   if (userError.code === 'PGRST116' || userError.code === 'PGRST301' || userError.message?.includes('406')) {
                     console.log('[establishing-session] 406/PGRST116 error (polling) - user record missing, treating as new user');
-                    if (isNewUser || isNewUser === null) {
+                    if (isNewUserRef.current || isNewUserRef.current === null) {
                       console.log('[establishing-session] Showing trial offer for missing user record (polling)');
                       router.push('/auth/trial-offer');
                       return;
                     }
-                  } else if (isNewUser) {
+                  } else if (isNewUserRef.current) {
                     console.log('[establishing-session] Other error but user is new, showing trial offer (polling)');
                     router.push('/auth/trial-offer');
                     return;
@@ -276,7 +288,7 @@ export default function EstablishingSessionPage() {
                   console.log('[establishing-session] User eligible for trial offer, redirecting (polling)');
                   router.push('/auth/trial-offer');
                   return;
-                } else if (!userData && (isNewUser || isNewUser === null)) {
+                } else if (!userData && (isNewUserRef.current || isNewUserRef.current === null)) {
                   // No user record found but user appears to be new
                   console.log('[establishing-session] No user record found for new user, showing trial offer (polling)');
                   router.push('/auth/trial-offer');
@@ -285,7 +297,7 @@ export default function EstablishingSessionPage() {
               } catch (error) {
                 console.error('[establishing-session] Unexpected error checking trial offer (polling):', error);
                 // For new users, show the trial offer anyway
-                if (isNewUser || isNewUser === null) {
+                if (isNewUserRef.current || isNewUserRef.current === null) {
                   console.log('[establishing-session] Error but user appears new, showing trial offer (polling)');
                   router.push('/auth/trial-offer');
                   return;
@@ -340,6 +352,8 @@ export default function EstablishingSessionPage() {
       return () => {
         mounted = false;
         subscription.unsubscribe();
+        // Reset establishing flag
+        isEstablishing.current = false;
         // Ensure auth flow is ended if component unmounts
         if (!hasRedirected.current) {
           endAuthFlow();
@@ -348,14 +362,14 @@ export default function EstablishingSessionPage() {
     };
     
     establishSession();
-  }, [router, searchParams, plan, from, next, attempts, isNewUser]);
+  }, [router, searchParams, plan, from, next]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
         <Loader2 className="w-12 h-12 animate-spin text-purple-600 mx-auto mb-4" />
         <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-          {isNewUser === false ? 'Signing You In' : 'Setting Up Your Account'}
+          {isNewUserRef.current === false ? 'Signing You In' : 'Setting Up Your Account'}
         </h2>
         <p className="text-gray-600 mb-2">{status}</p>
         <p className="text-sm text-gray-500">

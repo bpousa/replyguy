@@ -18,8 +18,10 @@ export async function GET(request: NextRequest) {
     hasVerifier: !!verifier,
     type,
     plan,
+    next,
     error,
-    url: request.url
+    url: request.url,
+    timestamp: new Date().toISOString()
   });
 
   // Handle Supabase auth errors
@@ -146,6 +148,13 @@ export async function GET(request: NextRequest) {
     const establishingUrl = new URL('/auth/establishing-session', url.origin);
     if (plan) establishingUrl.searchParams.set('plan', plan);
     if (next) establishingUrl.searchParams.set('next', next);
+    
+    console.log('[auth-callback] Intermediate redirect to establishing-session:', {
+      url: establishingUrl.toString(),
+      plan,
+      next,
+      finalDestination: redirectTo
+    });
     
     // Use 302 redirect to ensure Set-Cookie headers are preserved
     return NextResponse.redirect(establishingUrl, { status: 302 });

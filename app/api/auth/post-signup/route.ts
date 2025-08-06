@@ -17,7 +17,18 @@ export async function POST(req: NextRequest) {
   console.log('[post-signup] Processing new signup notification');
   
   try {
-    const { userId } = await req.json();
+    let userId;
+    
+    try {
+      const body = await req.json();
+      userId = body.userId;
+    } catch (parseError) {
+      console.error('[post-signup] Failed to parse request body:', parseError);
+      return NextResponse.json(
+        { error: 'Invalid request body' },
+        { status: 400 }
+      );
+    }
     
     if (!userId) {
       return NextResponse.json(
@@ -33,6 +44,17 @@ export async function POST(req: NextRequest) {
     
     if (authError || !authUser) {
       console.error('[post-signup] Auth user not found:', userId, authError);
+      
+      // For new OAuth users, the user might not be immediately available
+      // Return success but skip processing to avoid blocking the auth flow
+      if (authError?.message?.includes('User not found') || authError?.status === 404) {
+        console.log('[post-signup] User not found - likely timing issue, skipping processing');
+        return NextResponse.json(
+          { message: 'User not found - skipping processing', skipped: true },
+          { status: 200 }
+        );
+      }
+      
       return NextResponse.json(
         { error: 'Auth user not found' },
         { status: 404 }

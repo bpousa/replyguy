@@ -308,7 +308,7 @@ export default function WriteLikeMePage() {
                     <CheckCircle className="w-5 h-5 text-green-600 mt-1" />
                     <div>
                       <h4 className="font-semibold text-gray-900">Build Authentic Relationships</h4>
-                      <p className="text-gray-600">Followers can't tell the difference - it's genuinely you</p>
+                      <p className="text-gray-600">Followers can&apos;t tell the difference - it&apos;s genuinely you</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">

@@ -185,7 +185,7 @@ export default function BlogPost() {
 
               <p className="mb-8">
                 In this comprehensive guide, we&apos;ll explore 8 proven strategies that successful Twitter 
-                users employ to write replies that stand out from the crowd. Whether you're looking to 
+                users employ to write replies that stand out from the crowd. Whether you&apos;re looking to 
                 build your personal brand, grow your business, or simply engage more meaningfully with 
                 your community, these techniques will help you master the art of Twitter conversation.
               </p>
@@ -195,14 +195,14 @@ export default function BlogPost() {
               </h2>
 
               <p className="mb-6">
-                Twitter's algorithm favors engagement, and replies are one of the strongest engagement 
+                Twitter&apos;s algorithm favors engagement, and replies are one of the strongest engagement 
                 signals you can send. When you write thoughtful, engaging replies:
               </p>
 
               <ul className="mb-8 space-y-2">
                 <li className="flex items-start gap-2">
                   <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
-                  <span>You increase your visibility to the original poster's followers</span>
+                  <span>You increase your visibility to the original poster&apos;s followers</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
@@ -255,7 +255,7 @@ export default function BlogPost() {
               <div className="bg-red-50 p-6 rounded-lg mb-8">
                 <h3 className="text-xl font-bold text-red-900 mb-4">❌ What NOT to Do:</h3>
                 <ul className="space-y-2 text-red-800">
-                  <li>• Writing generic, one-word responses like "Great post!" or "This!"</li>
+                  <li>• Writing generic, one-word responses like &quot;Great post!&quot; or &quot;This!&quot;</li>
                   <li>• Self-promoting aggressively in your replies</li>
                   <li>• Arguing or being unnecessarily confrontational</li>
                   <li>• Copying and pasting the same reply to multiple tweets</li>
@@ -297,14 +297,14 @@ export default function BlogPost() {
 
               <p className="mb-6">
                 While authentic engagement is crucial, you can use AI tools to help you craft better 
-                replies more efficiently. ReplyGuy's AI reply generator analyzes tweet context and 
+                replies more efficiently. ReplyGuy&apos;s AI reply generator analyzes tweet context and 
                 your writing style to suggest human-like responses that maintain authenticity while 
                 saving you time.
               </p>
 
               <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-8 rounded-lg mb-8">
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                  Try ReplyGuy's AI Reply Generator
+                  Try ReplyGuy&apos;s AI Reply Generator
                 </h3>
                 <p className="text-gray-700 mb-6">
                   Generate authentic, engaging Twitter replies that sound exactly like you. Our AI 
@@ -331,7 +331,7 @@ export default function BlogPost() {
 
               <p className="mb-6">
                 Writing engaging Twitter replies is both an art and a science. By following these 8 
-                proven strategies, you'll be able to create replies that not only get noticed but 
+                proven strategies, you&apos;ll be able to create replies that not only get noticed but 
                 also build meaningful connections, establish your expertise, and grow your following 
                 organically.
               </p>
@@ -340,7 +340,7 @@ export default function BlogPost() {
                 Remember, the key to successful Twitter engagement is authenticity. While these 
                 strategies provide a framework, always ensure your replies reflect your genuine 
                 thoughts, experiences, and personality. The Twitter community values authentic 
-                voices, and that's what will ultimately drive your long-term success on the platform.
+                voices, and that&apos;s what will ultimately drive your long-term success on the platform.
               </p>
 
               {/* Social Sharing */}

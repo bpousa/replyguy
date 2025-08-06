@@ -24,11 +24,11 @@ const faqData: FAQItem[] = [
   },
   {
     question: "Can AI-generated replies be detected?",
-    answer: "ReplyGuy uses advanced anti-AI detection technology to ensure your replies sound genuinely human. Our system avoids common AI patterns and phrases, creates natural variations, and maintains authentic conversational flow that's indistinguishable from human-written content."
+    answer: "ReplyGuy uses advanced anti-AI detection technology to ensure your replies sound genuinely human. Our system avoids common AI patterns and phrases, creates natural variations, and maintains authentic conversational flow that&apos;s indistinguishable from human-written content."
   },
   {
     question: "What makes ReplyGuy better than other Twitter tools?",
-    answer: "Unlike generic Twitter automation tools, ReplyGuy focuses specifically on creating authentic, human-like replies. We offer unique features like Write Like Me™ personalization, Chrome extension integration, real-time fact-checking, and anti-AI detection technology that other tools don't provide."
+    answer: "Unlike generic Twitter automation tools, ReplyGuy focuses specifically on creating authentic, human-like replies. We offer unique features like Write Like Me™ personalization, Chrome extension integration, real-time fact-checking, and anti-AI detection technology that other tools don&apos;t provide."
   },
   {
     question: "Is there a free trial available?",

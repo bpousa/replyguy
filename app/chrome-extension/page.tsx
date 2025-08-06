@@ -346,7 +346,7 @@ export default function ChromeExtensionPage() {
                       ))}
                     </div>
                     <p className="text-gray-700 mb-4 italic">
-                      "{review.comment}"
+                      &quot;{review.comment}&quot;
                     </p>
                     <div>
                       <p className="font-semibold text-gray-900">{review.name}</p>

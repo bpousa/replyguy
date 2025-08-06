@@ -407,7 +407,7 @@ export default function ReplyGuyVsHypefuryPage() {
               
               <p className="text-gray-600 mb-6">
                 <strong>Choose Hypefury if you need:</strong> Comprehensive social media management 
-                across multiple platforms with advanced scheduling features, and don't need AI reply generation.
+                across multiple platforms with advanced scheduling features, and don&apos;t need AI reply generation.
               </p>
             </div>
             

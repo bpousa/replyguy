@@ -10,13 +10,20 @@ interface WebVitalsMetric {
   rating: 'good' | 'needs-improvement' | 'poor';
 }
 
+// Extend Window interface for gtag
+declare global {
+  interface Window {
+    gtag?: (command: string, targetId: string, config?: Record<string, any>) => void;
+  }
+}
+
 export function PerformanceMonitor() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     // Only load web-vitals in production
     if (process.env.NODE_ENV === 'production') {
-      import('web-vitals').then(({ onCLS, onFID, onFCP, onLCP, onTTFB }) => {
+      import('web-vitals').then(({ onCLS, onINP, onFCP, onLCP, onTTFB }) => {
         const handleMetric = (metric: WebVitalsMetric) => {
           // Log to console in development
           if (process.env.NODE_ENV === 'development') {
@@ -39,7 +46,7 @@ export function PerformanceMonitor() {
         };
 
         onCLS(handleMetric);
-        onFID(handleMetric);
+        onINP(handleMetric);
         onFCP(handleMetric);
         onLCP(handleMetric);
         onTTFB(handleMetric);

@@ -14,10 +14,10 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'ReplyGuy vs Hypefury: Twitter Reply Generator Comparison 2025',
     description: 'Detailed comparison of ReplyGuy vs Hypefury for Twitter automation. See why ReplyGuy is the better choice for authentic Twitter replies.',
-    url: 'https://replyguy.com/vs/hypefury',
+    url: 'https://replyguy.appendment.com/vs/hypefury',
   },
   alternates: {
-    canonical: 'https://replyguy.com/vs/hypefury',
+    canonical: 'https://replyguy.appendment.com/vs/hypefury',
   },
 };
 

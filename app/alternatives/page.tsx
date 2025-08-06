@@ -14,10 +14,10 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Best Twitter Reply Generator Alternatives 2025 | ReplyGuy vs Competitors',
     description: 'Compare the best Twitter reply generators and AI social media tools. See why ReplyGuy is the top choice for authentic Twitter engagement.',
-    url: 'https://replyguy.com/alternatives',
+    url: 'https://replyguy.appendment.com/alternatives',
   },
   alternates: {
-    canonical: 'https://replyguy.com/alternatives',
+    canonical: 'https://replyguy.appendment.com/alternatives',
   },
 };
 

@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'X Reply Generator - AI-Powered Responses for X Platform',
     description: 'Generate engaging X replies instantly with AI. Boost engagement and grow your following on X with authentic responses. Chrome extension included.',
-    url: 'https://replyguy.com/x-reply-generator',
+    url: 'https://replyguy.appendment.com/x-reply-generator',
     images: [
       {
         url: '/main-interface12880x800.png',
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     ],
   },
   alternates: {
-    canonical: 'https://replyguy.com/x-reply-generator',
+    canonical: 'https://replyguy.appendment.com/x-reply-generator',
   },
 };
 

@@ -11,10 +11,10 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'ReplyGuy Pricing Plans - AI Twitter Reply Generator',
     description: 'Choose the perfect plan for your Twitter growth. Free plan available with 10 replies monthly. Premium plans starting at $19/month.',
-    url: 'https://replyguy.com/pricing',
+    url: 'https://replyguy.appendment.com/pricing',
   },
   alternates: {
-    canonical: 'https://replyguy.com/pricing',
+    canonical: 'https://replyguy.appendment.com/pricing',
   },
 };
 

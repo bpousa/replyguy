@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'How to Write Engaging Twitter Replies That Get Noticed in 2025',
     description: 'Master the art of Twitter engagement with proven strategies for writing replies that boost your visibility and grow your following.',
-    url: 'https://replyguy.com/blog/how-to-write-engaging-twitter-replies',
+    url: 'https://replyguy.appendment.com/blog/how-to-write-engaging-twitter-replies',
     images: [
       {
         url: '/feature-showcase640x400.png',
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     images: ['/feature-showcase640x400.png'],
   },
   alternates: {
-    canonical: 'https://replyguy.com/blog/how-to-write-engaging-twitter-replies',
+    canonical: 'https://replyguy.appendment.com/blog/how-to-write-engaging-twitter-replies',
   },
 };
 
@@ -93,25 +93,25 @@ export default function BlogPost() {
     "@type": "Article",
     "headline": "How to Write Engaging Twitter Replies That Get Noticed in 2025",
     "description": "Master the art of Twitter engagement with 8 proven strategies for writing replies that boost your visibility, grow your following, and increase interactions.",
-    "image": "https://replyguy.com/feature-showcase640x400.png",
+    "image": "https://replyguy.appendment.com/feature-showcase640x400.png",
     "author": {
       "@type": "Organization",
       "name": "ReplyGuy",
-      "url": "https://replyguy.com"
+      "url": "https://replyguy.appendment.com"
     },
     "publisher": {
       "@type": "Organization",
       "name": "ReplyGuy",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://replyguy.com/reply_guy_logo.png"
+        "url": "https://replyguy.appendment.com/reply_guy_logo.png"
       }
     },
     "datePublished": "2025-01-15T10:00:00.000Z",
     "dateModified": "2025-01-15T10:00:00.000Z",
     "mainEntityOfPage": {
       "@type": "WebPage",
-      "@id": "https://replyguy.com/blog/how-to-write-engaging-twitter-replies"
+      "@id": "https://replyguy.appendment.com/blog/how-to-write-engaging-twitter-replies"
     },
     "wordCount": 2500,
     "keywords": "Twitter replies, Twitter engagement, social media marketing, Twitter growth",
@@ -348,7 +348,7 @@ export default function BlogPost() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Share this article:</h3>
                 <div className="flex gap-4">
                   <a
-                    href={`https://twitter.com/intent/tweet?text=How to Write Engaging Twitter Replies That Get Noticed&url=${encodeURIComponent('https://replyguy.com/blog/how-to-write-engaging-twitter-replies')}`}
+                    href={`https://twitter.com/intent/tweet?text=How to Write Engaging Twitter Replies That Get Noticed&url=${encodeURIComponent('https://replyguy.appendment.com/blog/how-to-write-engaging-twitter-replies')}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
@@ -357,7 +357,7 @@ export default function BlogPost() {
                     Tweet
                   </a>
                   <a
-                    href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://replyguy.com/blog/how-to-write-engaging-twitter-replies')}`}
+                    href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://replyguy.appendment.com/blog/how-to-write-engaging-twitter-replies')}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800 transition-colors"

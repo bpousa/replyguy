@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'How It Works - AI Twitter Reply Generator Process',
     description: 'Discover the advanced AI technology behind ReplyGuy. Learn our 4-step process for generating authentic, human-like Twitter replies.',
-    url: 'https://replyguy.com/how-it-works',
+    url: 'https://replyguy.appendment.com/how-it-works',
     images: [
       {
         url: '/main-interface12880x800.png',
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     ],
   },
   alternates: {
-    canonical: 'https://replyguy.com/how-it-works',
+    canonical: 'https://replyguy.appendment.com/how-it-works',
   },
 };
 

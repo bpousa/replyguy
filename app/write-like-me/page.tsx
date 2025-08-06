@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Write Like Me™ - AI That Matches Your Writing Style',
     description: 'Revolutionary AI technology that analyzes your writing style to generate replies that sound authentically like you. Maintain your voice while scaling engagement.',
-    url: 'https://replyguy.com/write-like-me',
+    url: 'https://replyguy.appendment.com/write-like-me',
     images: [
       {
         url: '/generated-reply1280x800.png',
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     ],
   },
   alternates: {
-    canonical: 'https://replyguy.com/write-like-me',
+    canonical: 'https://replyguy.appendment.com/write-like-me',
   },
 };
 

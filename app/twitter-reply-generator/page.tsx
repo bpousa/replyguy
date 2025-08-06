@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Twitter Reply Generator - AI-Powered Tweet Responses',
     description: 'Generate engaging Twitter replies instantly with AI. Boost engagement and grow your following with authentic tweet responses. Chrome extension included.',
-    url: 'https://replyguy.com/twitter-reply-generator',
+    url: 'https://replyguy.appendment.com/twitter-reply-generator',
     images: [
       {
         url: '/main-interface12880x800.png',
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     ],
   },
   alternates: {
-    canonical: 'https://replyguy.com/twitter-reply-generator',
+    canonical: 'https://replyguy.appendment.com/twitter-reply-generator',
   },
 };
 

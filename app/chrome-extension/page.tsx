@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Chrome Extension for Twitter Replies | ReplyGuy AI Extension',
     description: 'Install ReplyGuy Chrome extension for instant AI-powered Twitter replies. Generate authentic responses directly in X/Twitter. Free to install.',
-    url: 'https://replyguy.com/chrome-extension',
+    url: 'https://replyguy.appendment.com/chrome-extension',
     images: [
       {
         url: '/feature-showcase640x400.png',
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     ],
   },
   alternates: {
-    canonical: 'https://replyguy.com/chrome-extension',
+    canonical: 'https://replyguy.appendment.com/chrome-extension',
   },
 };
 

@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'AI Reply Generator - Create Human-Like Responses Instantly',
     description: 'Generate authentic AI replies for social media posts in seconds. Advanced AI reply generator with human-like responses. Free trial available.',
-    url: 'https://replyguy.com/ai-reply-generator',
+    url: 'https://replyguy.appendment.com/ai-reply-generator',
     images: [
       {
         url: '/main-interface12880x800.png',
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     ],
   },
   alternates: {
-    canonical: 'https://replyguy.com/ai-reply-generator',
+    canonical: 'https://replyguy.appendment.com/ai-reply-generator',
   },
 };
 

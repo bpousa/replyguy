@@ -126,11 +126,40 @@ export default function CompleteProfilePage() {
     }
   };
 
-  const handleSkip = () => {
-    console.log('[complete-profile] Profile completion skipped');
-    toast.success('You can complete your profile later in settings');
-    // Redirect to trial offer page even if skipped
-    router.push('/auth/trial-offer');
+  const handleSkip = async () => {
+    setIsSubmitting(true);
+    
+    try {
+      console.log('[complete-profile] Profile completion skipped - marking as completed');
+      
+      // Still need to mark profile as completed to prevent modal from showing again
+      const response = await fetch('/api/user/complete-profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          fullName: fullName.trim(),
+          // Don't include phone or SMS opt-in if skipped
+          phone: undefined,
+          smsOptIn: false
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update profile completion status');
+      }
+      
+      toast.success('You can complete your profile later in settings');
+      router.push('/auth/trial-offer');
+      
+    } catch (error: any) {
+      console.error('[complete-profile] Skip profile error:', error);
+      toast.error('Something went wrong. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isLoading) {
@@ -276,7 +305,14 @@ export default function CompleteProfilePage() {
                 className="w-full py-3 text-base"
                 disabled={isSubmitting}
               >
-                Skip for now
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  'Skip for now'
+                )}
               </Button>
             </div>
           </form>

@@ -1,10 +1,10 @@
+'use client';
+
 import Link from 'next/link';
 import { Button } from '@/app/components/ui/button';
 import { Footer } from '@/app/components/footer';
 import { Sparkles, ChevronDown, Menu, X } from 'lucide-react';
 import { useState } from 'react';
-
-'use client';
 
 export function MarketingWrapper({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

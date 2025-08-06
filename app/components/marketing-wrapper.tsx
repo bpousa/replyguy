@@ -39,6 +39,10 @@ export function MarketingWrapper({ children }: { children: React.ReactNode }) {
             
             {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center space-x-8">
+              <Link href="/" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+                Home
+              </Link>
+
               {/* Tools Dropdown */}
               <div 
                 className="relative group"
@@ -92,10 +96,6 @@ export function MarketingWrapper({ children }: { children: React.ReactNode }) {
                   </div>
                 )}
               </div>
-
-              <Link href="/" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
-                Home
-              </Link>
 
               <Link href="/chrome-extension" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
                 Chrome Extension
@@ -181,40 +181,44 @@ export function MarketingWrapper({ children }: { children: React.ReactNode }) {
               </div>
 
               {/* Mobile Navigation Links */}
-              <Link
-                href="/"
-                className="block text-sm font-medium text-gray-700"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Home
-              </Link>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Navigation</h3>
+                <div className="space-y-3">
+                  <Link
+                    href="/"
+                    className="block text-sm font-medium text-gray-700"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Home
+                  </Link>
 
-              <Link
-                href="/chrome-extension"
-                className="block text-sm font-medium text-gray-700"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Chrome Extension
-              </Link>
+                  <Link
+                    href="/chrome-extension"
+                    className="block text-sm font-medium text-gray-700"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Chrome Extension
+                  </Link>
 
-              {/* Mobile Pricing */}
-              <Link
-                href="/pricing"
-                className="block text-sm font-medium text-gray-700"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Pricing
-              </Link>
+                  <Link
+                    href="/pricing"
+                    className="block text-sm font-medium text-gray-700"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Pricing
+                  </Link>
 
-              <a 
-                href="https://appendment.com/contact" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="block text-sm font-medium text-gray-700"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Contact
-              </a>
+                  <a 
+                    href="https://appendment.com/contact" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="block text-sm font-medium text-gray-700"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Contact
+                  </a>
+                </div>
+              </div>
 
               {/* Mobile Auth Buttons */}
               <div className="space-y-3 pt-6 border-t">

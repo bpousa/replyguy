@@ -184,7 +184,7 @@ export default function BlogPost() {
               </p>
 
               <p className="mb-8">
-                In this comprehensive guide, we'll explore 8 proven strategies that successful Twitter 
+                In this comprehensive guide, we&apos;ll explore 8 proven strategies that successful Twitter 
                 users employ to write replies that stand out from the crowd. Whether you're looking to 
                 build your personal brand, grow your business, or simply engage more meaningfully with 
                 your community, these techniques will help you master the art of Twitter conversation.

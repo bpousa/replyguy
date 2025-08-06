@@ -121,7 +121,7 @@ export function HomepageFAQ() {
               Frequently Asked Questions
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Everything you need to know about ReplyGuy's AI-powered Twitter reply generator
+              Everything you need to know about ReplyGuy&apos;s AI-powered Twitter reply generator
             </p>
           </div>
 

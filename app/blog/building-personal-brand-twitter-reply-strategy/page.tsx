@@ -14,6 +14,20 @@ export const metadata: Metadata = {
     description: 'The complete guide to building a powerful personal brand on Twitter through strategic reply engagement. 10K+ creators trust this framework.',
     url: 'https://replyguy.com/blog/building-personal-brand-twitter-reply-strategy',
     type: 'article',
+    images: [
+      {
+        url: '/blog-images/twitter-personal-branding-og.png',
+        width: 1200,
+        height: 630,
+        alt: 'Building Personal Brand on Twitter: The Reply Strategy - ReplyGuy',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Building Personal Brand on Twitter: The Reply Strategy That Works',
+    description: 'The complete framework used by 10K+ creators to build powerful personal brands.',
+    images: ['/blog-images/twitter-personal-branding-og.png'],
   },
   alternates: {
     canonical: 'https://replyguy.com/blog/building-personal-brand-twitter-reply-strategy',

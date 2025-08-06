@@ -16,6 +16,20 @@ export const metadata: Metadata = {
     description: 'Copy-paste these proven Twitter reply templates to boost engagement by 300%. Perfect for marketers, creators, and businesses.',
     url: 'https://replyguy.com/blog/10-twitter-reply-templates-that-actually-get-engagement',
     type: 'article',
+    images: [
+      {
+        url: '/blog-images/twitter-reply-templates-og.png',
+        width: 1200,
+        height: 630,
+        alt: '10 Twitter Reply Templates That Actually Get Engagement - ReplyGuy Guide',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: '10 Twitter Reply Templates That Actually Get Engagement in 2024',
+    description: 'Copy-paste these proven Twitter reply templates to boost engagement by 300%.',
+    images: ['/blog-images/twitter-reply-templates-og.png'],
   },
   alternates: {
     canonical: 'https://replyguy.com/blog/10-twitter-reply-templates-that-actually-get-engagement',

@@ -14,6 +14,20 @@ export const metadata: Metadata = {
     description: 'The ultimate guide to Chrome extensions that will 10x your Twitter marketing efficiency and results.',
     url: 'https://replyguy.com/blog/chrome-extensions-every-twitter-marketer-needs',
     type: 'article',
+    images: [
+      {
+        url: '/blog-images/twitter-chrome-extensions-og.png',
+        width: 1200,
+        height: 630,
+        alt: '15 Essential Chrome Extensions for Twitter Marketing - ReplyGuy',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Chrome Extensions Every Twitter Marketer Needs in 2024',
+    description: 'Discover 15 essential Chrome extensions that will revolutionize your Twitter marketing.',
+    images: ['/blog-images/twitter-chrome-extensions-og.png'],
   },
   alternates: {
     canonical: 'https://replyguy.com/blog/chrome-extensions-every-twitter-marketer-needs',

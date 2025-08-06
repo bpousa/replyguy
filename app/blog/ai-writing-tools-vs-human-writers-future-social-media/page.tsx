@@ -14,6 +14,20 @@ export const metadata: Metadata = {
     description: 'The definitive analysis of AI vs human writing for social media. Learn which wins, when to use each, and how to combine both for maximum impact.',
     url: 'https://replyguy.com/blog/ai-writing-tools-vs-human-writers-future-social-media',
     type: 'article',
+    images: [
+      {
+        url: '/blog-images/ai-vs-human-writers-og.png',
+        width: 1200,
+        height: 630,
+        alt: 'AI Writing Tools vs Human Writers: Future of Social Media - ReplyGuy',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'AI Writing Tools vs Human Writers: The Future of Social Media',
+    description: 'The definitive analysis: AI vs human writing for social media in 2024.',
+    images: ['/blog-images/ai-vs-human-writers-og.png'],
   },
   alternates: {
     canonical: 'https://replyguy.com/blog/ai-writing-tools-vs-human-writers-future-social-media',

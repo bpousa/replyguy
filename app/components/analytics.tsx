@@ -7,12 +7,12 @@ interface AnalyticsProps {
   gaId?: string;
 }
 
-declare global {
-  interface Window {
-    gtag: (...args: any[]) => void;
-    dataLayer: any[];
-  }
-}
+// Type for gtag function
+type GtagFunction = (
+  command: 'config' | 'event' | 'js' | 'consent',
+  targetIdOrEventName: string | Date,
+  parameters?: Record<string, any>
+) => void;
 
 export function Analytics({ gaId }: AnalyticsProps) {
   // Use environment variable or provided gaId
@@ -21,14 +21,15 @@ export function Analytics({ gaId }: AnalyticsProps) {
   useEffect(() => {
     if (GA_TRACKING_ID && typeof window !== 'undefined') {
       // Initialize dataLayer if it doesn't exist
-      window.dataLayer = window.dataLayer || [];
+      (window as any).dataLayer = (window as any).dataLayer || [];
       
       function gtag(...args: any[]) {
-        window.dataLayer.push(args);
+        (window as any).dataLayer = (window as any).dataLayer || [];
+        (window as any).dataLayer.push(args);
       }
       
       // Make gtag available globally
-      window.gtag = gtag;
+      (window as any).gtag = gtag;
       
       // Configure GA4
       gtag('js', new Date());
@@ -51,7 +52,7 @@ export function Analytics({ gaId }: AnalyticsProps) {
           );
           if (scrollPercent > maxScroll && scrollPercent % 25 === 0) {
             maxScroll = scrollPercent;
-            gtag('event', 'scroll_depth', {
+            (window as any).gtag?.('event', 'scroll_depth', {
               event_category: 'engagement',
               event_label: `${scrollPercent}%`,
               value: scrollPercent
@@ -65,7 +66,7 @@ export function Analytics({ gaId }: AnalyticsProps) {
         const trackTimeOnPage = () => {
           const timeOnPage = Math.round((Date.now() - startTime) / 1000);
           if (timeOnPage >= 30 && timeOnPage % 30 === 0) {
-            gtag('event', 'time_on_page', {
+            (window as any).gtag?.('event', 'time_on_page', {
               event_category: 'engagement',
               event_label: `${timeOnPage}s`,
               value: timeOnPage
@@ -79,7 +80,7 @@ export function Analytics({ gaId }: AnalyticsProps) {
           const target = e.target as HTMLElement;
           const link = target.closest('a');
           if (link && link.href && !link.href.includes(window.location.hostname)) {
-            gtag('event', 'click', {
+            (window as any).gtag?.('event', 'click', {
               event_category: 'outbound_link',
               event_label: link.href,
               transport_type: 'beacon'
@@ -92,7 +93,7 @@ export function Analytics({ gaId }: AnalyticsProps) {
           // Track Chrome extension downloads
           document.querySelectorAll('a[href*="chrome.google.com"]').forEach(link => {
             link.addEventListener('click', () => {
-              gtag('event', 'extension_download_click', {
+              (window as any).gtag?.('event', 'extension_download_click', {
                 event_category: 'conversion',
                 event_label: 'chrome_extension'
               });
@@ -102,7 +103,7 @@ export function Analytics({ gaId }: AnalyticsProps) {
           // Track pricing page visits
           document.querySelectorAll('a[href*="/pricing"]').forEach(link => {
             link.addEventListener('click', () => {
-              gtag('event', 'pricing_page_visit', {
+              (window as any).gtag?.('event', 'pricing_page_visit', {
                 event_category: 'conversion',
                 event_label: 'pricing_interest'
               });
@@ -112,7 +113,7 @@ export function Analytics({ gaId }: AnalyticsProps) {
           // Track signup button clicks
           document.querySelectorAll('a[href*="/auth/signup"], a[href*="signup"]').forEach(link => {
             link.addEventListener('click', () => {
-              gtag('event', 'signup_click', {
+              (window as any).gtag?.('event', 'signup_click', {
                 event_category: 'conversion',
                 event_label: 'signup_attempt'
               });
@@ -168,15 +169,15 @@ export function Analytics({ gaId }: AnalyticsProps) {
 
 // Helper function to track custom events
 export const trackEvent = (eventName: string, parameters: Record<string, any> = {}) => {
-  if (typeof window !== 'undefined' && window.gtag) {
-    window.gtag('event', eventName, parameters);
+  if (typeof window !== 'undefined' && (window as any).gtag) {
+    (window as any).gtag('event', eventName, parameters);
   }
 };
 
 // Helper function to track page views
 export const trackPageView = (url: string, title?: string) => {
-  if (typeof window !== 'undefined' && window.gtag) {
-    window.gtag('config', process.env.NEXT_PUBLIC_GA_ID, {
+  if (typeof window !== 'undefined' && (window as any).gtag && process.env.NEXT_PUBLIC_GA_ID) {
+    (window as any).gtag('config', process.env.NEXT_PUBLIC_GA_ID, {
       page_location: url,
       page_title: title || document.title,
     });

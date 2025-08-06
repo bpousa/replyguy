@@ -14,6 +14,20 @@ export const metadata: Metadata = {
     description: 'Master the complete Twitter engagement framework that top creators use to build audiences and drive business results.',
     url: 'https://replyguy.com/blog/twitter-engagement-strategy-beyond-just-replying',
     type: 'article',
+    images: [
+      {
+        url: '/blog-images/twitter-engagement-strategy-og.png',
+        width: 1200,
+        height: 630,
+        alt: 'Complete Twitter Engagement Strategy Guide - ReplyGuy',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Complete Twitter Engagement Strategy: Beyond Just Replying',
+    description: 'Master the complete framework that top creators use to build audiences.',
+    images: ['/blog-images/twitter-engagement-strategy-og.png'],
   },
   alternates: {
     canonical: 'https://replyguy.com/blog/twitter-engagement-strategy-beyond-just-replying',

@@ -14,6 +14,20 @@ export const metadata: Metadata = {
     description: 'Learn 15 proven techniques to make AI-generated Twitter replies sound authentically human and bypass detection tools.',
     url: 'https://replyguy.com/blog/how-to-write-twitter-replies-that-dont-sound-like-ai',
     type: 'article',
+    images: [
+      {
+        url: '/blog-images/human-like-ai-replies-og.png',
+        width: 1200,
+        height: 630,
+        alt: 'How to Write Human-Like AI Twitter Replies - ReplyGuy Guide',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'How to Write Twitter Replies That Don&apos;t Sound Like AI',
+    description: 'Master the art of authentic AI replies on Twitter. 15 proven techniques inside.',
+    images: ['/blog-images/human-like-ai-replies-og.png'],
   },
   alternates: {
     canonical: 'https://replyguy.com/blog/how-to-write-twitter-replies-that-dont-sound-like-ai',

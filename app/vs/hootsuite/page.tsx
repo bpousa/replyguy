@@ -251,7 +251,7 @@ export default function ReplyGuyVsHootsuiteePage() {
             </p>
             <Link href="/auth/signup">
               <Button size="lg" variant="secondary" className="gap-2">
-                Start Free Trial
+                Create Free Account
                 <ArrowRight className="w-5 h-5" />
               </Button>
             </Link>

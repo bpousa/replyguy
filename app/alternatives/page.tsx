@@ -416,7 +416,7 @@ export default function AlternativesPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/auth/signup">
                 <Button size="lg" className="gap-2">
-                  Start Free Trial
+                  Create Free Account
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>

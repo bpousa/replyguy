@@ -107,10 +107,10 @@ export function Hero() {
           </div>
           
           {/* CTA buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
             <Link href="/auth/signup">
-              <Button size="lg" className="gap-2">
-                Start Free Trial
+              <Button size="lg" className="gap-2 px-8 py-4">
+                Create Free Account
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
@@ -134,6 +134,12 @@ export function Hero() {
                 See How It Works
               </Button>
             </Link>
+          </div>
+
+          {/* No Credit Card Required */}
+          <div className="mb-6">
+            <p className="text-lg font-semibold text-gray-700 mb-2">No Credit Card Required</p>
+            <p className="text-gray-600">Start with 10 free replies per month • Upgrade anytime</p>
           </div>
           
           {/* Trust indicators */}

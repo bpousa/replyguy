@@ -524,7 +524,7 @@ export default function AIReplyGeneratorPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <Link href="/auth/signup">
                 <Button size="lg" className="gap-2">
-                  Start Free Trial - 10 Replies Free
+                  Create Free Account - 10 Replies Free
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>

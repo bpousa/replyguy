@@ -567,7 +567,7 @@ export default function PricingPage() {
                 <Link href="/auth/signup">
                   <Button size="lg" className="gap-2">
                     <Gift className="w-5 h-5" />
-                    Start Free Trial
+                    Create Free Account
                   </Button>
                 </Link>
                 <Link href="/chrome-extension">

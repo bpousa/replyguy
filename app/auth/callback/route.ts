@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient } from '@/app/lib/auth';
 import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
@@ -44,34 +44,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // IMPORTANT: Pass cookies function, not cookies() invoked value
+    // Use centralized auth client to ensure consistent cookie configuration
     const cookieStore = cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-          set(name: string, value: string, options: any) {
-            try {
-              console.log(`[auth-callback] Setting cookie: ${name}`);
-              cookieStore.set({ name, value, ...options });
-            } catch (error) {
-              console.error('[auth-callback] Failed to set cookie:', name, error);
-            }
-          },
-          remove(name: string, options: any) {
-            try {
-              cookieStore.delete(name);
-            } catch (error) {
-              console.error('[auth-callback] Failed to remove cookie:', name, error);
-            }
-          },
-        },
-      }
-    );
+    const supabase = createServerClient(cookieStore);
     
     // Exchange the verifier for session (this mutates cookies)
     console.log('[auth-callback] Exchanging verifier for session...');
@@ -96,22 +71,23 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    console.log('[auth-callback] Session established successfully:', {
+    console.log('[auth-callback] OAuth session established successfully:', {
       userId: session.user.id,
       email: session.user.email,
+      provider: session.user.app_metadata?.provider,
       expiresAt: session.expires_at
     });
     
-    // Log cookie size for debugging (remove in production)
+    // Log cookie configuration for OAuth debugging
     if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_AUTH_DEBUG === 'true') {
       const allCookies = cookieStore.getAll();
       const authCookies = allCookies.filter(c => c.name.includes('sb-') || c.name.includes('supabase'));
-      console.log('[auth-callback] Auth cookie count:', authCookies.length);
-      console.log('[auth-callback] Total cookie bytes:', JSON.stringify(authCookies).length);
+      console.log('[auth-callback] OAuth auth cookies set:', authCookies.length);
+      console.log('[auth-callback] Using centralized auth configuration for OAuth cookies');
       
-      // Log specific auth cookies for debugging
+      // Log specific auth cookies for OAuth debugging
       authCookies.forEach(cookie => {
-        console.log(`[auth-callback] Cookie ${cookie.name}: ${cookie.value.length} bytes`);
+        console.log(`[auth-callback] OAuth cookie ${cookie.name}: ${cookie.value.length} bytes`);
       });
     }
     

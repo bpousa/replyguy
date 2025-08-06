@@ -46,7 +46,7 @@ export default function HowItWorksPage() {
       number: 2,
       title: 'Reply Classification',
       icon: Target,
-      description: 'GPT-3.5 determines the most effective reply type for maximum engagement',
+      description: 'OpenAI GPT determines the most effective reply type for maximum engagement',
       details: [
         'Classifies optimal response strategy (agree, question, add value, etc.)',
         'Selects from 50+ proven reply patterns',
@@ -82,10 +82,10 @@ export default function HowItWorksPage() {
 
   const aiModels = [
     {
-      name: 'GPT-3.5 Turbo',
+      name: 'OpenAI GPT',
       purpose: 'Reply Classification',
       icon: Target,
-      description: 'Fast, cost-effective classification of the best reply type for each situation'
+      description: 'Advanced OpenAI technology for fast, cost-effective classification of the best reply type for each situation'
     },
     {
       name: 'Perplexity API',
@@ -94,16 +94,16 @@ export default function HowItWorksPage() {
       description: 'Optional fact-checking and current information gathering for accurate responses'
     },
     {
-      name: 'Claude 3.5 Sonnet',
+      name: 'Anthropic Claude',
       purpose: 'Strategic Reasoning',
       icon: Brain,
-      description: 'Advanced reasoning to select the optimal reply strategy and approach'
+      description: 'Advanced Anthropic AI for strategic reasoning to select the optimal reply strategy and approach'
     },
     {
-      name: 'Claude 3 Opus',
+      name: 'Claude AI',
       purpose: 'Final Generation',
       icon: MessageCircle,
-      description: 'Premium AI model for creating the most human-like, engaging final replies'
+      description: 'Premium Anthropic AI model for creating the most human-like, engaging final replies'
     }
   ];
 

@@ -128,18 +128,20 @@ export default function HomePage() {
         const isProfileComplete = !!userData.profile_completed_at;
         setProfileCompleted(isProfileComplete);
         
-        // Show profile modal for incomplete profiles
+        // Show profile modal for incomplete profiles (email users only)
         const userAge = new Date().getTime() - new Date(userData.created_at).getTime();
         const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
         const isRecentUser = userAge < thirtyDaysInMs;
         const isOAuthUser = user.app_metadata?.provider && user.app_metadata.provider !== 'email';
+        const isXOAuthUser = user.app_metadata?.provider === 'twitter';
         
         // Profile completion logic:
-        // 1. Profile not completed AND recent user (within 30 days)
-        // 2. For OAuth users: Always show modal (need phone/SMS even if they have name from OAuth)
-        // 3. For email users: Show modal only if missing full_name
+        // 1. X OAuth users: Never show modal (handled by dedicated page)
+        // 2. Email users: Show modal if profile incomplete and missing full_name
+        // 3. Other OAuth users: Show modal if profile incomplete
         const needsProfileCompletion = !isProfileComplete && 
                                      isRecentUser && 
+                                     !isXOAuthUser && // X OAuth users handled separately
                                      (isOAuthUser || (!userData.full_name || userData.full_name.trim() === ''));
         
         if (needsProfileCompletion) {
@@ -151,6 +153,7 @@ export default function HomePage() {
           isComplete: isProfileComplete,
           isRecent: isRecentUser,
           isOAuthUser,
+          isXOAuthUser,
           provider: user.app_metadata?.provider,
           needsCompletion: needsProfileCompletion,
           hasName: !!userData.full_name,

@@ -179,7 +179,8 @@ export default function AlternativesPage() {
               </p>
             </div>
 
-            <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+            {/* Desktop: Table view for large screens */}
+            <div className="hidden lg:block bg-white rounded-lg shadow-lg overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-purple-50">
@@ -210,6 +211,29 @@ export default function AlternativesPage() {
                   </tbody>
                 </table>
               </div>
+            </div>
+
+            {/* Mobile: Card-based layout */}
+            <div className="lg:hidden space-y-4">
+              {replyGuyFeatures.map((item, index) => (
+                <div key={index} className="bg-white rounded-lg p-4 shadow-lg">
+                  <h4 className="font-semibold text-gray-900 mb-3 text-lg">{item.feature}</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-3 bg-purple-50 rounded-lg">
+                      <p className="text-sm text-purple-600 font-medium mb-2">ReplyGuy</p>
+                      {item.replyguy ? (
+                        <CheckCircle className="w-8 h-8 text-green-600 mx-auto" />
+                      ) : (
+                        <X className="w-8 h-8 text-red-500 mx-auto" />
+                      )}
+                    </div>
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <p className="text-sm text-gray-600 font-medium mb-2">Competitors</p>
+                      <p className="text-sm text-gray-700 font-medium">{item.competitors}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

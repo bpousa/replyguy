@@ -101,7 +101,23 @@ export async function GET(request: NextRequest) {
       console.log('[auth-callback] Session verified successfully');
     }
     
-    // Determine where to redirect
+    // Check if this is an X OAuth user
+    const isXOAuthUser = session.user.app_metadata?.provider === 'twitter';
+    
+    console.log('[auth-callback] User type detection:', {
+      provider: session.user.app_metadata?.provider,
+      isXOAuthUser,
+      email: session.user.email
+    });
+    
+    // X OAuth users go directly to profile completion
+    if (isXOAuthUser) {
+      console.log('[auth-callback] X OAuth user detected, redirecting to profile completion');
+      const profileUrl = new URL('/auth/complete-profile', url.origin);
+      return NextResponse.redirect(profileUrl, { status: 302 });
+    }
+    
+    // Determine where to redirect (email users and other OAuth)
     let redirectTo = '/dashboard'; // Default destination
     
     if (plan && plan !== 'free') {
@@ -118,9 +134,9 @@ export async function GET(request: NextRequest) {
       redirectTo = `/auth/checkout-redirect?plan=${session.user.user_metadata.selected_plan}`;
     }
     
-    console.log('[auth-callback] Redirecting to:', redirectTo);
+    console.log('[auth-callback] Email user redirecting to:', redirectTo);
     
-    // Use establishing-session as an intermediate step
+    // Use establishing-session as an intermediate step (email users only)
     const establishingUrl = new URL('/auth/establishing-session', url.origin);
     if (plan) establishingUrl.searchParams.set('plan', plan);
     if (next) establishingUrl.searchParams.set('next', next);

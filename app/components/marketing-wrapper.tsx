@@ -93,9 +93,26 @@ export function MarketingWrapper({ children }: { children: React.ReactNode }) {
                 )}
               </div>
 
+              <Link href="/" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+                Home
+              </Link>
+
+              <Link href="/chrome-extension" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+                Chrome Extension
+              </Link>
+
               <Link href="/pricing" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
                 Pricing
               </Link>
+
+              <a 
+                href="https://appendment.com/contact" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                Contact
+              </a>
             </div>
 
             {/* Auth Buttons & Mobile Menu */}
@@ -163,6 +180,23 @@ export function MarketingWrapper({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
 
+              {/* Mobile Navigation Links */}
+              <Link
+                href="/"
+                className="block text-sm font-medium text-gray-700"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Home
+              </Link>
+
+              <Link
+                href="/chrome-extension"
+                className="block text-sm font-medium text-gray-700"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Chrome Extension
+              </Link>
+
               {/* Mobile Pricing */}
               <Link
                 href="/pricing"
@@ -171,6 +205,16 @@ export function MarketingWrapper({ children }: { children: React.ReactNode }) {
               >
                 Pricing
               </Link>
+
+              <a 
+                href="https://appendment.com/contact" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="block text-sm font-medium text-gray-700"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Contact
+              </a>
 
               {/* Mobile Auth Buttons */}
               <div className="space-y-3 pt-6 border-t">

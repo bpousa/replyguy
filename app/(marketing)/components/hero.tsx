@@ -5,7 +5,7 @@ import Image from 'next/image';
 
 export function Hero() {
   return (
-    <section className="relative py-20 md:py-32">
+    <section className="relative py-8 md:py-16">
       <div className="container mx-auto px-4">
         <div className="max-w-5xl mx-auto text-center">
           {/* Logo */}
@@ -42,6 +42,43 @@ export function Hero() {
             Build your audience, increase engagement, and save hours daily with replies that sound genuinely like you. 
             Chrome extension included for seamless Twitter integration!
           </p>
+
+          {/* PRIMARY CTA - Above the Fold */}
+          <div className="mb-8">
+            <Link href="/auth/signup">
+              <Button 
+                size="lg" 
+                className="
+                  relative overflow-hidden
+                  bg-gradient-to-r from-purple-600 via-purple-700 to-blue-600
+                  hover:from-purple-700 hover:via-purple-800 hover:to-blue-700
+                  text-white font-bold text-lg
+                  px-12 py-6 rounded-2xl
+                  shadow-2xl shadow-purple-500/30
+                  transform transition-all duration-300
+                  hover:scale-105 hover:shadow-3xl hover:shadow-purple-500/40
+                  animate-pulse
+                  border-0
+                "
+              >
+                <span className="relative z-10 flex items-center gap-3">
+                  ✨ Create Free Account
+                  <ArrowRight className="w-5 h-5 animate-bounce" />
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300" />
+              </Button>
+            </Link>
+            
+            {/* No Credit Card Required - Prominent */}
+            <div className="mt-4">
+              <p className="text-lg font-bold text-green-700 mb-2">
+                🚀 No Credit Card Required
+              </p>
+              <p className="text-gray-600 font-medium">
+                Start with 10 free replies per month • Upgrade anytime
+              </p>
+            </div>
+          </div>
 
           {/* Extended Value Proposition */}
           <div className="max-w-4xl mx-auto mb-12">
@@ -106,16 +143,10 @@ export function Hero() {
             </div>
           </div>
           
-          {/* CTA buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-            <Link href="/auth/signup">
-              <Button size="lg" className="gap-2 px-8 py-4">
-                Create Free Account
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
+          {/* Secondary Actions - Less Prominent */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8 opacity-75">
             <Button 
-              size="lg" 
+              size="default" 
               variant="outline"
               className="gap-2"
               asChild
@@ -130,16 +161,10 @@ export function Hero() {
               </a>
             </Button>
             <Link href="#features">
-              <Button size="lg" variant="ghost">
+              <Button size="default" variant="ghost">
                 See How It Works
               </Button>
             </Link>
-          </div>
-
-          {/* No Credit Card Required */}
-          <div className="mb-6">
-            <p className="text-lg font-semibold text-gray-700 mb-2">No Credit Card Required</p>
-            <p className="text-gray-600">Start with 10 free replies per month • Upgrade anytime</p>
           </div>
           
           {/* Trust indicators */}

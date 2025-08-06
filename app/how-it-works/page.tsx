@@ -152,7 +152,7 @@ export default function HowItWorksPage() {
             </h1>
             
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Discover the advanced AI technology behind ReplyGuy's human-like Twitter replies. 
+              Discover the advanced AI technology behind ReplyGuy&apos;s human-like Twitter replies. 
               Our 4-step process combines multiple AI models to create authentic responses that 
               boost engagement and sound exactly like you.
             </p>

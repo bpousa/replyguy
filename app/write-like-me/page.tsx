@@ -260,7 +260,7 @@ export default function WriteLikeMePage() {
                           <Target className="w-4 h-4" />
                           Generic AI Reply
                         </h4>
-                        <p className="text-gray-700 italic">"{example.generic}"</p>
+                        <p className="text-gray-700 italic">&quot;{example.generic}&quot;</p>
                         <p className="text-sm text-red-600 mt-2">Sounds robotic and impersonal</p>
                       </div>
                       
@@ -269,7 +269,7 @@ export default function WriteLikeMePage() {
                           <TrendingUp className="w-4 h-4" />
                           Write Like Me™ Reply
                         </h4>
-                        <p className="text-gray-700 italic">"{example.writeLikeMe}"</p>
+                        <p className="text-gray-700 italic">&quot;{example.writeLikeMe}&quot;</p>
                         <p className="text-sm text-green-600 mt-2">Authentic, personal, and engaging</p>
                       </div>
                     </div>

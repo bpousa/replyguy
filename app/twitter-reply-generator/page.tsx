@@ -205,7 +205,7 @@ export default function TwitterReplyGeneratorPage() {
                     </p>
                     <div className="bg-gray-50 p-4 rounded-lg border-l-4 border-blue-500">
                       <p className="text-gray-700 italic">
-                        "{strategy.example}"
+                        &quot;{strategy.example}&quot;
                       </p>
                     </div>
                   </CardContent>

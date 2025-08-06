@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: '10 Twitter Reply Templates That Actually Get Engagement in 2024',
     description: 'Copy-paste these proven Twitter reply templates to boost engagement by 300%. Perfect for marketers, creators, and businesses.',
-    url: 'https://replyguy.com/blog/10-twitter-reply-templates-that-actually-get-engagement',
+    url: 'https://replyguy.appendment.com/blog/10-twitter-reply-templates-that-actually-get-engagement',
     type: 'article',
     images: [
       {
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     images: ['/blog-images/twitter-reply-templates-og.png'],
   },
   alternates: {
-    canonical: 'https://replyguy.com/blog/10-twitter-reply-templates-that-actually-get-engagement',
+    canonical: 'https://replyguy.appendment.com/blog/10-twitter-reply-templates-that-actually-get-engagement',
   },
 };
 
@@ -231,19 +231,19 @@ export default function TwitterReplyTemplatesPost() {
   const articleData = {
     title: '10 Twitter Reply Templates That Actually Get Engagement in 2024',
     description: 'Discover 10 proven Twitter reply templates that boost engagement by 300%. Copy-paste these high-converting templates for likes, retweets, and followers.',
-    url: 'https://replyguy.com/blog/10-twitter-reply-templates-that-actually-get-engagement',
+    url: 'https://replyguy.appendment.com/blog/10-twitter-reply-templates-that-actually-get-engagement',
     publishedTime: '2024-01-15T10:00:00Z',
     modifiedTime: '2024-01-15T10:00:00Z',
     keywords: ['twitter reply templates', 'X reply templates', 'tweet reply examples', 'social media templates', 'twitter engagement'],
     wordCount: 2800,
-    image: 'https://replyguy.com/blog-images/twitter-reply-templates-og.png'
+    image: 'https://replyguy.appendment.com/blog-images/twitter-reply-templates-og.png'
   };
 
   const breadcrumbData = {
     items: [
-      { name: 'Home', url: 'https://replyguy.com' },
-      { name: 'Blog', url: 'https://replyguy.com/blog' },
-      { name: '10 Twitter Reply Templates', url: 'https://replyguy.com/blog/10-twitter-reply-templates-that-actually-get-engagement' }
+      { name: 'Home', url: 'https://replyguy.appendment.com' },
+      { name: 'Blog', url: 'https://replyguy.appendment.com/blog' },
+      { name: '10 Twitter Reply Templates', url: 'https://replyguy.appendment.com/blog/10-twitter-reply-templates-that-actually-get-engagement' }
     ]
   };
 

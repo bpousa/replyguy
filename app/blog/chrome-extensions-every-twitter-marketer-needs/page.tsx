@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: '15 Chrome Extensions Every Twitter Marketer Needs in 2024',
     description: 'The ultimate guide to Chrome extensions that will 10x your Twitter marketing efficiency and results.',
-    url: 'https://replyguy.com/blog/chrome-extensions-every-twitter-marketer-needs',
+    url: 'https://replyguy.appendment.com/blog/chrome-extensions-every-twitter-marketer-needs',
     type: 'article',
     images: [
       {
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     images: ['/blog-images/twitter-chrome-extensions-og.png'],
   },
   alternates: {
-    canonical: 'https://replyguy.com/blog/chrome-extensions-every-twitter-marketer-needs',
+    canonical: 'https://replyguy.appendment.com/blog/chrome-extensions-every-twitter-marketer-needs',
   },
 };
 

@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'ReplyGuy - AI Twitter Reply Generator | Write Like You',
     description: 'Generate authentic, human-like Twitter replies with AI in seconds. Chrome extension included. 10 free replies monthly. Try now!',
-    url: 'https://replyguy.com',
+    url: 'https://replyguy.appendment.com',
     images: [
       {
         url: '/main-interface12880x800.png',
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     images: ['/main-interface12880x800.png'],
   },
   alternates: {
-    canonical: 'https://replyguy.com',
+    canonical: 'https://replyguy.appendment.com',
   },
 };
 

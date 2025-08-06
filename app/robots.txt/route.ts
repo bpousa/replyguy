@@ -5,7 +5,7 @@ export async function GET() {
 Allow: /
 
 # Sitemap location
-Sitemap: https://replyguy.com/sitemap.xml
+Sitemap: https://replyguy.appendment.com/sitemap.xml
 
 # Crawl-delay for specific bots
 User-agent: Googlebot
@@ -44,7 +44,7 @@ Allow: /how-it-works
 Allow: /alternatives
 
 # Host directive
-Host: https://replyguy.com`;
+Host: https://replyguy.appendment.com`;
 
   return new NextResponse(robotsContent, {
     status: 200,

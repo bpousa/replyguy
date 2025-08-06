@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Building Personal Brand on Twitter: The Reply Strategy That Works in 2024',
     description: 'The complete guide to building a powerful personal brand on Twitter through strategic reply engagement. 10K+ creators trust this framework.',
-    url: 'https://replyguy.com/blog/building-personal-brand-twitter-reply-strategy',
+    url: 'https://replyguy.appendment.com/blog/building-personal-brand-twitter-reply-strategy',
     type: 'article',
     images: [
       {
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     images: ['/blog-images/twitter-personal-branding-og.png'],
   },
   alternates: {
-    canonical: 'https://replyguy.com/blog/building-personal-brand-twitter-reply-strategy',
+    canonical: 'https://replyguy.appendment.com/blog/building-personal-brand-twitter-reply-strategy',
   },
 };
 

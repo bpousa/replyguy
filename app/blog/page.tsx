@@ -13,10 +13,10 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'ReplyGuy Blog - Twitter AI & Social Media Growth Tips',
     description: 'Expert tips on growing your Twitter following and mastering social media with AI tools.',
-    url: 'https://replyguy.com/blog',
+    url: 'https://replyguy.appendment.com/blog',
   },
   alternates: {
-    canonical: 'https://replyguy.com/blog',
+    canonical: 'https://replyguy.appendment.com/blog',
   },
 };
 

@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'AI Writing Tools vs Human Writers: The Future of Social Media in 2024',
     description: 'The definitive analysis of AI vs human writing for social media. Learn which wins, when to use each, and how to combine both for maximum impact.',
-    url: 'https://replyguy.com/blog/ai-writing-tools-vs-human-writers-future-social-media',
+    url: 'https://replyguy.appendment.com/blog/ai-writing-tools-vs-human-writers-future-social-media',
     type: 'article',
     images: [
       {
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     images: ['/blog-images/ai-vs-human-writers-og.png'],
   },
   alternates: {
-    canonical: 'https://replyguy.com/blog/ai-writing-tools-vs-human-writers-future-social-media',
+    canonical: 'https://replyguy.appendment.com/blog/ai-writing-tools-vs-human-writers-future-social-media',
   },
 };
 

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  const baseUrl = 'https://replyguy.com';
+  const baseUrl = 'https://replyguy.appendment.com';
   const currentDate = new Date().toISOString();
   
   const staticPages = [

@@ -5,7 +5,7 @@ interface SchemaMarkupProps {
 
 export function SchemaMarkup({ type, data }: SchemaMarkupProps) {
   const generateSchema = () => {
-    const baseUrl = 'https://replyguy.com';
+    const baseUrl = 'https://replyguy.appendment.com';
     
     switch (type) {
       case 'website':

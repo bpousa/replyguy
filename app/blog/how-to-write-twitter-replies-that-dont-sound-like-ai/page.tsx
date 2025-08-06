@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'How to Write Twitter Replies That Don&apos;t Sound Like AI in 2024',
     description: 'Learn 15 proven techniques to make AI-generated Twitter replies sound authentically human and bypass detection tools.',
-    url: 'https://replyguy.com/blog/how-to-write-twitter-replies-that-dont-sound-like-ai',
+    url: 'https://replyguy.appendment.com/blog/how-to-write-twitter-replies-that-dont-sound-like-ai',
     type: 'article',
     images: [
       {
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     images: ['/blog-images/human-like-ai-replies-og.png'],
   },
   alternates: {
-    canonical: 'https://replyguy.com/blog/how-to-write-twitter-replies-that-dont-sound-like-ai',
+    canonical: 'https://replyguy.appendment.com/blog/how-to-write-twitter-replies-that-dont-sound-like-ai',
   },
 };
 

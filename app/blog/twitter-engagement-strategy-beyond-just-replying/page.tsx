@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Twitter Engagement Strategy: Beyond Just Replying - Complete 2024 Guide',
     description: 'Master the complete Twitter engagement framework that top creators use to build audiences and drive business results.',
-    url: 'https://replyguy.com/blog/twitter-engagement-strategy-beyond-just-replying',
+    url: 'https://replyguy.appendment.com/blog/twitter-engagement-strategy-beyond-just-replying',
     type: 'article',
     images: [
       {
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     images: ['/blog-images/twitter-engagement-strategy-og.png'],
   },
   alternates: {
-    canonical: 'https://replyguy.com/blog/twitter-engagement-strategy-beyond-just-replying',
+    canonical: 'https://replyguy.appendment.com/blog/twitter-engagement-strategy-beyond-just-replying',
   },
 };
 

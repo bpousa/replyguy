@@ -54,7 +54,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'ReplyGuy - AI Twitter Reply Generator | Write Like You',
     description: 'Generate authentic, human-like Twitter replies with AI. Our Chrome extension helps you craft engaging X replies that sound genuinely like you. 10 free replies monthly.',
-    url: 'https://replyguy.com',
+    url: 'https://replyguy.appendment.com',
     siteName: 'ReplyGuy',
     images: [
       {
@@ -82,7 +82,7 @@ export const metadata: Metadata = {
     site: '@replyguyai',
   },
   alternates: {
-    canonical: 'https://replyguy.com',
+    canonical: 'https://replyguy.appendment.com',
   },
   category: 'Social Media Tools',
   classification: 'AI-powered social media management tool',
@@ -98,12 +98,12 @@ export default function RootLayout({
     "@graph": [
       {
         "@type": "Organization",
-        "@id": "https://replyguy.com/#organization",
+        "@id": "https://replyguy.appendment.com/#organization",
         "name": "ReplyGuy",
-        "url": "https://replyguy.com",
+        "url": "https://replyguy.appendment.com",
         "logo": {
           "@type": "ImageObject",
-          "url": "https://replyguy.com/reply_guy_logo.png",
+          "url": "https://replyguy.appendment.com/reply_guy_logo.png",
           "width": 512,
           "height": 512
         },
@@ -116,10 +116,10 @@ export default function RootLayout({
       },
       {
         "@type": "WebApplication",
-        "@id": "https://replyguy.com/#webapp",
+        "@id": "https://replyguy.appendment.com/#webapp",
         "name": "ReplyGuy",
         "description": "AI-powered Twitter reply generator with Chrome extension for authentic, human-like replies",
-        "url": "https://replyguy.com",
+        "url": "https://replyguy.appendment.com",
         "applicationCategory": "SocialNetworkingApplication",
         "operatingSystem": "Web Browser, Chrome Extension",
         "browserRequirements": "Requires JavaScript enabled",
@@ -148,16 +148,16 @@ export default function RootLayout({
           "Anti-AI detection technology",
           "Real-time fact checking"
         ],
-        "screenshot": "https://replyguy.com/main-interface12880x800.png"
+        "screenshot": "https://replyguy.appendment.com/main-interface12880x800.png"
       },
       {
         "@type": "WebSite",
-        "@id": "https://replyguy.com/#website",
-        "url": "https://replyguy.com",
+        "@id": "https://replyguy.appendment.com/#website",
+        "url": "https://replyguy.appendment.com",
         "name": "ReplyGuy - AI Twitter Reply Generator",
         "description": "Generate authentic, human-like Twitter replies with AI",
         "publisher": {
-          "@id": "https://replyguy.com/#organization"
+          "@id": "https://replyguy.appendment.com/#organization"
         },
         "inLanguage": "en-US"
       }

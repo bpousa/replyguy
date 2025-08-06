@@ -14,10 +14,10 @@ interface BreadcrumbProps {
 export function Breadcrumb({ items }: BreadcrumbProps) {
   // Create breadcrumb schema data
   const breadcrumbItems = [
-    { name: 'Home', url: 'https://replyguy.com' },
+    { name: 'Home', url: 'https://replyguy.appendment.com' },
     ...items.map((item, index) => ({
       name: item.label,
-      url: item.href ? `https://replyguy.com${item.href}` : 'https://replyguy.com'
+      url: item.href ? `https://replyguy.appendment.com${item.href}` : 'https://replyguy.appendment.com'
     }))
   ];
 

@@ -4,6 +4,7 @@ import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import { Providers } from './providers'
 import { PerformanceMonitor } from './components/performance-monitor'
+import { Analytics } from './components/analytics'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -214,6 +215,7 @@ export default function RootLayout({
           }}
         />
         <PerformanceMonitor />
+        <Analytics />
       </body>
     </html>
   )

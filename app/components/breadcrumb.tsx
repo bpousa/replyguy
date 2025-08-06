@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ChevronRight, Home } from 'lucide-react';
+import { SchemaMarkup } from './schema-markup';
 
 interface BreadcrumbItem {
   label: string;
@@ -11,41 +12,57 @@ interface BreadcrumbProps {
 }
 
 export function Breadcrumb({ items }: BreadcrumbProps) {
+  // Create breadcrumb schema data
+  const breadcrumbItems = [
+    { name: 'Home', url: 'https://replyguy.com' },
+    ...items.map((item, index) => ({
+      name: item.label,
+      url: item.href ? `https://replyguy.com${item.href}` : 'https://replyguy.com'
+    }))
+  ];
+
+  const breadcrumbData = {
+    items: breadcrumbItems
+  };
+
   return (
-    <nav aria-label="Breadcrumb" className="py-4">
-      <div className="container mx-auto px-4">
-        <ol className="flex items-center space-x-2 text-sm">
-          {/* Home Link */}
-          <li>
-            <Link
-              href="/"
-              className="flex items-center text-gray-500 hover:text-purple-600 transition-colors"
-            >
-              <Home className="w-4 h-4 mr-1" />
-              Home
-            </Link>
-          </li>
-          
-          {/* Breadcrumb Items */}
-          {items.map((item, index) => (
-            <li key={index} className="flex items-center">
-              <ChevronRight className="w-4 h-4 text-gray-400 mx-2" />
-              {item.href && index < items.length - 1 ? (
-                <Link
-                  href={item.href}
-                  className="text-gray-500 hover:text-purple-600 transition-colors"
-                >
-                  {item.label}
-                </Link>
-              ) : (
-                <span className="text-gray-900 font-medium" aria-current="page">
-                  {item.label}
-                </span>
-              )}
+    <>
+      <SchemaMarkup type="breadcrumb" data={breadcrumbData} />
+      <nav aria-label="Breadcrumb" className="py-4">
+        <div className="container mx-auto px-4">
+          <ol className="flex items-center space-x-2 text-sm">
+            {/* Home Link */}
+            <li>
+              <Link
+                href="/"
+                className="flex items-center text-gray-500 hover:text-purple-600 transition-colors"
+              >
+                <Home className="w-4 h-4 mr-1" />
+                Home
+              </Link>
             </li>
-          ))}
-        </ol>
-      </div>
-    </nav>
+            
+            {/* Breadcrumb Items */}
+            {items.map((item, index) => (
+              <li key={index} className="flex items-center">
+                <ChevronRight className="w-4 h-4 text-gray-400 mx-2" />
+                {item.href && index < items.length - 1 ? (
+                  <Link
+                    href={item.href}
+                    className="text-gray-500 hover:text-purple-600 transition-colors"
+                  >
+                    {item.label}
+                  </Link>
+                ) : (
+                  <span className="text-gray-900 font-medium" aria-current="page">
+                    {item.label}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ol>
+        </div>
+      </nav>
+    </>
   );
 }

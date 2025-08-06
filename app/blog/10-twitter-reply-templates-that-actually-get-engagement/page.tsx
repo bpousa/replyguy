@@ -4,6 +4,7 @@ import { MarketingWrapper } from '@/app/components/marketing-wrapper';
 import { Breadcrumb } from '@/app/components/breadcrumb';
 import { Button } from '@/app/components/ui/button';
 import { SchemaMarkup } from '@/app/components/schema-markup';
+import { StrategicLinks } from '@/app/components/strategic-links';
 import { CheckCircle, TrendingUp, MessageSquare, Heart, ArrowRight, Copy, Star } from 'lucide-react';
 
 export const metadata: Metadata = {
@@ -575,6 +576,12 @@ export default function TwitterReplyTemplatesPost() {
                 </Link>
               </div>
             </section>
+
+            {/* Strategic Internal Links */}
+            <StrategicLinks 
+              context="blog-post" 
+              currentPage="10-twitter-reply-templates-that-actually-get-engagement"
+            />
           </div>
         </div>
       </article>

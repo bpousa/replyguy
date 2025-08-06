@@ -7,6 +7,7 @@ import { WriteLikeMe } from './(marketing)/components/write-like-me';
 import { PricingCards } from './(marketing)/components/pricing-cards';
 import { MarketingWrapper } from './components/marketing-wrapper';
 import { HomepageFAQ } from './(marketing)/components/homepage-faq';
+import { StrategicLinks } from './components/strategic-links';
 // import { Testimonials } from './(marketing)/components/testimonials';
 
 export const metadata: Metadata = {
@@ -47,6 +48,7 @@ export default function LandingPage() {
       <WhyReplyGuy />
       <PricingCards />
       <HomepageFAQ />
+      <StrategicLinks context="homepage" currentPage="/" />
       {/* <Testimonials /> */}
     </MarketingWrapper>
   );

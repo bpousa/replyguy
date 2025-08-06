@@ -39,9 +39,11 @@ export async function POST(request: NextRequest) {
     const supabase = createServerClient(cookieStore);
     const { data: { session } } = await supabase.auth.getSession();
     
-    // Only allow clearing cookies for authenticated users or recent auth failures
+    // Allow clearing cookies for authenticated users, active auth flows, or cleanup operations
     const authFlowActive = request.headers.get('x-auth-flow-active') === 'true';
-    if (!session && !authFlowActive) {
+    const isCleanupOperation = request.headers.get('x-cleanup-operation') === 'true';
+    
+    if (!session && !authFlowActive && !isCleanupOperation) {
       console.warn('[clear-session] Unauthorized attempt to clear cookies');
       return NextResponse.json(
         { error: 'Unauthorized' },

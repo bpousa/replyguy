@@ -46,7 +46,7 @@ const AUTH_FLOW_START_KEY = 'auth_flow_started_at';
 const AUTH_RETRY_KEY = 'auth_retry_count';
 const AUTH_RETRY_TIMESTAMP_KEY = 'auth_retry_timestamp';
 const MAX_AUTH_FLOW_DURATION = 5 * 60 * 1000; // 5 minutes
-const MAX_RETRY_ATTEMPTS = 15; // Total max across all page loads
+const MAX_RETRY_ATTEMPTS = 8; // Reduced from 15 - faster failure detection
 const RETRY_DELAY_MS = 2000; // 2 seconds between retries
 
 // Network detection
@@ -254,6 +254,9 @@ export async function clearAllAuthData() {
       // Add auth flow header if active
       if (isInAuthFlow()) {
         headers['x-auth-flow-active'] = 'true';
+      } else {
+        // If not in auth flow, mark as cleanup operation to allow clearing
+        headers['x-cleanup-operation'] = 'true';
       }
       
       const response = await fetch('/api/auth/clear-session', {

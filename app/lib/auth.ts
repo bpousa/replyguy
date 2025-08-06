@@ -127,8 +127,8 @@ export const createServerClient = (cookieStore: ReturnType<typeof cookies>) => {
               value,
               ...options,
               // Override with secure defaults for auth cookies
+              // IMPORTANT: Don't set httpOnly for auth cookies as client needs to read them
               ...(isAuthCookie ? {
-                httpOnly: true,
                 secure: isProduction,
                 sameSite: 'lax' as const,
                 path: '/',

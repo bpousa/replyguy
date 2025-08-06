@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setStatus('error');
         
         // Clear auth data on persistent errors
-        if (retryCount > 5) {
+        if (retryCount > 3) {
           console.log('[auth-context] Clearing auth data due to persistent errors');
           await clearAllAuthData().catch(e => console.error('[auth-context] Error clearing auth data:', e));
           endAuthFlow();
@@ -103,7 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }, 2000);
         } else {
           // Max retries reached or not in auth flow
-          if (retryCount >= 15) {
+          if (retryCount >= 8) {
             console.log('[auth-context] Max retries reached, clearing all auth data');
             await clearAllAuthData().catch(e => console.error('[auth-context] Error clearing auth data:', e));
             endAuthFlow();

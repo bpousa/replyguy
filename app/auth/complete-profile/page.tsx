@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@/app/lib/auth';
 import { toast } from 'react-hot-toast';
 import { Button } from '@/app/components/ui/button';
-import { Gift, UserPlus, Phone, User, ArrowRight } from 'lucide-react';
+import { Gift, UserPlus, Phone, User, ArrowRight, Loader2 } from 'lucide-react';
 import { Logo } from '@/app/components/logo';
 
 export default function CompleteProfilePage() {

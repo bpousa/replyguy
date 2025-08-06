@@ -171,7 +171,7 @@ export default function CompleteProfilePage() {
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
               <h3 className="font-semibold text-purple-900 mb-2 flex items-center gap-2">
                 <UserPlus className="h-5 w-5" />
-                What you'll get:
+                What you&apos;ll get:
               </h3>
               <ul className="text-sm text-purple-700 space-y-1">
                 <li>🚀 Exclusive X growth tips via SMS</li>

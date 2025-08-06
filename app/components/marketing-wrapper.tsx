@@ -19,10 +19,12 @@ export function MarketingWrapper({ children }: { children: React.ReactNode }) {
   ];
 
   const resources = [
-    { name: 'Blog', href: '/blog', description: 'Tips and strategies for Twitter growth' },
+    { name: 'Blog', href: '/blog', description: 'Latest tips and strategies' },
+    { name: 'Reply Templates', href: '/blog/10-twitter-reply-templates-that-actually-get-engagement', description: '10 proven engagement templates' },
+    { name: 'AI vs Human Writing', href: '/blog/ai-writing-tools-vs-human-writers-future-social-media', description: 'Future of content creation' },
+    { name: 'Personal Branding', href: '/blog/building-personal-brand-twitter-reply-strategy', description: 'Build your Twitter brand' },
+    { name: 'Chrome Extensions', href: '/blog/chrome-extensions-every-twitter-marketer-needs', description: 'Essential browser tools' },
     { name: 'How It Works', href: '/how-it-works', description: 'Learn about our AI technology' },
-    { name: 'Alternatives', href: '/alternatives', description: 'Compare ReplyGuy with other tools' },
-    { name: 'Chrome Extension', href: '/chrome-extension', description: 'Browser extension guide' },
   ];
 
   return (
@@ -38,20 +40,16 @@ export function MarketingWrapper({ children }: { children: React.ReactNode }) {
             {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center space-x-8">
               {/* Tools Dropdown */}
-              <div className="relative group">
-                <button 
-                  className="flex items-center text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-                  onMouseEnter={() => setToolsOpen(true)}
-                  onMouseLeave={() => setToolsOpen(false)}
-                >
+              <div 
+                className="relative group"
+                onMouseEnter={() => setToolsOpen(true)}
+                onMouseLeave={() => setToolsOpen(false)}
+              >
+                <button className="flex items-center text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors py-2">
                   Reply Tools <ChevronDown className="w-4 h-4 ml-1" />
                 </button>
                 {toolsOpen && (
-                  <div 
-                    className="absolute left-0 mt-2 w-72 bg-white rounded-lg shadow-lg border z-50"
-                    onMouseEnter={() => setToolsOpen(true)}
-                    onMouseLeave={() => setToolsOpen(false)}
-                  >
+                  <div className="absolute left-0 top-full w-72 bg-white rounded-lg shadow-lg border z-50 mt-0">
                     <div className="p-2">
                       {replyGeneratorTools.map((tool) => (
                         <Link
@@ -69,20 +67,16 @@ export function MarketingWrapper({ children }: { children: React.ReactNode }) {
               </div>
 
               {/* Resources Dropdown */}
-              <div className="relative group">
-                <button 
-                  className="flex items-center text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-                  onMouseEnter={() => setResourcesOpen(true)}
-                  onMouseLeave={() => setResourcesOpen(false)}
-                >
+              <div 
+                className="relative group"
+                onMouseEnter={() => setResourcesOpen(true)}
+                onMouseLeave={() => setResourcesOpen(false)}
+              >
+                <button className="flex items-center text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors py-2">
                   Resources <ChevronDown className="w-4 h-4 ml-1" />
                 </button>
                 {resourcesOpen && (
-                  <div 
-                    className="absolute left-0 mt-2 w-72 bg-white rounded-lg shadow-lg border z-50"
-                    onMouseEnter={() => setResourcesOpen(true)}
-                    onMouseLeave={() => setResourcesOpen(false)}
-                  >
+                  <div className="absolute left-0 top-full w-80 bg-white rounded-lg shadow-lg border z-50 mt-0">
                     <div className="p-2">
                       {resources.map((resource) => (
                         <Link
@@ -154,7 +148,7 @@ export function MarketingWrapper({ children }: { children: React.ReactNode }) {
               {/* Mobile Resources Section */}
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">Resources</h3>
-                <div className="space-y-3">
+                <div className="space-y-3 max-h-64 overflow-y-auto">
                   {resources.map((resource) => (
                     <Link
                       key={resource.name}

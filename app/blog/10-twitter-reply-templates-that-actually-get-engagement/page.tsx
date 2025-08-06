@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { MarketingWrapper } from '@/app/components/marketing-wrapper';
 import { Breadcrumb } from '@/app/components/breadcrumb';
 import { Button } from '@/app/components/ui/button';
+import { SchemaMarkup } from '@/app/components/schema-markup';
 import { CheckCircle, TrendingUp, MessageSquare, Heart, ArrowRight, Copy, Star } from 'lucide-react';
 
 export const metadata: Metadata = {
@@ -212,8 +213,30 @@ const commonMistakes = [
 ];
 
 export default function TwitterReplyTemplatesPost() {
+  const articleData = {
+    title: '10 Twitter Reply Templates That Actually Get Engagement in 2024',
+    description: 'Discover 10 proven Twitter reply templates that boost engagement by 300%. Copy-paste these high-converting templates for likes, retweets, and followers.',
+    url: 'https://replyguy.com/blog/10-twitter-reply-templates-that-actually-get-engagement',
+    publishedTime: '2024-01-15T10:00:00Z',
+    modifiedTime: '2024-01-15T10:00:00Z',
+    keywords: ['twitter reply templates', 'X reply templates', 'tweet reply examples', 'social media templates', 'twitter engagement'],
+    wordCount: 2800,
+    image: 'https://replyguy.com/blog-images/twitter-reply-templates-og.png'
+  };
+
+  const breadcrumbData = {
+    items: [
+      { name: 'Home', url: 'https://replyguy.com' },
+      { name: 'Blog', url: 'https://replyguy.com/blog' },
+      { name: '10 Twitter Reply Templates', url: 'https://replyguy.com/blog/10-twitter-reply-templates-that-actually-get-engagement' }
+    ]
+  };
+
   return (
-    <MarketingWrapper>
+    <>
+      <SchemaMarkup type="article" data={articleData} />
+      <SchemaMarkup type="breadcrumb" data={breadcrumbData} />
+      <MarketingWrapper>
       <Breadcrumb 
         items={[
           { label: 'Blog', href: '/blog' },
@@ -556,5 +579,6 @@ export default function TwitterReplyTemplatesPost() {
         </div>
       </article>
     </MarketingWrapper>
+    </>
   );
 }

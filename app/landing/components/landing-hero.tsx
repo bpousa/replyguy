@@ -74,13 +74,13 @@ export function LandingHero() {
           
           {/* Main headline - Conversion focused */}
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
-            AI X Replies That Help You <span className="gradient-text">Grow Faster</span>
+            Reply Faster, <span className="gradient-text">Grow Faster</span> on X
           </h1>
           
           {/* Subheadline with quantified benefits */}
           <p className="text-xl text-gray-600 mb-10 max-w-3xl mx-auto">
-            Transform your thoughts into perfect X replies instantly. Our AI enhances what you want to say 
-            and gives you ideas when you&apos;re stuck. Build your following 3x faster with replies that sound like you.
+            Our Chrome extension makes replying instant - just click any X post, enhance your thoughts with AI, 
+            and insert perfect replies in seconds. Build your following 3x faster with effortless engagement.
           </p>
 
           {/* Primary CTA Section */}

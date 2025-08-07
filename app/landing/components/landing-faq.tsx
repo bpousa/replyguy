@@ -25,7 +25,7 @@ export function LandingFAQ() {
     },
     {
       question: "What's the Chrome extension and how does it work?",
-      answer: "Our Chrome extension integrates directly into X, allowing you to enhance replies without leaving the platform. Tell it what you want to say or get ideas when you&apos;re stuck, then insert the perfect reply with one click. It&apos;s seamless and works with your existing X workflow."
+      answer: "Our Chrome extension integrates directly into X, allowing you to enhance replies without leaving the platform. Tell it what you want to say or get ideas when you're stuck, then insert the perfect reply with one click. It's seamless and works with your existing X workflow."
     },
     {
       question: "Is my X data safe and secure?",
@@ -120,7 +120,9 @@ export function LandingFAQ() {
                   Email Support
                 </a>
                 <a 
-                  href="/contact" 
+                  href="https://appendment.com/contact" 
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex items-center justify-center px-6 py-3 bg-white text-purple-600 font-medium rounded-lg border border-purple-200 hover:bg-purple-50 transition-colors"
                 >
                   Contact Form

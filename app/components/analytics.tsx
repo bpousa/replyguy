@@ -119,6 +119,56 @@ export function Analytics({ gaId }: AnalyticsProps) {
               });
             });
           });
+
+          // Track landing page specific interactions
+          const trackLandingPageEvents = () => {
+            // Track landing page visits
+            if (window.location.pathname === '/landing') {
+              (window as any).gtag?.('event', 'landing_page_view', {
+                event_category: 'landing',
+                event_label: 'paid_traffic_landing',
+                page_location: window.location.href
+              });
+            }
+
+            // Track section visibility using Intersection Observer
+            const observerOptions = {
+              threshold: 0.5,
+              rootMargin: '0px 0px -20% 0px'
+            };
+
+            const sectionObserver = new IntersectionObserver((entries) => {
+              entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                  const sectionName = entry.target.getAttribute('data-section');
+                  if (sectionName) {
+                    (window as any).gtag?.('event', 'section_view', {
+                      event_category: 'engagement',
+                      event_label: sectionName,
+                      page_location: window.location.href
+                    });
+                  }
+                }
+              });
+            }, observerOptions);
+
+            // Observe landing page sections
+            document.querySelectorAll('[data-section]').forEach(section => {
+              sectionObserver.observe(section);
+            });
+
+            // Track landing page conversions when users reach signup page from landing
+            if (window.location.pathname === '/auth/signup' && 
+                document.referrer.includes('/landing')) {
+              (window as any).gtag?.('event', 'landing_conversion_start', {
+                event_category: 'conversion',
+                event_label: 'signup_from_landing',
+                page_location: window.location.href
+              });
+            }
+          };
+
+          trackLandingPageEvents();
         };
 
         trackReplyGuyEvents();

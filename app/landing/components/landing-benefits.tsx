@@ -18,9 +18,9 @@ export function LandingBenefits() {
     },
     {
       icon: Zap,
-      title: '10-Second Generation',
-      description: 'Generate multiple high-quality reply options in seconds, not minutes. Perfect for real-time engagement and trending conversations.',
-      highlight: 'Instant authentic replies',
+      title: 'Instant Enhancement',
+      description: 'Transform your thoughts into perfect replies instantly. Takes what you want to say and makes it better, or gives you ideas when you&apos;re stuck.',
+      highlight: 'AI enhances your thoughts',
       color: 'blue'
     },
     {
@@ -32,16 +32,16 @@ export function LandingBenefits() {
     },
     {
       icon: TrendingUp,
-      title: 'Proven Growth Results',
-      description: 'Users report 3x higher engagement rates and faster follower growth. Build real connections that convert to loyal audience.',
-      highlight: '3x more engagement',
+      title: 'Grow Faster on X',
+      description: 'Users report 3x higher engagement rates and faster follower growth. Build real connections that convert to loyal audience with AI assistance.',
+      highlight: '3x faster growth',
       color: 'emerald'
     },
     {
       icon: Chrome,
       title: 'Chrome Extension Integration',
-      description: 'Generate replies directly within X (Twitter) without switching tabs. Seamless workflow integration for maximum productivity.',
-      highlight: 'Works inside X',
+      description: 'Enhance and insert replies directly within X without switching tabs. One-click insertion makes engagement effortless.',
+      highlight: 'One-click insertion',
       color: 'indigo'
     }
   ];
@@ -134,7 +134,7 @@ export function LandingBenefits() {
                 <ul className="space-y-3 text-green-700 text-sm">
                   <li className="flex items-start gap-2">
                     <div className="w-2 h-2 bg-green-400 rounded-full mt-2 flex-shrink-0"></div>
-                    <span>Generate 10+ authentic replies in seconds</span>
+                    <span>Transform your thoughts into perfect replies instantly</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <div className="w-2 h-2 bg-green-400 rounded-full mt-2 flex-shrink-0"></div>

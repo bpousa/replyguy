@@ -21,9 +21,9 @@ export function LandingHowItWorks() {
     {
       number: '03',
       icon: MessageSquare,
-      title: 'Generate Perfect Replies',
-      description: 'Get authentic, context-aware replies in 10 seconds. Choose from multiple options that sound exactly like you.',
-      details: ['10-second generation time', 'Multiple reply options', 'Sounds exactly like you'],
+      title: 'Get Your Perfect Reply',
+      description: 'AI enhances your thoughts into the perfect reply instantly. One-click insertion directly into X - no copy-paste needed.',
+      details: ['Instant enhancement', 'One-click insertion', 'Sounds exactly like you'],
       color: 'from-green-500 to-green-600'
     }
   ];
@@ -146,8 +146,8 @@ export function LandingHowItWorks() {
               </div>
               <div className="bg-orange-50 rounded-lg p-4">
                 <div className="text-2xl mb-2">🎯</div>
-                <div className="text-sm font-medium text-orange-700">Human Review</div>
-                <div className="text-xs text-gray-600 mt-1">You choose the best</div>
+                <div className="text-sm font-medium text-orange-700">One-Click Insert</div>
+                <div className="text-xs text-gray-600 mt-1">Direct insertion into X</div>
               </div>
             </div>
           </div>

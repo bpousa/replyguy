@@ -139,16 +139,16 @@ export function LandingFinalCTA() {
                 <div className="text-sm text-white/80">Setup Time</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-white mb-1">10s</div>
-                <div className="text-sm text-white/80">Reply Generation</div>
+                <div className="text-2xl font-bold text-white mb-1">Instant</div>
+                <div className="text-sm text-white/80">Reply Enhancement</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-white mb-1">3x</div>
-                <div className="text-sm text-white/80">More Engagement</div>
+                <div className="text-sm text-white/80">Faster Growth</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-white mb-1">100%</div>
-                <div className="text-sm text-white/80">Authentic Voice</div>
+                <div className="text-2xl font-bold text-white mb-1">1-Click</div>
+                <div className="text-sm text-white/80">Direct Insertion</div>
               </div>
             </div>
           </div>

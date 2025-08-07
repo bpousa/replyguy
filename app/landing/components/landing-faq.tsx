@@ -20,15 +20,15 @@ export function LandingFAQ() {
       answer: "Yes! Every account gets 10 completely free AI-generated replies monthly with no credit card required. This includes access to basic reply types and our Chrome extension. You can upgrade anytime for more replies, advanced features like Write Like Me™ training, and longer response options."
     },
     {
-      question: "How fast can I generate replies?",
-      answer: "Most replies generate in 10 seconds or less. Our system analyzes the original tweet, considers context, selects the best reply type, and generates multiple options for you to choose from. You can generate and post replies faster than typing them manually."
+      question: "How fast does ReplyGuy enhance my replies?",
+      answer: "ReplyGuy enhances your thoughts into perfect replies instantly. Simply tell it what you want to say (or let it give you ideas when you&apos;re stuck), and it transforms your input into an authentic reply that sounds like you. One-click insertion makes posting effortless."
     },
     {
       question: "What's the Chrome extension and how does it work?",
-      answer: "Our Chrome extension integrates directly into X (Twitter), allowing you to generate replies without leaving the platform. Click on any tweet, select 'Generate Reply', and choose from AI-generated options that match your voice. It's seamless and works with your existing Twitter workflow."
+      answer: "Our Chrome extension integrates directly into X, allowing you to enhance replies without leaving the platform. Tell it what you want to say or get ideas when you&apos;re stuck, then insert the perfect reply with one click. It&apos;s seamless and works with your existing X workflow."
     },
     {
-      question: "Is my Twitter data safe and secure?",
+      question: "Is my X data safe and secure?",
       answer: "Absolutely. We use industry-standard OAuth authentication (no passwords stored) and only access public tweet data needed for the AI to learn your writing style. We never post anything without your explicit approval, and your data is encrypted and stored securely. You maintain full control over your account."
     },
     {
@@ -41,11 +41,11 @@ export function LandingFAQ() {
     },
     {
       question: "How is this different from other AI writing tools?",
-      answer: "Unlike generic AI writers, ReplyGuy is built specifically for Twitter engagement. Our Write Like Me™ technology creates personalized voice models, our anti-AI detection ensures authentic-sounding responses, and our Chrome extension integrates directly into your Twitter workflow. We focus on authentic engagement, not just content generation."
+      answer: "Unlike generic AI writers, ReplyGuy is built specifically for X engagement. Our Write Like Me™ technology creates personalized voice models, and our Chrome extension integrates directly into your X workflow. We enhance your thoughts instead of replacing them, helping you grow faster while staying authentic."
     },
     {
-      question: "What happens if I don't like a generated reply?",
-      answer: "You always get multiple reply options to choose from, and you can regenerate new options anytime. Every reply goes through your approval before posting - the AI never posts automatically. You're in complete control of what gets shared on your account."
+      question: "What if I don't like the enhanced reply?",
+      answer: "Simply edit your input or try a different approach - ReplyGuy adapts to your feedback. You can refine what you want to say until the AI creates the perfect reply. You maintain complete control and the AI never posts automatically."
     }
   ];
 

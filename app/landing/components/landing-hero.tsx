@@ -74,13 +74,13 @@ export function LandingHero() {
           
           {/* Main headline - Conversion focused */}
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
-            AI Twitter Replies That <span className="gradient-text">Sound Exactly Like You</span>
+            AI X Replies That Help You <span className="gradient-text">Grow Faster</span>
           </h1>
           
           {/* Subheadline with quantified benefits */}
           <p className="text-xl text-gray-600 mb-10 max-w-3xl mx-auto">
-            Generate authentic replies in 10 seconds. Build your X following 3x faster 
-            with AI that learns your unique voice and style. No robotic responses, just you.
+            Transform your thoughts into perfect X replies instantly. Our AI enhances what you want to say 
+            and gives you ideas when you&apos;re stuck. Build your following 3x faster with replies that sound like you.
           </p>
 
           {/* Primary CTA Section */}
@@ -164,16 +164,16 @@ export function LandingHero() {
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 max-w-2xl mx-auto">
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <div className="text-2xl font-bold text-purple-600 mb-1">10s</div>
-                <div className="text-sm text-gray-600">Reply Generation</div>
+                <div className="text-2xl font-bold text-purple-600 mb-1">Instant</div>
+                <div className="text-sm text-gray-600">Reply Enhancement</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-green-600 mb-1">50+</div>
-                <div className="text-sm text-gray-600">Reply Types</div>
+                <div className="text-2xl font-bold text-green-600 mb-1">3x</div>
+                <div className="text-sm text-gray-600">Faster Growth</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-blue-600 mb-1">4.8★</div>
-                <div className="text-sm text-gray-600">Chrome Extension</div>
+                <div className="text-2xl font-bold text-blue-600 mb-1">1-Click</div>
+                <div className="text-sm text-gray-600">Direct Insertion</div>
               </div>
             </div>
           </div>

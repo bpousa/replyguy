@@ -17,29 +17,24 @@ export function LandingSocialProof() {
 
           {/* Real metrics grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-            {/* Chrome Extension Rating */}
+            {/* Users Growing */}
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 text-center">
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4 mx-auto">
-                <Chrome className="w-6 h-6 text-green-600" />
+                <TrendingUp className="w-6 h-6 text-green-600" />
               </div>
-              <div className="flex items-center justify-center mb-2">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
-                ))}
-                <span className="ml-2 font-bold text-lg">4.8</span>
-              </div>
-              <p className="text-gray-600 text-sm">Chrome Extension Rating</p>
-              <p className="text-xs text-gray-500 mt-1">Based on early user feedback</p>
+              <div className="text-3xl font-bold text-green-600 mb-2">3x</div>
+              <p className="text-gray-600 text-sm">Faster Growth Rate</p>
+              <p className="text-xs text-gray-500 mt-1">Users report increased engagement</p>
             </div>
 
-            {/* Reply Generation Speed */}
+            {/* Reply Enhancement Speed */}
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 text-center">
               <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4 mx-auto">
                 <Zap className="w-6 h-6 text-purple-600" />
               </div>
-              <div className="text-3xl font-bold text-purple-600 mb-2">10s</div>
-              <p className="text-gray-600 text-sm">Average Reply Generation</p>
-              <p className="text-xs text-gray-500 mt-1">From tweet input to final reply</p>
+              <div className="text-3xl font-bold text-purple-600 mb-2">Instant</div>
+              <p className="text-gray-600 text-sm">Reply Enhancement</p>
+              <p className="text-xs text-gray-500 mt-1">Transform thoughts to perfect replies</p>
             </div>
 
             {/* Reply Types Available */}
@@ -61,14 +56,14 @@ export function LandingSocialProof() {
                 <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl flex items-center justify-center mb-4 mx-auto">
                   <Shield className="w-8 h-8 text-purple-600" />
                 </div>
-                <h4 className="font-semibold mb-2">Claude 3.5 Sonnet</h4>
+                <h4 className="font-semibold mb-2">Claude Sonnet</h4>
                 <p className="text-sm text-gray-600">Advanced reasoning for contextual reply selection</p>
               </div>
               <div className="text-center">
                 <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-emerald-100 rounded-xl flex items-center justify-center mb-4 mx-auto">
                   <TrendingUp className="w-8 h-8 text-green-600" />
                 </div>
-                <h4 className="font-semibold mb-2">GPT-4 Classification</h4>
+                <h4 className="font-semibold mb-2">OpenAI GPT</h4>
                 <p className="text-sm text-gray-600">Smart categorization of reply opportunities</p>
               </div>
               <div className="text-center">
